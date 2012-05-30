@@ -145,7 +145,7 @@ class LanguageTool:
             try:
                 cls.err_msg = err_msg.decode(sys.stderr.encoding, "replace")
             except AttributeError:
-                cls.err_msg = err_msg.decode("ascii", "replace")
+                cls.err_msg = err_msg.decode("utf-8", "replace")
             match = cls.PORT_RE.search(err_msg)
             if not match:
                 raise Error(cls.err_msg)
@@ -222,22 +222,20 @@ class Match:
                              if self.replacements else [])
 
     def __repr__(self):
-        return ("{}({})".format(self.__class__.__name__,
-                self._ordered_dict_repr()))
+        def _ordered_dict_repr():
+            return "{{{}}}".format(
+                ", ".join(
+                    "{!r}: {!r}".format(k, self.__dict__[k])
+                    for k in self.SLOTS +
+                    tuple(set(self.__dict__).difference(self.SLOTS))
+                    if getattr(self, k) is not None
+                )
+            )
+
+        return "{}({})".format(self.__class__.__name__, _ordered_dict_repr())
 
     def __getattr__(self, name):
         return None
-
-    def _ordered_dict_repr(self):
-        d = self.__dict__
-        keys = self.SLOTS
-        return "{{{}}}".format(
-            ", ".join(
-                "{!r}: {!r}".format(k, d[k])
-                for k in keys + tuple(set(d).difference(keys))
-                if getattr(self, k) is not None
-            )
-        )
 
 
 if FIX_SENTENCES:
