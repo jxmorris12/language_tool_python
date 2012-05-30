@@ -41,9 +41,9 @@ class TestLanguageTool(unittest.TestCase):
 
     def test_samples(self):
         for language, tests in self.tests.items():
-            lt = LanguageTool(language)
+            lang_tool = LanguageTool(language)
             for text, expected_matches in tests:
-                matches = lt.check(text)
+                matches = lang_tool.check(text)
                 for expected_match in expected_matches:
                     for match in matches:
                         if (
