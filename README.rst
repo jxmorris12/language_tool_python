@@ -23,7 +23,9 @@ Requirements
 - `Python 3.2 <http://www.python.org/>`_
 - `LanguageTool <http://www.languagetool.org/>`_
 
-Download the LanguageTool-stable.oxt file, rename it so it ends with “.zip”,
-then unzip it into a subdirectory where the language_tool package resides.
+Download `LanguageTool-stable.oxt
+<http://www.languagetool.org/download/LanguageTool-stable.oxt>`_,
+rename it so it ends with “.zip”, then unzip it into a subdirectory
+inside the language_tool package.
 
 LanguageTool requires Java 6 or later.
