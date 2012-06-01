@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Convert the Python 3 source into Python 2 source, using lib3to2
+"""Convert Python 3 source into Python 2 source, using lib3to2
 """
 import codecs
 import glob
