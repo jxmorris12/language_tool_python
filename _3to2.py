@@ -23,8 +23,6 @@ from lib3to2.main import main as lib3to2_main
 
 # For environment markers
 import platform #@UnusedImport
-import os #@UnusedImport
-import sys
 
 python_version = "%s.%s" % sys.version_info[:2]
 python_full_version = sys.version.split()[0]
@@ -237,7 +235,7 @@ def main():
         file_list.append(py2_path)
 
     for path in glob.glob("*test*"):
-        dir_path, name = os.path.split(path)
+        name = os.path.split(path)[1]
         if not re.search(r"\btest\b|_test\b|\btest_", name):
             continue
         py2_path = os.path.join(PY2_DIR, path)
