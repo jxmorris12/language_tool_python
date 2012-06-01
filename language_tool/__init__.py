@@ -27,6 +27,7 @@ import sys
 import urllib.parse
 import urllib.request
 from collections import namedtuple
+from contextlib import closing
 from weakref import WeakValueDictionary
 try:
     # Deprecated since Python 3.3
@@ -156,7 +157,7 @@ class LanguageTool:
             params = {"language": "en", "text": ""}
             data = urllib.parse.urlencode(params).encode()
             try:
-                with urllib.request.urlopen(cls.url, data, 10) as f:
+                with closing(urllib.request.urlopen(cls.url, data, 10)) as f:
                     tree = ElementTree.parse(f)
             except (urllib.error.URLError, socket.error, socket.timeout) as e:
                 raise ServerError("{}: {}".format(cls.url, e))
@@ -194,8 +195,8 @@ class LanguageTool:
         try:
             while True:
                 try:
-                    with urllib.request.urlopen(
-                            self.url, data, self.TIMEOUT) as f:
+                    with closing(urllib.request.urlopen(
+                                 self.url, data, self.TIMEOUT)) as f:
                         tree = ElementTree.parse(f)
                     break
                 except (urllib.error.URLError, socket.error):
