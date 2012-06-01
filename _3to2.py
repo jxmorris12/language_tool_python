@@ -252,10 +252,9 @@ def main():
     lib3to2_main("lib3to2.fixes",
                  ["--no-diffs", "-wnj", str(cpu_count)] + file_list)
 
-    rewrite_header(file_list)
-
-    py2_path = os.path.join(PY2_DIR, SETUP_PY)
-    shutil.copy(SETUP_PY, py2_path)
+    setup_py2_path = os.path.join(PY2_DIR, SETUP_PY)
+    shutil.copy(SETUP_PY, setup_py2_path)
+    rewrite_header(file_list + [setup_py2_path])
 
     config.set("metadata", "name", config.get("metadata", "name") + "-py2")
     f = codecs.open(os.path.join(PY2_DIR, SETUP_CFG), "w", encoding="utf-8")
