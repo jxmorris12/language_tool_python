@@ -5,3 +5,4 @@ dist
 MANIFEST
 .*
 LanguageTool-*
+py2/*
