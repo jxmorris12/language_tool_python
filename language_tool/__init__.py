@@ -141,7 +141,7 @@ class LanguageTool:
                 raise Error("requested port {}, but got {}"
                             .format(cls.port, port))
         else:
-            err_msg = cls.server.stderr.readall().strip()
+            err_msg = cls.server.stderr.read().strip()
             cls._terminate_server()
             try:
                 cls.err_msg = err_msg.decode(sys.stderr.encoding, "replace")
