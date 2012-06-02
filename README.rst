@@ -20,7 +20,6 @@ Example usage
 Requirements
 ------------
 
-- `Python 3.2 <http://www.python.org/>`_
 - `LanguageTool <http://www.languagetool.org/>`_
 
 Download `LanguageTool-stable.oxt

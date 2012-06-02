@@ -5,4 +5,5 @@ dist
 MANIFEST
 .*
 LanguageTool-*
-py2/*
+py2k/*
+*.egg-info/*
