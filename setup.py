@@ -40,6 +40,7 @@ import platform #@UnusedImport
 python_version = "%s.%s" % sys.version_info[:2]
 python_full_version = sys.version.split()[0]
 
+FIX_AWKWARD_DUET = True
 PY2K_DIR = "py2k"
 SETUP_CFG = "setup.cfg"
 BASE_ARGS_3TO2 = [
@@ -73,6 +74,45 @@ ENVIRON_OPTIONS = set([
     ("metadata", "requires_python"),
     ("metadata", "requires_external"),
 ])
+
+if FIX_AWKWARD_DUET:
+    # Awkward Duet 1.1a2 fails with properties (getter followed by a setter).
+    BASE_ARGS_3TO2 += ["-x", "funcdecorator"]
+
+    def fix_func_annotations(file_list):
+        """Remove empty func_annotations.
+
+        AttributeError: 'property' object has no attribute 'func_annotations'
+        Needed until Awkward Duet gets fixed.
+        """
+        if not isinstance(file_list, list):
+            file_list = [file_list]
+
+        for file in file_list:
+            f = open(file, "rb")
+            try:
+                contents = f.read()
+            finally:
+                f.close()
+
+            new_contents = re.sub(
+                br"[ \t]*\w+\.func_annotations = {}\r?\n",
+                b"",
+                contents
+            )
+
+            if len(new_contents) != len(contents):
+                f = open(file, "wb")
+                try:
+                    contents = f.write(new_contents)
+                finally:
+                    f.close()
+
+    _run_3to2 = run_3to2
+
+    def run_3to2(args=[]):
+        _run_3to2(args)
+        fix_func_annotations(args)
 
 
 def split_multiline(value):
