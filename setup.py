@@ -17,14 +17,18 @@ try:
     from setuptools import setup, Command
 except ImportError:
     from distutils.core import setup, Command
+
 try:
     from configparser import RawConfigParser
 except ImportError:
     from ConfigParser import RawConfigParser
+
 try:
-    from multiprocessing import cpu_count
+    import multiprocessing
+    NUM_PROCESSES = multiprocessing.cpu_count()
 except (ImportError, NotImplementedError):
-    cpu_count = lambda: 1
+    NUM_PROCESSES = 1
+
 try:
     from lib3to2.main import main as lib3to2_main
 
@@ -40,12 +44,11 @@ import platform #@UnusedImport
 python_version = "%s.%s" % sys.version_info[:2]
 python_full_version = sys.version.split()[0]
 
-FIX_AWKWARD_DUET = True
 PY2K_DIR = "py2k"
-SETUP_CFG = "setup.cfg"
+USE_AWKWARD_DUET_WORKAROUNDS = True
 BASE_ARGS_3TO2 = [
     "-w", "-n", "--no-diffs",
-    "-j", str(cpu_count()),
+    "-j", str(NUM_PROCESSES),
 ]
 
 MULTI_OPTIONS = set([
@@ -75,7 +78,7 @@ ENVIRON_OPTIONS = set([
     ("metadata", "requires_external"),
 ])
 
-if FIX_AWKWARD_DUET:
+if USE_AWKWARD_DUET_WORKAROUNDS:
     # Awkward Duet 1.1a2 fails with properties (getter followed by a setter).
     BASE_ARGS_3TO2 += ["-x", "funcdecorator"]
 
@@ -390,18 +393,17 @@ def main():
             pass
 
         def run(self):
-            generate_py2k(config, py2k_dir=PY2K_DIR,
-                          overwrite=True, run_tests=True)
+            generate_py2k(config, overwrite=True, run_tests=True)
 
     config = RawConfigParser()
-    fp = open(SETUP_CFG)
+    fp = open("setup.cfg")
     try:
         config.readfp(fp)
     finally:
         fp.close()
 
     if sys.version_info.major < 3:
-        generate_py2k(config, PY2K_DIR)
+        generate_py2k(config)
         packages_root = get_cfg_option(config, "files", "packages_root")
         packages_root = os.path.join(PY2K_DIR, packages_root)
         config.set("files", "packages_root", packages_root)
