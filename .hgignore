@@ -1,9 +1,13 @@
 syntax: glob
-__pycache__
-build
-dist
-MANIFEST
 .*
-LanguageTool-*
-py2k/*
+build/*
+dist/*
 *.egg-info/*
+MANIFEST
+__pycache__/*
+*.pyc
+*.pyo
+*$py.class
+py2k/*
+
+LanguageTool-*
