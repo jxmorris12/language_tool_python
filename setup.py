@@ -42,7 +42,10 @@ python_full_version = sys.version.split()[0]
 
 PY2K_DIR = "py2k"
 SETUP_CFG = "setup.cfg"
-BASE_ARGS_3TO2 = ["--no-diffs", "-wnj", str(cpu_count())]
+BASE_ARGS_3TO2 = [
+    "-w", "-n", "--no-diffs",
+    "-j", str(cpu_count()),
+]
 
 MULTI_OPTIONS = set([
     ("global", "commands"),
@@ -81,7 +84,7 @@ def split_multiline(value):
 
 
 def eval_environ(value):
-    """"Evaluate environment markers.
+    """Evaluate environment markers.
     """
     def eval_environ_str(value):
         parts = value.split(";")
@@ -123,7 +126,7 @@ def get_cfg_option(config, section, option):
             if (section, option) in MULTI_OPTIONS:
                 return []
             else:
-                return None
+                return ""
     if (section, option) in MULTI_OPTIONS:
         value = split_multiline(value)
     if (section, option) in ENVIRON_OPTIONS:
@@ -205,6 +208,8 @@ def cfg_to_args(config):
 # 3to2 stuff
 
 def write_py2k_header(file_list):
+    """Modify shebang and add encoding cookie if needed.
+    """
     if not isinstance(file_list, list):
         file_list = [file_list]
 
@@ -243,7 +248,7 @@ def write_py2k_header(file_list):
                 lines.insert(1 if python_found else 0, line)
                 rewrite_needed = True
             if rewrite_needed:
-                lines.extend(f.readlines())
+                lines += f.readlines()
         finally:
             f.close()
 
@@ -273,8 +278,6 @@ def generate_py2k(config, py2k_dir=PY2K_DIR, overwrite=False, run_tests=False):
     test_scripts = []
 
     packages_root = get_cfg_option(config, "files", "packages_root")
-    if not packages_root:
-        packages_root = ""
 
     for name in get_cfg_option(config, "files", "packages"):
         name = name.replace(".", os.path.sep)
@@ -367,8 +370,6 @@ def main():
     if sys.version_info.major < 3:
         generate_py2k(config, PY2K_DIR)
         packages_root = get_cfg_option(config, "files", "packages_root")
-        if not packages_root:
-            packages_root = ""
         packages_root = os.path.join(PY2K_DIR, packages_root)
         config.set("files", "packages_root", packages_root)
 
