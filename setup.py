@@ -15,8 +15,10 @@ from distutils.version import LooseVersion
 
 try:
     from setuptools import setup, Command
+    SETUPTOOLS = True
 except ImportError:
     from distutils.core import setup, Command
+    SETUPTOOLS = False
 
 try:
     from configparser import RawConfigParser
@@ -204,7 +206,6 @@ def cfg_to_args(config):
         "platforms": ("metadata", "platform"),  # **
         "license": ("metadata",),
         "requires": ("metadata", "requires_dist"),
-        "install_requires": ("metadata", "requires_dist"),  # setuptools
         "provides": ("metadata", "provides_dist"),  # **
         "obsoletes": ("metadata", "obsoletes_dist"),  # **
         "package_dir": ("files", "packages_root"),
@@ -212,6 +213,10 @@ def cfg_to_args(config):
         "scripts": ("files",),
         "py_modules": ("files", "modules"),  # **
     }
+
+    if SETUPTOOLS:
+        D1_D2_SETUP_ARGS["install_requires"] = D1_D2_SETUP_ARGS["requires"]
+        del D1_D2_SETUP_ARGS["requires"]
 
     kwargs = {}
     for arg in D1_D2_SETUP_ARGS:
