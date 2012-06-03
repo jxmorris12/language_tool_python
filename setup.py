@@ -405,8 +405,11 @@ def main():
         packages_root = get_cfg_option(config, "files", "packages_root")
         packages_root = os.path.join(PY2K_DIR, packages_root)
         config.set("files", "packages_root", packages_root)
+        cmdclass = {}
+    else:
+        cmdclass = {"py2k": Py2KCommand}
 
-    setup(cmdclass={"py2k": Py2KCommand}, **cfg_to_args(config))
+    setup(cmdclass=cmdclass, **cfg_to_args(config))
 
 
 if __name__ == "__main__":
