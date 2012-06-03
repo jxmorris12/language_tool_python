@@ -302,14 +302,7 @@ def write_py2k_header(file_list):
 
 def generate_py2k(config, py2k_dir=PY2K_DIR, overwrite=False, run_tests=False):
     if os.path.isdir(py2k_dir):
-        if overwrite:
-            for name in os.listdir(py2k_dir):
-                path = os.path.join(py2k_dir, name)
-                if os.path.isfile(path):
-                    os.remove(path)
-                else:
-                    shutil.rmtree(path)
-        else:
+        if not overwrite:
             return
     else:
         os.makedirs(py2k_dir)
@@ -387,7 +380,7 @@ def generate_py2k(config, py2k_dir=PY2K_DIR, overwrite=False, run_tests=False):
 
 def main():
     class Py2KCommand(Command):
-        description = "Convert Python 3 source into Python 2"
+        description = "convert Python 3 source into Python 2"
         user_options = []
 
         def initialize_options(self):
