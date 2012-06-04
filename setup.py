@@ -141,16 +141,16 @@ def eval_environ(value):
                             "(in|==|!=|not in)\\s+"
                             "(\\w+(\\.\\w+)?|'.*?'|\".*?\")"
                             "(\s+(or|and)\s+)?)+$", expr):
-                raise ValueError("bad environment marker: %r" % (expr,))
-            expr = re.sub(r"(platform.\w+)", r"\1()", expr)
-            new_value = parts[0] if eval(expr) else None
+                raise ValueError("bad environment marker: %r" % expr)
+            expr = re.sub(r"(platform\.\w+)", r"\1()", expr)
+            new_value = parts[0] if eval(expr) else ""
         return new_value
 
     if isinstance(value, list):
         new_value = []
         for element in value:
             element = eval_environ_str(element)
-            if element is not None:
+            if element:
                 new_value.append(element)
     elif isinstance(value, str):
         new_value = eval_environ_str(value)
@@ -243,6 +243,8 @@ def cfg_to_args(config):
                         finally:
                             fp.close()
                     in_cfg_value = "\n\n".join(in_cfg_value)
+                else:
+                    continue
             else:
                 continue
         elif arg == "package_dir" and in_cfg_value:
@@ -252,8 +254,6 @@ def cfg_to_args(config):
 
     return kwargs
 
-
-# 3to2 stuff
 
 def write_py2k_header(file_list):
     """Modify shebang and add encoding cookie if needed.
@@ -381,9 +381,6 @@ def generate_py2k(config, py2k_dir=PY2K_DIR, overwrite=False, run_tests=False):
     if run_tests:
         for script in test_scripts:
             subprocess.check_call([script])
-
-
-# End of 3to2 stuff
 
 
 def main():
