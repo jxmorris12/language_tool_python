@@ -31,7 +31,7 @@ except ImportError:
 
 
 BASE_URL = "http://www.languagetool.org/download/"
-PACKAGE_NAME = "language_tool"
+PACKAGE_PATH = "language_tool"
 
 
 if NormalizedVersion:
@@ -53,8 +53,8 @@ else:
 
 
 def download_lt(update=False):
-    assert os.path.isdir(PACKAGE_NAME)
-    old_path_list = glob.glob(os.path.join(PACKAGE_NAME, "LanguageTool*"))
+    assert os.path.isdir(PACKAGE_PATH)
+    old_path_list = glob.glob(os.path.join(PACKAGE_PATH, "LanguageTool*"))
 
     if old_path_list and not update:
         return
@@ -74,7 +74,7 @@ def download_lt(update=False):
     ][-1]
     url = urljoin(BASE_URL, filename)
     dirname = os.path.splitext(filename)[0]
-    extract_path = os.path.join(PACKAGE_NAME, dirname)
+    extract_path = os.path.join(PACKAGE_PATH, dirname)
 
     if extract_path in old_path_list:
         print("No update needed: {}".format(dirname))
@@ -116,6 +116,14 @@ def download_lt(update=False):
 
 
 def setup_hook(config):
+    try:
+        packages_root = config["files"]["packages_root"]
+    except KeyError:
+        pass
+    else:
+        if packages_root:
+            global PACKAGE_PATH
+            PACKAGE_PATH = os.path.join(packages_root, PACKAGE_PATH)
     download_lt()
 
 
