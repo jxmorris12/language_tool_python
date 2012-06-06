@@ -116,14 +116,6 @@ def download_lt(update=False):
 
 
 def setup_hook(config):
-    try:
-        packages_root = config["files"]["packages_root"]
-    except KeyError:
-        pass
-    else:
-        if packages_root:
-            global PACKAGE_PATH
-            PACKAGE_PATH = os.path.join(packages_root, PACKAGE_PATH)
     download_lt()
 
 
