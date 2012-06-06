@@ -25,7 +25,7 @@ except ImportError:
     from ConfigParser import RawConfigParser, NoOptionError
 
     class RawConfigParser(RawConfigParser):
-        """Python 3-like dictionary accesss for config objects
+        """Dictionary access for config objects
         """
         class Section:
             def __init__(self, config, section):
@@ -304,7 +304,11 @@ def write_py2k_header(file_list):
                 if match:
                     python_found = True
                     version = LooseVersion(match.group(2).decode() or "2")
-                    if version >= version_3:
+                    try:
+                        version_test = version >= version_3
+                    except TypeError:
+                        version_test = True
+                    if version_test:
                         line = python_re.sub(br"\g<1>2\g<3>", line)
                         rewrite_needed = True
                 elif coding_re.search(line):
