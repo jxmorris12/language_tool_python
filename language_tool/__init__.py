@@ -17,6 +17,7 @@
     along with this program. If not, see <http://www.gnu.org/licenses/>.
 '''
 
+import atexit
 import glob
 import locale
 import os
@@ -106,6 +107,9 @@ class LanguageTool:
     def language(self, language):
         if not language:
             language = locale.getlocale()[0]
+            if not language:
+                locale.setlocale(locale.LC_ALL, "")
+                language = locale.getlocale()[0]
         language = get_language_2chars(language)
         if language not in list_languages():
             raise Error("unsupported language: {!r}".format(language))
@@ -345,3 +349,16 @@ def get_cmd(port=None):
                "org.languagetool.server.HTTPServer"]
         cache["cmd"] = cmd
     return cmd if port is None else cmd + ["-p", str(port)]
+
+
+@atexit.register
+def _terminate_server():
+    """Terminate the server on exit.
+
+    Might be required with PyPy, Jython and such.
+    """
+    if LanguageTool.server and LanguageTool.server.poll() is None:
+        try:
+            LanguageTool.server.terminate()
+        except OSError:
+            pass
