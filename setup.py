@@ -22,7 +22,29 @@ except ImportError:
 try:
     from configparser import RawConfigParser
 except ImportError:
-    from ConfigParser import RawConfigParser
+    from ConfigParser import RawConfigParser, NoOptionError
+
+    class RawConfigParser(RawConfigParser):
+        """Python 3-like dictionary accesss for config objects
+        """
+        class Section:
+            def __init__(self, config, section):
+                self.config = config
+                self.section = section
+
+            def __getitem__(self, option):
+                try:
+                    return self.config.get(self.section, option)
+                except NoOptionError:
+                    raise KeyError(option)
+
+            def __setitem__(self, option, value):
+                self.config.set(self.section, option, value)
+
+        def __getitem__(self, section):
+            if section not in self.sections():
+                raise KeyError(section)
+            return RawConfigParser.Section(self, section)
 
 try:
     import multiprocessing
@@ -130,16 +152,9 @@ def eval_environ(value):
 
 def get_cfg_value(config, section, option):
     """Get configuration value.
-
-    Support dictionary and configuration object.
     """
     try:
-        try:
-            value = config[section][option]
-        except AttributeError:
-            if not config.has_option(section, option):
-                raise KeyError
-            value = config.get(section, option)
+        value = config[section][option]
     except KeyError:
         if (section, option) in MULTI_OPTIONS:
             return []
@@ -154,15 +169,10 @@ def get_cfg_value(config, section, option):
 
 def set_cfg_value(config, section, option, value):
     """Set configuration value.
-
-    Support dictionary and configuration object.
     """
     if isinstance(value, list):
         value = "\n".join(value)
-    try:
-        config[section][option] = value
-    except AttributeError:
-        config.set(section, option, value)
+    config[section][option] = value
 
 
 def get_package_data(value):
@@ -251,11 +261,11 @@ def cfg_to_args(config):
                     fp.close()
             kwargs["long_description"] = "\n\n".join(value)
 
-    if "keywords" in kwargs:
-        kwargs["keywords"] = split_elements(kwargs["keywords"])
-
     if "package_dir" in kwargs:
         kwargs["package_dir"] = {"": kwargs["package_dir"]}
+
+    if "keywords" in kwargs:
+        kwargs["keywords"] = split_elements(kwargs["keywords"])
 
     if "package_data" in kwargs:
         kwargs["package_data"] = get_package_data(kwargs["package_data"])
@@ -417,12 +427,10 @@ def hook(config):
         set_cfg_value(config, "files", "packages_root", packages_root)
 
 
-def main():
-    """Running with distutils or setuptools
-    """
+def load_config(file="setup.cfg"):
     config = RawConfigParser()
     config.optionxform = lambda x: x.lower().replace("_", "-")
-    config.read("setup.cfg")
+    config.read(file)
 
     for hook_name in get_cfg_value(config, "global", "setup_hooks"):
         try:
@@ -434,8 +442,15 @@ def main():
                 func = getattr(module, obj)
             func(config)
         except Exception as e:
-            warnings.warn(e)
+            warnings.warn("%s: %s" % (hook_name, e))
 
+    return config
+
+
+def main():
+    """Running with distutils or setuptools
+    """
+    config = load_config()
     setup(**cfg_to_args(config))
 
 
