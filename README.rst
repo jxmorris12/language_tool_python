@@ -22,7 +22,8 @@ Requirements
 
 - `LanguageTool <http://www.languagetool.org/>`_
 
-Download `LanguageTool-stable.oxt
+The installation process should take care of downloading LanguageTool.
+Otherwise, you can manually download `LanguageTool-stable.oxt
 <http://www.languagetool.org/download/LanguageTool-stable.oxt>`_,
 rename it so it ends with “.zip”, then unzip it into a subdirectory
 inside the language_tool package.
