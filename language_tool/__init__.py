@@ -55,17 +55,67 @@ class ServerError(Error):
     pass
 
 
+class Match:
+    """Hold information about where a rule matches text.
+    """
+    _SLOTS = ("fromy", "fromx", "toy", "tox", "frompos", "topos",
+              "ruleId", "subId", "msg", "replacements",
+              "context", "contextoffset", "errorlength")
+
+    def __init__(self, attrib, language=None):
+        for k, v in attrib.items():
+            setattr(self, k, int(v) if v.isdigit() else v)
+        if not isinstance(self.replacements, list):
+            self.replacements = (self.replacements.split("#")
+                                 if self.replacements else [])
+
+    def __repr__(self):
+        def _ordered_dict_repr():
+            return "{{{}}}".format(
+                ", ".join(
+                    "{!r}: {!r}".format(k, self.__dict__[k])
+                    for k in self._SLOTS +
+                    tuple(set(self.__dict__).difference(self._SLOTS))
+                    if getattr(self, k) is not None
+                )
+            )
+
+        return "{}({})".format(self.__class__.__name__, _ordered_dict_repr())
+
+    def __getattr__(self, name):
+        return None
+
+
+if FIX_SENTENCES:
+    import translit
+
+    def fix_sentence(text, language=None):
+        if text[0].islower():
+            text = text.capitalize()
+        if text[-1] not in ".?!…,:;":
+            text += "."
+        text = translit.upgrade(text, language)
+        return text
+
+    class Match(Match):
+        def __init__(self, attrib, language=None):
+            super().__init__(attrib, language)
+            self.msg = fix_sentence(self.msg, language)
+            self.replacements = [translit.upgrade(r, language)
+                                 for r in self.replacements]
+
+
 class LanguageTool:
     """Main class used for checking text against different rules
     """
-    TIMEOUT = 30
-    URL_FORMAT = "http://localhost:{}/"
-    PORT_RE = re.compile(br"port (\d+)", re.I)
     MIN_PORT = 8081
     MAX_PORT = 8083
+    TIMEOUT = 30
+    URL_FORMAT = "http://localhost:{}/"
+    _PORT_RE = re.compile(br"port (\d+)", re.I)
 
-    server = None
     port = MIN_PORT
+    server = None
     err_msg = None
     _instances = WeakValueDictionary()
 
@@ -138,7 +188,7 @@ class LanguageTool:
                                       stdout=subprocess.PIPE,
                                       stderr=subprocess.PIPE,
                                       startupinfo=cls.startupinfo)
-        match = cls.PORT_RE.search(cls.server.stdout.readline())
+        match = cls._PORT_RE.search(cls.server.stdout.readline())
         if match:
             port = int(match.group(1))
             if port != cls.port:
@@ -151,7 +201,7 @@ class LanguageTool:
                 cls.err_msg = err_msg.decode(sys.stderr.encoding, "replace")
             except AttributeError:
                 cls.err_msg = err_msg.decode("utf-8", "replace")
-            match = cls.PORT_RE.search(err_msg)
+            match = cls._PORT_RE.search(err_msg)
             if not match:
                 raise Error(cls.err_msg)
             port = int(match.group(1))
@@ -184,7 +234,7 @@ class LanguageTool:
                 if wait:
                     cls.server.wait()
 
-    def check(self, text: str, srctext=None) -> list:
+    def check(self, text: str, srctext=None) -> [Match]:
         """
         Tokenize the text into sentences and match those sentences
         against all currently active rules.
@@ -211,55 +261,6 @@ class LanguageTool:
         except (urllib.error.URLError, socket.error, socket.timeout) as e:
             raise Error("{}: {}".format(self.url, e))
         return [Match(e.attrib, self.language) for e in tree.getroot()]
-
-
-class Match:
-    """Hold information about where a rule matches text.
-    """
-    SLOTS = ("fromy", "fromx", "toy", "tox", "frompos", "topos",
-             "ruleId", "subId", "msg", "replacements",
-             "context", "contextoffset", "errorlength")
-
-    def __init__(self, attrib, language=None):
-        for k, v in attrib.items():
-            setattr(self, k, int(v) if v.isdigit() else v)
-        self.replacements = (self.replacements.split("#")
-                             if self.replacements else [])
-
-    def __repr__(self):
-        def _ordered_dict_repr():
-            return "{{{}}}".format(
-                ", ".join(
-                    "{!r}: {!r}".format(k, self.__dict__[k])
-                    for k in self.SLOTS +
-                    tuple(set(self.__dict__).difference(self.SLOTS))
-                    if getattr(self, k) is not None
-                )
-            )
-
-        return "{}({})".format(self.__class__.__name__, _ordered_dict_repr())
-
-    def __getattr__(self, name):
-        return None
-
-
-if FIX_SENTENCES:
-    import translit
-
-    def fix_sentence(text, language=None):
-        if text[0].islower():
-            text = text.capitalize()
-        if text[-1] not in ".?!…,:;":
-            text += "."
-        text = translit.upgrade(text, language)
-        return text
-
-    class Match(Match):
-        def __init__(self, attrib, language=None):
-            super().__init__(attrib, language)
-            self.msg = fix_sentence(self.msg, language)
-            self.replacements = [translit.upgrade(r, language)
-                                 for r in self.replacements]
 
 
 def get_version():
@@ -352,7 +353,7 @@ def get_cmd(port=None):
 
 
 @atexit.register
-def _terminate_server():
+def terminate_server():
     """Terminate the server on exit.
 
     Might be required with PyPy, Jython and such.
