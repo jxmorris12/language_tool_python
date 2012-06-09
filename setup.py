@@ -55,11 +55,13 @@ except (ImportError, NotImplementedError):
 try:
     from lib3to2.main import main as lib3to2_main
 
-    def run_3to2(args=[]):
-        return lib3to2_main("lib3to2.fixes", BASE_ARGS_3TO2 + args)
+    def run_3to2(args=None):
+        args = BASE_ARGS_3TO2 if args is None else BASE_ARGS_3TO2 + args
+        return lib3to2_main("lib3to2.fixes", args)
 except ImportError:
-    def run_3to2(args=[]):
-        return subprocess.call(["3to2"] + BASE_ARGS_3TO2 + args)
+    def run_3to2(args=None):
+        args = BASE_ARGS_3TO2 if args is None else BASE_ARGS_3TO2 + args
+        return subprocess.call(["3to2"] + args)
 
 # For environment markers
 import platform #@UnusedImport
@@ -424,7 +426,7 @@ def generate_py2k(config, py2k_dir=PY2K_DIR, overwrite=False, run_tests=False):
 def hook(config):
     """Setup hook
     """
-    if sys.version_info.major < 3:
+    if sys.version_info[0] < 3:
         generate_py2k(config)
         packages_root = get_cfg_value(config, "files", "packages_root")
         packages_root = os.path.join(PY2K_DIR, packages_root)

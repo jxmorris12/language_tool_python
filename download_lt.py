@@ -132,4 +132,4 @@ def setup_hook(config):
 
 
 if __name__ == "__main__":
-    sys.exit(download_lt(True))
+    sys.exit(download_lt(update=True))
