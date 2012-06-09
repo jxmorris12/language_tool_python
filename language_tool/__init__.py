@@ -92,6 +92,7 @@ if FIX_SENTENCES:
     import translit
 
     def fix_sentence(text, language=None):
+        text = text.strip()
         if text[0].islower():
             text = text.capitalize()
         if text[-1] not in ".?!…,:;":
@@ -130,7 +131,7 @@ class LanguageTool:
         self.language = language
         self.motherTongue = motherTongue
         self._instances[id(self)] = self
-        if not self._server_is_running():
+        if not self._server_is_alive():
             while True:
                 try:
                     self._start_server()
@@ -142,11 +143,13 @@ class LanguageTool:
                         raise
 
     def __del__(self):
-        if not self._instances and self._server_is_running():
+        if not self._instances and self._server_is_alive():
             self._terminate_server()
 
     @property
     def language(self):
+        """The language to be used
+        """
         return self._language
 
     @language.setter
@@ -162,6 +165,11 @@ class LanguageTool:
 
     @property
     def motherTongue(self):
+        """The user’s mother tongue or None
+
+        The mother tongue may also be used as a source language
+        for checking bilingual texts.
+        """
         return self._motherTongue
 
     @motherTongue.setter
@@ -213,7 +221,7 @@ class LanguageTool:
                                   .format(cls.url, root.tag))
 
     @classmethod
-    def _server_is_running(cls):
+    def _server_is_alive(cls):
         return cls.server and cls.server.poll() is None
 
     @classmethod
@@ -363,5 +371,5 @@ def terminate_server():
 
     Might be required with PyPy, Jython and such.
     """
-    if LanguageTool._server_is_running():
+    if LanguageTool._server_is_alive():
         LanguageTool._terminate_server()
