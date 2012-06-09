@@ -154,10 +154,7 @@ class LanguageTool:
         if language:
             self._language = get_supported_language(language)
         else:
-            language = locale.getlocale()[0]
-            if not language:
-                locale.setlocale(locale.LC_ALL, "")
-                language = locale.getlocale()[0]
+            language = locale.getdefaultlocale()[0]
             try:
                 self._language = get_supported_language(language)
             except ValueError:
