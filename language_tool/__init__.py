@@ -116,9 +116,8 @@ class LanguageTool:
     URL_FORMAT = "http://localhost:{}/"
     _PORT_RE = re.compile(br"port (\d+)", re.I)
 
-    port = MIN_PORT
     server = None
-    err_msg = None
+    port = MIN_PORT
     _instances = WeakValueDictionary()
 
     if os.name == "nt":
@@ -131,8 +130,7 @@ class LanguageTool:
         self.language = language
         self.motherTongue = motherTongue
         self._instances[id(self)] = self
-        if (LanguageTool.server is None or
-                LanguageTool.server.poll() is not None):
+        if not self._server_is_running():
             while True:
                 try:
                     self._start_server()
@@ -144,12 +142,8 @@ class LanguageTool:
                         raise
 
     def __del__(self):
-        if (not self._instances and
-                self.server and self.server.poll() is None):
-            try:
-                self.server.terminate()
-            except OSError:
-                pass
+        if not self._instances and self._server_is_running():
+            self._terminate_server()
 
     @property
     def language(self):
@@ -195,8 +189,9 @@ class LanguageTool:
                 raise Error("requested port {}, but got {}"
                             .format(cls.port, port))
         else:
-            err_msg = cls.server.stderr.read().strip()
             cls._terminate_server()
+            err_msg = cls.server.communicate()[1].strip()
+            cls.server = None
             try:
                 cls.err_msg = err_msg.decode(sys.stderr.encoding, "replace")
             except AttributeError:
@@ -208,7 +203,7 @@ class LanguageTool:
             if port != cls.port:
                 raise Error("already used port mismatch: {}, {}"
                             .format(cls.port, port))
-            params = {"language": "en", "text": ""}
+            params = {"language": DEFAULT_LANGUAGE, "text": ""}
             data = urllib.parse.urlencode(params).encode()
             try:
                 with closing(urllib.request.urlopen(cls.url, data, 10)) as f:
@@ -221,18 +216,15 @@ class LanguageTool:
                                   .format(cls.url, root.tag))
 
     @classmethod
-    def _terminate_server(cls, wait=False):
-        if cls.server:
-            cls.server.stdin.close()
-            cls.server.stdout.close()
-            cls.server.stderr.close()
-            if cls.server.poll() is None:
-                try:
-                    cls.server.terminate()
-                except OSError:
-                    return
-                if wait:
-                    cls.server.wait()
+    def _server_is_running(cls):
+        return cls.server and cls.server.poll() is None
+
+    @classmethod
+    def _terminate_server(cls):
+        try:
+            cls.server.terminate()
+        except OSError:
+            pass
 
     def check(self, text: str, srctext=None) -> [Match]:
         """
@@ -374,8 +366,5 @@ def terminate_server():
 
     Might be required with PyPy, Jython and such.
     """
-    if LanguageTool.server and LanguageTool.server.poll() is None:
-        try:
-            LanguageTool.server.terminate()
-        except OSError:
-            pass
+    if LanguageTool._server_is_running():
+        LanguageTool._terminate_server()
