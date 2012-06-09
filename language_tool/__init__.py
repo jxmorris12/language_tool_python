@@ -39,10 +39,12 @@ except ImportError:
 from .which import which
 
 
-__all__ = ["LanguageTool", "Error", "list_languages",
+__all__ = ["LanguageTool", "Error", "get_languages",
            "get_version", "get_version_info", "get_language_tool_dir"]
 
+DEFAULT_LANGUAGE = "en"
 FIX_SENTENCES = False
+LANGUAGE_RE = re.compile(r"^([a-z]{2})(?:[_-]([a-z]{2}))?$", re.I)
 cache = {}
 
 
@@ -155,15 +157,17 @@ class LanguageTool:
 
     @language.setter
     def language(self, language):
-        if not language:
+        if language:
+            self._language = get_supported_language(language)
+        else:
             language = locale.getlocale()[0]
             if not language:
                 locale.setlocale(locale.LC_ALL, "")
                 language = locale.getlocale()[0]
-        language = get_language_2chars(language)
-        if language not in list_languages():
-            raise Error("unsupported language: {!r}".format(language))
-        self._language = get_language_2chars(language)
+            try:
+                self._language = get_supported_language(language)
+            except ValueError:
+                self._language = DEFAULT_LANGUAGE
 
     @property
     def motherTongue(self):
@@ -172,11 +176,7 @@ class LanguageTool:
     @motherTongue.setter
     def motherTongue(self, motherTongue):
         if motherTongue:
-            motherTongue = get_language_2chars(motherTongue)
-            if motherTongue not in list_languages():
-                raise Error(
-                    "unsupported motherTongue: {!r}".format(motherTongue))
-            self._motherTongue = motherTongue
+            self._motherTongue = get_supported_language(motherTongue)
         else:
             self._motherTongue = None
 
@@ -282,21 +282,37 @@ def get_version_info():
     return VersionInfo(*info_list, release_level=release_level)
 
 
-def list_languages():
-    """List supported languages.
+def get_languages():
+    """Get the set of supported languages.
     """
     try:
         languages = cache["languages"]
     except KeyError:
         rules_path = os.path.join(get_language_tool_dir(), "rules")
-        languages = sorted(fn for fn in os.listdir(rules_path)
-                           if os.path.isdir(os.path.join(rules_path, fn)))
+        languages = set([fn for fn in os.listdir(rules_path)
+                         if os.path.isdir(os.path.join(rules_path, fn)) and
+                         LANGUAGE_RE.match(fn)])
+        variants = []
+        for language in languages:
+            d = os.path.join(rules_path, language)
+            for fn in os.listdir(d):
+                if (os.path.isdir(os.path.join(d, fn)) and
+                        LANGUAGE_RE.match(fn)):
+                    variants.append(fn)
+        languages.update(variants)
         cache["languages"] = languages
     return languages
 
 
-def get_language_2chars(language):
-    return language.split("_")[0]
+def get_supported_language(language):
+    languages = {l.lower().replace("-", "_"): l for l in get_languages()}
+    try:
+        return languages[language.lower().replace("-", "_")]
+    except KeyError:
+        try:
+            return languages[LANGUAGE_RE.match(language).group(1).lower()]
+        except (KeyError, AttributeError):
+            raise ValueError("unsupported language: {}".format(language))
 
 
 def get_language_tool_dir():
