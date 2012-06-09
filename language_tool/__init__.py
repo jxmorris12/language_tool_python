@@ -346,7 +346,7 @@ def get_cmd(port=None):
         java_path = which("java")
         if not java_path:
             raise Error("can’t find Java")
-        jar_names = ["LanguageTool.uno.jar", "LanguageTool.jar"]
+        jar_names = ["LanguageTool.jar", "LanguageTool.uno.jar"]
         for jar_name in jar_names:
             jar_path = os.path.join(get_language_tool_dir(), jar_name)
             if os.path.isfile(jar_path):

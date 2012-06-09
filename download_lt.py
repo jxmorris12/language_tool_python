@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Download latest LanguageTool-*.oxt
+"""Download latest LanguageTool distribution
 """
 
 import glob
@@ -68,10 +68,18 @@ def download_lt(update=False):
                 break
             contents += data.decode()
 
-    filename, version = [
+    matches = [
         (m.group(1), Version(m.group(2))) for m in
-        re.finditer(r'<a href="(LanguageTool-(\d+.*?).oxt)">', contents)
-    ][-1]
+        re.finditer(r'<a href="(LanguageTool-(\d+.*?)\.zip)">', contents)
+    ]
+
+    if not matches:
+        matches = [
+            (m.group(1), Version(m.group(2))) for m in
+            re.finditer(r'<a href="(LanguageTool-(\d+.*?)\.oxt)">', contents)
+        ]
+
+    filename, version = matches[-1]
     url = urljoin(BASE_URL, filename)
     dirname = os.path.splitext(filename)[0]
     extract_path = os.path.join(PACKAGE_PATH, dirname)
