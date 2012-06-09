@@ -54,7 +54,11 @@ else:
 
 def download_lt(update=False):
     assert os.path.isdir(PACKAGE_PATH)
-    old_path_list = glob.glob(os.path.join(PACKAGE_PATH, "LanguageTool*"))
+    old_path_list = [
+        path for path in
+        glob.glob(os.path.join(PACKAGE_PATH, "LanguageTool*"))
+        if os.path.isdir(path)
+    ]
 
     if old_path_list and not update:
         return
@@ -85,7 +89,7 @@ def download_lt(update=False):
     extract_path = os.path.join(PACKAGE_PATH, dirname)
 
     if extract_path in old_path_list:
-        print("No update needed: {}".format(dirname))
+        print("No update needed: {!r}".format(dirname))
         return
 
     for old_path in old_path_list:
@@ -98,8 +102,8 @@ def download_lt(update=False):
                 continue
             if version_test:
                 print(
-                    "Local version: {}, Remote version: {}"
-                    .format(current_version, version)
+                    "Local version: {!r}, Remote version: {!r}"
+                    .format(str(current_version), str(version))
                 )
                 return
 
@@ -107,7 +111,7 @@ def download_lt(update=False):
         with closing(urlopen(url)) as u:
             size = int(u.headers["Content-Length"])
             print(
-                "Downloading {} ({:.1f} MiB)..."
+                "Downloading {!r} ({:.1f} MiB)..."
                 .format(filename, size / 1048576.)
             )
             while True:
