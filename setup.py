@@ -2,12 +2,13 @@
 """Backward-compatible setup script
 """
 
+import codecs
 import glob
 import os
 import re
-import sys
 import shutil
 import subprocess
+import sys
 import warnings
 
 from distutils.version import LooseVersion
@@ -22,35 +23,54 @@ except ImportError:
 try:
     from configparser import RawConfigParser
 except ImportError:
-    from ConfigParser import RawConfigParser, NoOptionError
+    from ConfigParser import RawConfigParser
+    from collections import MutableMapping  # 2.6
 
-    class RawConfigParser(RawConfigParser):
+    class RawConfigParser(RawConfigParser, MutableMapping):
         """Dictionary access for config objects
         """
-        class Section:
+        class Section(MutableMapping):
             def __init__(self, config, section):
                 self.config = config
                 self.section = section
 
             def __getitem__(self, option):
-                try:
+                if self.config.has_option(self.section, option):
                     return self.config.get(self.section, option)
-                except NoOptionError:
-                    raise KeyError(option)
+                raise KeyError(option)
 
             def __setitem__(self, option, value):
                 self.config.set(self.section, option, value)
 
-        def __getitem__(self, section):
-            if section not in self.sections():
-                raise KeyError(section)
-            return RawConfigParser.Section(self, section)
+            def __delitem__(self, option):
+                self.config.remove_option(self.section, option)
 
-try:
-    import multiprocessing
-    NUM_PROCESSES = multiprocessing.cpu_count()
-except (ImportError, NotImplementedError):
-    NUM_PROCESSES = 1
+            def __iter__(self):
+                return iter(self.config.options(self.section))
+
+            def __len__(self):
+                return len(self.config.options(self.section))
+
+        def __getitem__(self, section):
+            if self.has_section(section):
+                return RawConfigParser.Section(self, section)
+            raise KeyError(section)
+
+        def __setitem__(self, section, value):
+            if self.has_section(section):
+                self.remove_section(section)
+            self.add_section(section)
+            for key in value:
+                self.set(section, key, value[key])
+
+        def __delitem__(self, section):
+            self.remove_section(section)
+
+        def __iter__(self):
+            return iter(self.sections())
+
+        def __len__(self):
+            return len(self.sections())
 
 try:
     from lib3to2.main import main as lib3to2_main
@@ -63,17 +83,17 @@ except ImportError:
         args = BASE_ARGS_3TO2 if args is None else BASE_ARGS_3TO2 + args
         return subprocess.call(["3to2"] + args)
 
-# For environment markers
-import platform #@UnusedImport
-
-python_version = "%s.%s" % sys.version_info[:2]
-python_full_version = sys.version.split()[0]
-
 PY2K_DIR = os.path.join("build", "py2k")
 BASE_ARGS_3TO2 = [
-    "-w", "-n", "--no-diffs",
-    "-j", str(NUM_PROCESSES),
+    "-w", "-n", "--no-diffs", "-x", "bytes",
 ]
+
+if os.name in set(["posix"]):
+    try:
+        from multiprocessing import cpu_count
+        BASE_ARGS_3TO2 += ["-j", str(cpu_count())]
+    except (ImportError, NotImplementedError):
+        pass
 
 MULTI_OPTIONS = set([
     ("global", "commands"),
@@ -104,6 +124,12 @@ ENVIRON_OPTIONS = set([
     ("metadata", "requires-python"),
     ("metadata", "requires-external"),
 ])
+
+# For environment markers
+import platform #@UnusedImport
+
+python_version = "%s.%s" % sys.version_info[:2]
+python_full_version = sys.version.split()[0]
 
 
 def split_multiline(value):
@@ -210,6 +236,20 @@ def get_data_files(value):
     return data_files
 
 
+def read_description_file(config):
+    filenames = get_cfg_value(config, "metadata", "description-file")
+    if not filenames:
+        return ""
+    value = []
+    for filename in filenames.split():
+        f = codecs.open(filename, encoding="utf-8")
+        try:
+            value.append(f.read())
+        finally:
+            f.close()
+    return "\n\n".join(value).strip()
+
+
 def cfg_to_args(config):
     """Compatibility helper to use setup.cfg in setup.py.
     """
@@ -252,16 +292,7 @@ def cfg_to_args(config):
                 kwargs[argname] = value
 
     if "long_description" not in kwargs:
-        filenames = get_cfg_value(config, "metadata", "description-file")
-        if filenames:
-            value = []
-            for filename in filenames.split():
-                fp = open(filename)
-                try:
-                    value.append(fp.read())
-                finally:
-                    fp.close()
-            kwargs["long_description"] = "\n\n".join(value)
+        kwargs["long_description"] = read_description_file(config)
 
     if "package_dir" in kwargs:
         kwargs["package_dir"] = {"": kwargs["package_dir"]}
@@ -335,17 +366,29 @@ def write_py2k_header(file_list):
                 f.close()
 
 
-def generate_py2k(config, py2k_dir=PY2K_DIR, overwrite=False, run_tests=False):
+def generate_py2k(config, py2k_dir=PY2K_DIR, run_tests=False):
     """Generate Python 2 code from Python 3 code.
     """
-    if os.path.isdir(py2k_dir):
-        if not overwrite:
-            return
-    else:
-        os.makedirs(py2k_dir)
+    def copy(src, dst):
+        if (not os.path.isfile(dst) or
+                os.path.getmtime(src) > os.path.getmtime(dst)):
+            shutil.copy(src, dst)
+            return dst
+        return None
 
-    file_list = []
+    def copy_data(src, dst):
+        if (not os.path.isfile(dst) or
+                os.path.getmtime(src) > os.path.getmtime(dst) or
+                os.path.getsize(src) != os.path.getsize(dst)):
+            shutil.copy(src, dst)
+            return dst
+        return None
+
+    copied_py_files = []
     test_scripts = []
+
+    if not os.path.isdir(py2k_dir):
+        os.makedirs(py2k_dir)
 
     packages_root = get_cfg_value(config, "files", "packages_root")
 
@@ -362,8 +405,8 @@ def generate_py2k(config, py2k_dir=PY2K_DIR, overwrite=False, run_tests=False):
             if not os.path.splitext(path)[1].lower() == ".py":
                 continue
             new_path = os.path.join(py2k_path, fn)
-            shutil.copy(path, new_path)
-            file_list.append(new_path)
+            if copy(path, new_path):
+                copied_py_files.append(new_path)
 
     for name in get_cfg_value(config, "files", "modules"):
         name = name.replace(".", os.path.sep) + ".py"
@@ -372,8 +415,8 @@ def generate_py2k(config, py2k_dir=PY2K_DIR, overwrite=False, run_tests=False):
         dirname = os.path.dirname(py2k_path)
         if not os.path.isdir(dirname):
             os.makedirs(dirname)
-        shutil.copy(py3k_path, py2k_path)
-        file_list.append(py2k_path)
+        if copy(py3k_path, py2k_path):
+            copied_py_files.append(py2k_path)
 
     for name in get_cfg_value(config, "files", "scripts"):
         py3k_path = os.path.join(packages_root, name)
@@ -381,8 +424,8 @@ def generate_py2k(config, py2k_dir=PY2K_DIR, overwrite=False, run_tests=False):
         dirname = os.path.dirname(py2k_path)
         if not os.path.isdir(dirname):
             os.makedirs(dirname)
-        shutil.copy(py3k_path, py2k_path)
-        file_list.append(py2k_path)
+        if copy(py3k_path, py2k_path):
+            copied_py_files.append(py2k_path)
 
     setup_py_path = os.path.abspath(__file__)
 
@@ -394,14 +437,15 @@ def generate_py2k(config, py2k_dir=PY2K_DIR, overwrite=False, run_tests=False):
             py2k_dirname = os.path.dirname(py2k_path)
             if not os.path.isdir(py2k_dirname):
                 os.makedirs(py2k_dirname)
-            shutil.copy(path, py2k_path)
             filename = os.path.split(path)[1]
             ext = os.path.splitext(filename)[1].lower()
             if ext == ".py":
-                file_list.append(py2k_path)
+                if copy(path, py2k_path):
+                    copied_py_files.append(py2k_path)
+            else:
+                copy_data(path, py2k_path)
             if (os.access(py2k_path, os.X_OK) and
-                re.search(r"\btest\b|_test\b|\btest_", filename)
-            ):
+                    re.search(r"\btest\b|_test\b|\btest_", filename)):
                 test_scripts.append(py2k_path)
 
     for package, patterns in get_package_data(
@@ -413,50 +457,64 @@ def generate_py2k(config, py2k_dir=PY2K_DIR, overwrite=False, run_tests=False):
                 py2k_dirname = os.path.dirname(py2k_path)
                 if not os.path.isdir(py2k_dirname):
                     os.makedirs(py2k_dirname)
-                shutil.copy(py3k_path, py2k_path)
+                copy_data(py3k_path, py2k_path)
 
-    run_3to2(file_list)
-    write_py2k_header(file_list)
+    if copied_py_files:
+        run_3to2(copied_py_files)
+        write_py2k_header(copied_py_files)
 
     if run_tests:
         for script in test_scripts:
             subprocess.check_call([script])
 
 
-def hook(config):
-    """Setup hook
-    """
-    if sys.version_info[0] < 3:
-        generate_py2k(config)
-        packages_root = get_cfg_value(config, "files", "packages_root")
-        packages_root = os.path.join(PY2K_DIR, packages_root)
-        set_cfg_value(config, "files", "packages_root", packages_root)
-
-
 def load_config(file="setup.cfg"):
     config = RawConfigParser()
     config.optionxform = lambda x: x.lower().replace("_", "-")
     config.read(file)
-
-    for hook_name in get_cfg_value(config, "global", "setup_hooks"):
-        try:
-            if hook_name == "setup.hook":
-                func = hook
-            else:
-                module, obj = hook_name.split(".", 1)
-                module = __import__(module, globals(), locals(), [], 0)
-                func = getattr(module, obj)
-            func(config)
-        except Exception as e:
-            warnings.warn("%s: %s" % (hook_name, e))
-
     return config
+
+
+def run_setup_hooks(config):
+    for hook_name in get_cfg_value(config, "global", "setup_hooks"):
+        module, obj = hook_name.split(".", 1)
+        if module == "setup":
+            func = globals()[obj]
+        else:
+            module = __import__(module, globals(), locals(), [], 0)
+            func = getattr(module, obj)
+        func(config)
+
+
+def default_hook(config):
+    """Default setup hook
+    """
+    if any(arg.startswith("install") or arg.startswith("build")
+           for arg in sys.argv):
+        if sys.version_info[0] < 3:
+            generate_py2k(config)
+            packages_root = get_cfg_value(config, "files", "packages_root")
+            packages_root = os.path.join(PY2K_DIR, packages_root)
+            set_cfg_value(config, "files", "packages_root", packages_root)
+    elif "bdist_wininst" in sys.argv:
+        try:
+            description = config["metadata"]["description"]
+        except KeyError:
+            try:
+                import translit
+            except ImportError:
+                warnings.warn("translit package is unavailable")
+            else:
+                description = read_description_file(config)
+                description = translit.downgrade(description)
+                config["metadata"]["description"] = description
 
 
 def main():
     """Running with distutils or setuptools
     """
     config = load_config()
+    run_setup_hooks(config)
     setup(**cfg_to_args(config))
 
 
