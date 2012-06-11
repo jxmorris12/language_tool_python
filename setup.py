@@ -508,6 +508,7 @@ def default_hook(config):
                 description = read_description_file(config)
                 description = translit.downgrade(description)
                 config["metadata"]["description"] = description
+                del config["metadata"]["description-file"]
 
     if any(arg.startswith("install") or arg.startswith("build") or
            arg.startswith("sdist") or arg.startswith("bdist")
