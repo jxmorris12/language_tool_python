@@ -85,7 +85,7 @@ except ImportError:
 
 PY2K_DIR = os.path.join("build", "py2k")
 BASE_ARGS_3TO2 = [
-    "-w", "-n", "--no-diffs", "-x", "bytes",
+    "-w", "-n", "--no-diffs",
 ]
 
 if os.name in set(["posix"]):
