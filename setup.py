@@ -84,6 +84,8 @@ except ImportError:
         return subprocess.call(["3to2"] + args)
 
 PY2K_DIR = os.path.join("build", "py2k")
+LIB_DIR = os.path.join("build", "lib")
+
 BASE_ARGS_3TO2 = [
     "-w", "-n", "--no-diffs",
 ]
@@ -489,14 +491,12 @@ def run_setup_hooks(config):
 def default_hook(config):
     """Default setup hook
     """
-    if any(arg.startswith("install") or arg.startswith("build")
-           for arg in sys.argv):
-        if sys.version_info[0] < 3:
-            generate_py2k(config)
-            packages_root = get_cfg_value(config, "files", "packages_root")
-            packages_root = os.path.join(PY2K_DIR, packages_root)
-            set_cfg_value(config, "files", "packages_root", packages_root)
-    elif "bdist_wininst" in sys.argv:
+    if any(arg.startswith("bdist") for arg in sys.argv):
+        if (bool(os.path.isdir(PY2K_DIR)) != bool(sys.version_info[0] < 3) and
+                os.path.isdir(LIB_DIR)):
+            shutil.rmtree(LIB_DIR)
+
+    if any(arg == "bdist_wininst" for arg in sys.argv):
         try:
             description = config["metadata"]["description"]
         except KeyError:
@@ -508,6 +508,15 @@ def default_hook(config):
                 description = read_description_file(config)
                 description = translit.downgrade(description)
                 config["metadata"]["description"] = description
+
+    if any(arg.startswith("install") or arg.startswith("build") or
+           arg.startswith("sdist") or arg.startswith("bdist")
+           for arg in sys.argv):
+        if sys.version_info[0] < 3:
+            generate_py2k(config)
+            packages_root = get_cfg_value(config, "files", "packages_root")
+            packages_root = os.path.join(PY2K_DIR, packages_root)
+            set_cfg_value(config, "files", "packages_root", packages_root)
 
 
 def main():
