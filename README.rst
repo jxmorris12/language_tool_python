@@ -1,5 +1,5 @@
-language_tool – LanguageTool through server mode (for Python 3)
-===============================================================
+language_tool – LanguageTool through server mode
+================================================
 
 
 Example usage
