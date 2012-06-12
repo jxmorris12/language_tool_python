@@ -7,5 +7,6 @@ MANIFEST
 *.pyc
 *.pyo
 *$py.class
+wininst.cmd
 
 LanguageTool-*
