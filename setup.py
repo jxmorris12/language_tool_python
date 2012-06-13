@@ -462,6 +462,7 @@ def generate_py2k(config, py2k_dir=PY2K_DIR, run_tests=False):
                 copy_data(py3k_path, py2k_path)
 
     if copied_py_files:
+        copied_py_files.sort()
         run_3to2(copied_py_files)
         write_py2k_header(copied_py_files)
 
