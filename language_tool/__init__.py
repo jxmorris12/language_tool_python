@@ -88,23 +88,28 @@ class Match:
 
 
 if FIX_SENTENCES:
-    import translit
+    try:
+        import translit
+    except ImportError:
+        translit = None
+        import warnings
+        warnings.warn("translit package is unavailable", ImportWarning)
+    else:
+        def fix_sentence(text, language=None):
+            text = text.strip()
+            if text[0].islower():
+                text = text.capitalize()
+            if text[-1] not in ".?!…,:;":
+                text += "."
+            text = translit.upgrade(text, language)
+            return text
 
-    def fix_sentence(text, language=None):
-        text = text.strip()
-        if text[0].islower():
-            text = text.capitalize()
-        if text[-1] not in ".?!…,:;":
-            text += "."
-        text = translit.upgrade(text, language)
-        return text
-
-    class Match(Match):
-        def __init__(self, attrib, language=None):
-            super().__init__(attrib, language)
-            self.msg = fix_sentence(self.msg, language)
-            self.replacements = [translit.upgrade(r, language)
-                                 for r in self.replacements]
+        class Match(Match):
+            def __init__(self, attrib, language=None):
+                super().__init__(attrib, language)
+                self.msg = fix_sentence(self.msg, language)
+                self.replacements = [translit.upgrade(r, language)
+                                     for r in self.replacements]
 
 
 class LanguageTool:
