@@ -325,12 +325,12 @@ def get_language_tool_dir():
                     for e in re.split(r"(\d+)", s)]
 
         def get_lt_dir(base_dir):
-            dirs = sorted([
+            paths = [
                 path for path in
                 glob.glob(os.path.join(base_dir, "LanguageTool*"))
                 if os.path.isdir(path)
-            ], key=version_key, reverse=True)
-            return dirs[0] if dirs else None
+            ]
+            return max(paths, key=version_key) if paths else None
 
         base_dir = os.path.dirname(sys.argv[0])
         language_tool_dir = get_lt_dir(base_dir)
