@@ -127,9 +127,5 @@ def download_lt(update=False):
             z.extractall(extract_path)
 
 
-def setup_hook(config):
-    download_lt()
-
-
 if __name__ == "__main__":
     sys.exit(download_lt(update=True))
