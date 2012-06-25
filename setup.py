@@ -72,19 +72,9 @@ except ImportError:
         def __len__(self):
             return len(self.sections())
 
-try:
-    from lib3to2.main import main as lib3to2_main
-
-    def run_3to2(args=None):
-        args = BASE_ARGS_3TO2 if args is None else BASE_ARGS_3TO2 + args
-        return lib3to2_main("lib3to2.fixes", args)
-except ImportError:
-    def run_3to2(args=None):
-        args = BASE_ARGS_3TO2 if args is None else BASE_ARGS_3TO2 + args
-        return subprocess.call(["3to2"] + args)
-
 PY2K_DIR = os.path.join("build", "py2k")
 LIB_DIR = os.path.join("build", "lib")
+IS_NOT_PY3K = sys.version_info[0] < 3
 
 BASE_ARGS_3TO2 = [
     "-w", "-n", "--no-diffs",
@@ -132,6 +122,58 @@ import platform #@UnusedImport
 
 python_version = "%s.%s" % sys.version_info[:2]
 python_full_version = sys.version.split()[0]
+
+
+def which(program, win_allow_cross_arch=True):
+    """Identify the location of an executable file.
+    """
+    def is_exe(path):
+        return os.path.isfile(path) and os.access(path, os.X_OK)
+
+    def _get_path_list():
+        return os.environ["PATH"].split(os.pathsep)
+
+    if os.name == "nt":
+        def find_exe(program):
+            root, ext = os.path.splitext(program)
+            if ext:
+                if is_exe(program):
+                    return program
+            else:
+                for ext in os.environ["PATHEXT"].split(os.pathsep):
+                    program_path = root + ext.lower()
+                    if is_exe(program_path):
+                        return program_path
+            return None
+
+        def get_path_list():
+            paths = _get_path_list()
+            if win_allow_cross_arch:
+                alt_sys_path = os.path.expandvars(r"$WINDIR\Sysnative")
+                if os.path.isdir(alt_sys_path):
+                    paths.insert(0, alt_sys_path)
+                else:
+                    alt_sys_path = os.path.expandvars(r"$WINDIR\SysWOW64")
+                    if os.path.isdir(alt_sys_path):
+                        paths.append(alt_sys_path)
+            return paths
+
+    else:
+        def find_exe(program):
+            return program if is_exe(program) else None
+
+        get_path_list = _get_path_list
+
+    if os.path.split(program)[0]:
+        program_path = find_exe(program)
+        if program_path:
+            return program_path
+    else:
+        for path in get_path_list():
+            program_path = find_exe(os.path.join(path, program))
+            if program_path:
+                return program_path
+    return None
 
 
 def split_multiline(value):
@@ -282,10 +324,12 @@ def cfg_to_args(config):
         ],
     }
 
+    kwargs = {}
+
     if USING_SETUPTOOLS:
         opts_to_args["metadata"].append(("requires-dist", "install_requires"))
-
-    kwargs = {}
+        if IS_NOT_PY3K and not which("3to2"):
+            kwargs["setup_requires"] = ["3to2"]
 
     for section in opts_to_args:
         for option, argname in opts_to_args[section]:
@@ -309,6 +353,24 @@ def cfg_to_args(config):
         kwargs["data_files"] = get_data_files(kwargs["data_files"])
 
     return kwargs
+
+
+def run_3to2(args=None):
+    """Convert Python files using lib3to2.
+    """
+    args = BASE_ARGS_3TO2 if args is None else BASE_ARGS_3TO2 + args
+    try:
+        return subprocess.call(["3to2"] + args)
+    except OSError:
+        for path in glob.glob("*.egg"):
+            if os.path.isdir(path) and not path in sys.path:
+                sys.path.append(path)
+        try:
+            from lib3to2.main import main as lib3to2_main
+        except ImportError:
+            raise OSError("3to2 script is unavailable.")
+        else:
+            return lib3to2_main("lib3to2.fixes", args)
 
 
 def write_py2k_header(file_list):
@@ -463,8 +525,12 @@ def generate_py2k(config, py2k_dir=PY2K_DIR, run_tests=False):
 
     if copied_py_files:
         copied_py_files.sort()
-        run_3to2(copied_py_files)
-        write_py2k_header(copied_py_files)
+        try:
+            run_3to2(copied_py_files)
+            write_py2k_header(copied_py_files)
+        except:
+            shutil.rmtree(py2k_dir)
+            raise
 
     if run_tests:
         for script in test_scripts:
@@ -492,10 +558,8 @@ def run_setup_hooks(config):
 def default_hook(config):
     """Default setup hook
     """
-    is_not_py3k = sys.version_info[0] < 3
-
     if (any(arg.startswith("bdist") for arg in sys.argv) and
-            os.path.isdir(PY2K_DIR) != is_not_py3k and os.path.isdir(LIB_DIR)):
+            os.path.isdir(PY2K_DIR) != IS_NOT_PY3K and os.path.isdir(LIB_DIR)):
         shutil.rmtree(LIB_DIR)
 
     if any(arg == "bdist_wininst" for arg in sys.argv):
@@ -512,7 +576,7 @@ def default_hook(config):
                 config["metadata"]["description"] = description
                 del config["metadata"]["description-file"]
 
-    if is_not_py3k and any(arg.startswith("install") or
+    if IS_NOT_PY3K and any(arg.startswith("install") or
                            arg.startswith("build") or
                            arg.startswith("sdist") or
                            arg.startswith("bdist")
