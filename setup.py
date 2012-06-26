@@ -562,36 +562,13 @@ def default_hook(config):
             os.path.isdir(PY2K_DIR) != IS_NOT_PY3K and os.path.isdir(LIB_DIR)):
         shutil.rmtree(LIB_DIR)
 
-    if any(arg == "bdist_wininst" for arg in sys.argv):
-        try:
-            description = config["metadata"]["description"]
-        except KeyError:
-            try:
-                import translit
-            except ImportError:
-                warnings.warn("translit package is unavailable")
-            else:
-                description = read_description_file(config)
-                description = translit.downgrade(description)
-                config["metadata"]["description"] = description
-                del config["metadata"]["description-file"]
-
-    if IS_NOT_PY3K:
-        if any(arg.startswith("install") or arg.startswith("build") or
-               arg.startswith("bdist") for arg in sys.argv):
-            generate_py2k(config)
-            packages_root = get_cfg_value(config, "files", "packages_root")
-            packages_root = os.path.join(PY2K_DIR, packages_root)
-            set_cfg_value(config, "files", "packages_root", packages_root)
-        elif "sdist" in sys.argv:
-            # Python 2 version of Distutils2 doesn't seem to support
-            # non-ASCII description files.
-            try:
-                description = config["metadata"]["description"]
-            except KeyError:
-                description = read_description_file(config)
-                config["metadata"]["description"] = description
-                del config["metadata"]["description-file"]
+    if IS_NOT_PY3K and any(arg.startswith("install") or
+                           arg.startswith("build") or
+                           arg.startswith("bdist") for arg in sys.argv):
+        generate_py2k(config)
+        packages_root = get_cfg_value(config, "files", "packages_root")
+        packages_root = os.path.join(PY2K_DIR, packages_root)
+        set_cfg_value(config, "files", "packages_root", packages_root)
 
 
 def main():
