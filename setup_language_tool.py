@@ -1,6 +1,5 @@
 import sys
 
-import setup
 from download_lt import download_lt
 
 
