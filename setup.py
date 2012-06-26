@@ -297,6 +297,7 @@ def read_description_file(config):
 def cfg_to_args(config):
     """Compatibility helper to use setup.cfg in setup.py.
     """
+    kwargs = {}
     opts_to_args = {
         "metadata": [
             ("name", "name"),
@@ -323,8 +324,6 @@ def cfg_to_args(config):
             ("data_files", "data_files"),
         ],
     }
-
-    kwargs = {}
 
     if USING_SETUPTOOLS:
         opts_to_args["metadata"].append(("requires-dist", "install_requires"))
