@@ -17,10 +17,24 @@ Example usage
 ('SUPPOSE_TO', ['supposed'])
 
 
+Installation
+------------
+
+You can use `pip <http://www.pip-installer.org>`_ to install or uninstall::
+
+  $ pip install language_tool
+
+On Windows, you can use one of the MSI binary packages provided
+on the `download page
+<https://bitbucket.org/spirit/language_tool/downloads>`_.
+
+
 Requirements
 ------------
 
-- `LanguageTool <http://www.languagetool.org/>`_
+- `Python 3.2+ <http://www.python.org>`_
+  (or 2.7, using `lib3to2 <https://bitbucket.org/amentajo/lib3to2>`_)
+- `LanguageTool <http://www.languagetool.org>`_
 
 The installation process should take care of downloading LanguageTool.
 Otherwise, you can manually download `LanguageTool-stable.oxt
