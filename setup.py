@@ -73,7 +73,7 @@ except ImportError:
 
 PY2K_DIR = os.path.join("build", "py2k")
 LIB_DIR = os.path.join("build", "lib")
-NOT_PY3K = sys.version_info[0] < 3
+IS_PY2K = sys.version_info[0] < 3
 
 BASE_ARGS_3TO2 = [
     "-w", "-n", "--no-diffs",
@@ -326,7 +326,7 @@ def cfg_to_args(config):
 
     if USING_SETUPTOOLS:
         opts_to_args["metadata"].append(("requires-dist", "install_requires"))
-        if NOT_PY3K and not which("3to2"):
+        if IS_PY2K and not which("3to2"):
             kwargs["setup_requires"] = ["3to2"]
 
     for section in opts_to_args:
@@ -557,12 +557,12 @@ def default_hook(config):
     """Default setup hook
     """
     if (any(arg.startswith("bdist") for arg in sys.argv) and
-            os.path.isdir(PY2K_DIR) != NOT_PY3K and os.path.isdir(LIB_DIR)):
+            os.path.isdir(PY2K_DIR) != IS_PY2K and os.path.isdir(LIB_DIR)):
         shutil.rmtree(LIB_DIR)
 
-    if NOT_PY3K and any(arg.startswith("install") or
-                        arg.startswith("build") or
-                        arg.startswith("bdist") for arg in sys.argv):
+    if IS_PY2K and any(arg.startswith("install") or
+                       arg.startswith("build") or
+                       arg.startswith("bdist") for arg in sys.argv):
         generate_py2k(config)
         packages_root = get_cfg_value(config, "files", "packages_root")
         packages_root = os.path.join(PY2K_DIR, packages_root)
