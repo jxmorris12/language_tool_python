@@ -161,7 +161,7 @@ class LanguageTool:
         if language:
             self._language = get_supported_language(language)
         else:
-            language = locale.getdefaultlocale()[0]
+            language = get_locale_language()
             try:
                 self._language = get_supported_language(language)
             except ValueError:
@@ -367,6 +367,16 @@ def get_cmd(port=None):
                "org.languagetool.server.HTTPServer"]
         cache["cmd"] = cmd
     return cmd if port is None else cmd + ["-p", str(port)]
+
+
+def get_locale_language():
+    """Get the language code for the current locale setting.
+    """
+    language = locale.getlocale()[0]
+    if not language:
+        locale.setlocale(locale.LC_ALL, "")
+        language = locale.getlocale()[0]
+    return language
 
 
 @atexit.register
