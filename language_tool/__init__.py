@@ -119,7 +119,7 @@ class LanguageTool:
     MAX_PORT = 8083
     TIMEOUT = 30
     URL_FORMAT = "http://localhost:{}/"
-    _PORT_RE = re.compile(br"port (\d+)", re.I)
+    _PORT_RE = re.compile(r"port (\d+)", re.I)
 
     server = None
     port = MIN_PORT
@@ -190,6 +190,7 @@ class LanguageTool:
                                       stdin=subprocess.PIPE,
                                       stdout=subprocess.PIPE,
                                       stderr=subprocess.PIPE,
+                                      universal_newlines=True,
                                       startupinfo=cls.startupinfo)
         match = cls._PORT_RE.search(cls.server.stdout.readline())
         if match:
@@ -199,10 +200,9 @@ class LanguageTool:
                             .format(cls.port, port))
         else:
             cls._terminate_server()
-            err_msg = cls.server.communicate()[1].strip()
+            cls.err_msg = cls.server.communicate()[1].strip()
             cls.server = None
-            cls.err_msg = err_msg.decode(get_stderr_encoding(), "replace")
-            match = cls._PORT_RE.search(err_msg)
+            match = cls._PORT_RE.search(cls.err_msg)
             if not match:
                 raise Error(cls.err_msg)
             port = int(match.group(1))
@@ -265,17 +265,22 @@ def get_version():
     """Get LanguageTool version as a string.
     """
     try:
-        out = subprocess.check_output(
-            get_version_cmd(),
-            stdin=subprocess.PIPE, stderr=subprocess.PIPE,
-        ).decode(get_stdout_encoding(), "replace")
-        match = re.match(r"LanguageTool .*?(\d+.*)", out)
+        return cache["version"]
+    except KeyError:
+        try:
+            # LanguageTool 1.9+
+            s = subprocess.check_output(
+                get_version_cmd(),
+                stdin=subprocess.PIPE, stderr=subprocess.PIPE,
+                universal_newlines=True
+            )
+        except subprocess.CalledProcessError:
+            s = get_language_tool_dir()
+        match = re.search(r"LanguageTool-?.*?(\S+)$", s)
         if not match:
-            raise Error("unexpected version output: {!r}".format(out))
+            raise Error("unexpected version output: {!r}".format(s))
         version = match.group(1)
-    except subprocess.CalledProcessError:
-        lt_dir = get_language_tool_dir()
-        version = re.search(r"LanguageTool-(.*)$", lt_dir).group(1)
+        cache["version"] = version
     return version
 
 
@@ -405,20 +410,6 @@ def get_locale_language():
         locale.setlocale(locale.LC_ALL, "")
         language = locale.getlocale()[0]
     return language
-
-
-def get_stdout_encoding():
-    try:
-        return sys.stdout.encoding
-    except AttributeError:
-        return "utf-8"
-
-
-def get_stderr_encoding():
-    try:
-        return sys.stderr.encoding
-    except AttributeError:
-        return "utf-8"
 
 
 @atexit.register
