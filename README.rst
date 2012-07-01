@@ -36,10 +36,10 @@ Requirements
   (or 2.7, using `lib3to2 <https://bitbucket.org/amentajo/lib3to2>`_)
 - `LanguageTool <http://www.languagetool.org>`_
 
-The installation process should take care of downloading LanguageTool.
-Otherwise, you can manually download `LanguageTool-stable.oxt
-<http://www.languagetool.org/download/LanguageTool-stable.oxt>`_,
-rename it so it ends with “.zip”, then unzip it into a subdirectory
-inside the language_tool package.
+The installation process should take care of downloading LanguageTool
+(it may take a few minutes).
+Otherwise, you can manually download `LanguageTool-stable.zip
+<http://www.languagetool.org/download/LanguageTool-stable.zip>`_
+and unzip it into a subdirectory inside the language_tool package.
 
 LanguageTool requires Java 6 or later.
