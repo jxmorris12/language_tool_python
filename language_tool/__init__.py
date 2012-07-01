@@ -186,7 +186,7 @@ class LanguageTool:
     @classmethod
     def _start_server(cls):
         cls.url = cls.URL_FORMAT.format(cls.port)
-        cls.server = subprocess.Popen(get_cmd(cls.port),
+        cls.server = subprocess.Popen(get_server_cmd(cls.port),
                                       stdin=subprocess.PIPE,
                                       stdout=subprocess.PIPE,
                                       stderr=subprocess.PIPE,
@@ -201,10 +201,7 @@ class LanguageTool:
             cls._terminate_server()
             err_msg = cls.server.communicate()[1].strip()
             cls.server = None
-            try:
-                cls.err_msg = err_msg.decode(sys.stderr.encoding, "replace")
-            except AttributeError:
-                cls.err_msg = err_msg.decode("utf-8", "replace")
+            cls.err_msg = err_msg.decode(get_stderr_encoding(), "replace")
             match = cls._PORT_RE.search(err_msg)
             if not match:
                 raise Error(cls.err_msg)
@@ -267,7 +264,19 @@ class LanguageTool:
 def get_version():
     """Get LanguageTool version as a string.
     """
-    return re.search(r"LanguageTool-(.*)$", get_language_tool_dir()).group(1)
+    try:
+        out = subprocess.check_output(
+            get_version_cmd(),
+            stdin=subprocess.PIPE, stderr=subprocess.PIPE,
+        ).decode(get_stdout_encoding(), "replace")
+        match = re.match(r"LanguageTool .*?(\d+.*)", out)
+        if not match:
+            raise Error("unexpected version output: {!r}".format(out))
+        version = match.group(1)
+    except subprocess.CalledProcessError:
+        lt_dir = get_language_tool_dir()
+        version = re.search(r"LanguageTool-(.*)$", lt_dir).group(1)
+    return version
 
 
 def get_version_info():
@@ -284,7 +293,7 @@ def get_version_info():
 
 
 def get_languages():
-    """Get the set of supported languages.
+    """Get the supported languages as a set.
     """
     try:
         languages = cache["languages"]
@@ -348,9 +357,30 @@ def get_language_tool_dir():
     return language_tool_dir
 
 
-def get_cmd(port=None):
+def get_server_cmd(port=None):
     try:
-        cmd = cache["cmd"]
+        cmd = cache["server_cmd"]
+    except KeyError:
+        java_path, jar_path = get_jar_info()
+        cmd = [java_path, "-cp", jar_path,
+               "org.languagetool.server.HTTPServer"]
+        cache["server_cmd"] = cmd
+    return cmd if port is None else cmd + ["-p", str(port)]
+
+
+def get_version_cmd():
+    try:
+        cmd = cache["version_cmd"]
+    except KeyError:
+        java_path, jar_path = get_jar_info()
+        cmd = [java_path, "-jar", jar_path, "--version"]
+        cache["version_cmd"] = cmd
+    return cmd
+
+
+def get_jar_info():
+    try:
+        java_path, jar_path = cache["jar_info"]
     except KeyError:
         java_path = which("java")
         if not java_path:
@@ -363,10 +393,8 @@ def get_cmd(port=None):
         else:
             raise Error("can’t find {!r} in {!r}"
                         .format(jar_names[0], get_language_tool_dir()))
-        cmd = [java_path, "-cp", jar_path,
-               "org.languagetool.server.HTTPServer"]
-        cache["cmd"] = cmd
-    return cmd if port is None else cmd + ["-p", str(port)]
+        cache["jar_info"] = java_path, jar_path
+    return java_path, jar_path
 
 
 def get_locale_language():
@@ -377,6 +405,20 @@ def get_locale_language():
         locale.setlocale(locale.LC_ALL, "")
         language = locale.getlocale()[0]
     return language
+
+
+def get_stdout_encoding():
+    try:
+        return sys.stdout.encoding
+    except AttributeError:
+        return "utf-8"
+
+
+def get_stderr_encoding():
+    try:
+        return sys.stderr.encoding
+    except AttributeError:
+        return "utf-8"
 
 
 @atexit.register
