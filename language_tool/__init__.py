@@ -299,7 +299,7 @@ def get_version_info():
 
 
 def get_languages():
-    """Get the supported languages as a set.
+    """Get available languages as a set.
     """
     try:
         languages = cache["languages"]
@@ -427,9 +427,7 @@ def get_locale_language():
 
 @atexit.register
 def terminate_server():
-    """Terminate the server on exit.
-
-    Might be required with PyPy, Jython and such.
+    """Terminate the server.
     """
     if LanguageTool._server_is_alive():
         LanguageTool._terminate_server()

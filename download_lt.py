@@ -72,15 +72,17 @@ def download_lt(update=False):
                 break
             contents += data.decode()
 
+    href_format = r'<a href="(LanguageTool-(\d+.*?)\.{})">'
+
     matches = [
         (m.group(1), Version(m.group(2))) for m in
-        re.finditer(r'<a href="(LanguageTool-(\d+.*?)\.zip)">', contents)
+        re.finditer(href_format.format("zip"), contents)
     ]
 
     if not matches:
         matches = [
             (m.group(1), Version(m.group(2))) for m in
-            re.finditer(r'<a href="(LanguageTool-(\d+.*?)\.oxt)">', contents)
+            re.finditer(href_format.format("oxt"), contents)
         ]
 
     filename, version = matches[-1]
