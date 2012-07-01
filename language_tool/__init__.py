@@ -44,8 +44,22 @@ __all__ = ["LanguageTool", "Error", "get_languages",
 
 DEFAULT_LANGUAGE = "en"
 FIX_SENTENCES = False
-LANGUAGE_RE = re.compile(r"^([a-z]{2})(?:[_-]([a-z]{2}))?$", re.I)
+LANGUAGE_RE = re.compile(r"^([a-z]{2,3})(?:[_-]([a-z]{2}))?$", re.I)
 cache = {}
+
+LANGUAGE_TAGS_MAPPING = {
+    "English (Australian)": "en-AU",
+    "English (Canadian)": "en-CA",
+    "English (GB)": "en-GB",
+    "English (New Zealand)": "en-NZ",
+    "English (South African)": "en-ZA",
+    "English (US)": "en-US",
+    "German (Austria)": "de-AT",
+    "German (Germany)": "de-DE",
+    "German (Swiss)": "de-CH",
+    "Portuguese (Brazil)": "pt-BR",
+    "Portuguese (Portugal)": "pt-PT",
+}
 
 
 class Error(Exception):
@@ -133,9 +147,6 @@ class LanguageTool:
         startupinfo = None
 
     def __init__(self, language=None, motherTongue=None):
-        self.language = language
-        self.motherTongue = motherTongue
-        self._instances[id(self)] = self
         if not self._server_is_alive():
             while True:
                 try:
@@ -146,6 +157,9 @@ class LanguageTool:
                         LanguageTool.port += 1
                     else:
                         raise
+        self.language = language
+        self.motherTongue = motherTongue
+        self._instances[id(self)] = self
 
     def __del__(self):
         if not self._instances and self._server_is_alive():
@@ -248,8 +262,9 @@ class LanguageTool:
         try:
             while True:
                 try:
-                    with closing(urllib.request.urlopen(
-                                 self.url, data, self.TIMEOUT)) as f:
+                    with closing(
+                        urllib.request.urlopen(self.url, data, self.TIMEOUT)
+                    ) as f:
                         tree = ElementTree.parse(f)
                     break
                 except (urllib.error.URLError, socket.error):
@@ -260,6 +275,30 @@ class LanguageTool:
         except (urllib.error.URLError, socket.error, socket.timeout) as e:
             raise Error("{}: {}".format(self.url, e))
         return [Match(e.attrib, self.language) for e in tree.getroot()]
+
+    @classmethod
+    def _get_languages(cls):
+        second_try = False
+        try:
+            while True:
+                try:
+                    url = urllib.parse.urljoin(cls.url, "Languages")
+                    with closing(
+                        urllib.request.urlopen(url, timeout=cls.TIMEOUT)
+                    ) as f:
+                        tree = ElementTree.parse(f)
+                    break
+                except (urllib.error.URLError, socket.error, AttributeError):
+                    if second_try:
+                        raise
+                    second_try = True
+                    cls._start_server()
+        except (urllib.error.URLError, socket.error, socket.timeout) as e:
+            raise Error("{}: {}".format(url, e))
+        return {
+            LANGUAGE_TAGS_MAPPING.get(e.attrib["name"], e.attrib["abbr"])
+            for e in tree.getroot()
+        }
 
 
 def get_version():
@@ -304,19 +343,26 @@ def get_languages():
     try:
         languages = cache["languages"]
     except KeyError:
-        rules_path = os.path.join(get_language_tool_dir(), "rules")
-        languages = set([fn for fn in os.listdir(rules_path)
-                         if os.path.isdir(os.path.join(rules_path, fn)) and
-                         LANGUAGE_RE.match(fn)])
-        variants = []
-        for language in languages:
-            d = os.path.join(rules_path, language)
-            for fn in os.listdir(d):
-                if (os.path.isdir(os.path.join(d, fn)) and
-                        LANGUAGE_RE.match(fn)):
-                    variants.append(fn)
-        languages.update(variants)
+        try:
+            languages = LanguageTool._get_languages()
+        except Error:
+            languages = get_languages_from_dir()
         cache["languages"] = languages
+    return languages
+
+
+def get_languages_from_dir():
+    rules_path = os.path.join(get_language_tool_dir(), "rules")
+    languages = {fn for fn in os.listdir(rules_path)
+                 if os.path.isdir(os.path.join(rules_path, fn)) and
+                 LANGUAGE_RE.match(fn)}
+    variants = []
+    for language in languages:
+        d = os.path.join(rules_path, language)
+        for fn in os.listdir(d):
+            if os.path.isdir(os.path.join(d, fn)) and LANGUAGE_RE.match(fn):
+                variants.append(fn)
+    languages.update(variants)
     return languages
 
 
