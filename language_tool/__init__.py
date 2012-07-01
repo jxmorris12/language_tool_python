@@ -39,7 +39,8 @@ from .which import which
 
 
 __all__ = ["LanguageTool", "Error", "get_languages",
-           "get_version", "get_version_info", "get_language_tool_dir"]
+           "get_version", "get_version_info",
+           "get_language_tool_dir", "set_language_tool_dir"]
 
 DEFAULT_LANGUAGE = "en"
 FIX_SENTENCES = False
@@ -331,6 +332,8 @@ def get_supported_language(language):
 
 
 def get_language_tool_dir():
+    """Get LanguageTool directory.
+    """
     try:
         language_tool_dir = cache["language_tool_dir"]
     except KeyError:
@@ -360,6 +363,16 @@ def get_language_tool_dir():
                             .format(base_dir))
         cache["language_tool_dir"] = language_tool_dir
     return language_tool_dir
+
+
+def set_language_tool_dir(path=None):
+    """Set LanguageTool directory.
+    """
+    terminate_server()
+    cache.clear()
+    if path:
+        cache["language_tool_dir"] = path
+        get_jar_info()
 
 
 def get_server_cmd(port=None):
