@@ -257,10 +257,10 @@ class LanguageTool:
            against all currently active rules.
         """
         params = {"language": self.language, "text": text}
-        if self.motherTongue is not None:
-            params["motherTongue"] = self.motherTongue
         if srctext is not None:
             params["srctext"] = srctext
+        if self.motherTongue is not None:
+            params["motherTongue"] = self.motherTongue
         if self.enabled is not None:
             params["enabled"] = ",".join(self.enabled)
         if self.disabled is not None:
