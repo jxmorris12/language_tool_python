@@ -28,6 +28,7 @@ import urllib.parse
 import urllib.request
 from collections import namedtuple
 from contextlib import closing
+from functools import total_ordering
 from weakref import WeakValueDictionary
 try:
     # Deprecated since Python 3.3
@@ -42,7 +43,7 @@ __all__ = ["LanguageTool", "Error", "get_languages",
            "get_version", "get_version_info",
            "get_language_tool_dir", "set_language_tool_dir"]
 
-DEFAULT_LANGUAGE = "en"
+FAILSAFE_LANGUAGE = "en"
 FIX_SENTENCES = False
 LANGUAGE_RE = re.compile(r"^([a-z]{2,3})(?:[_-]([a-z]{2}))?$", re.I)
 cache = {}
@@ -157,7 +158,13 @@ class LanguageTool:
                         LanguageTool.port += 1
                     else:
                         raise
-        self.language = language
+        if language is None:
+            try:
+                self._language = LanguageTag(get_locale_language())
+            except ValueError:
+                self._language = LanguageTag(FAILSAFE_LANGUAGE)
+        else:
+            self.language = language
         self.motherTongue = motherTongue
         self._instances[id(self)] = self
 
@@ -173,14 +180,7 @@ class LanguageTool:
 
     @language.setter
     def language(self, language):
-        if language:
-            self._language = get_supported_language(language)
-        else:
-            language = get_locale_language()
-            try:
-                self._language = get_supported_language(language)
-            except ValueError:
-                self._language = DEFAULT_LANGUAGE
+        self._language = LanguageTag(language)
 
     @property
     def motherTongue(self):
@@ -193,10 +193,8 @@ class LanguageTool:
 
     @motherTongue.setter
     def motherTongue(self, motherTongue):
-        if motherTongue:
-            self._motherTongue = get_supported_language(motherTongue)
-        else:
-            self._motherTongue = None
+        self._motherTongue = (None if motherTongue is None
+                              else LanguageTag(motherTongue))
 
     @classmethod
     def _start_server(cls):
@@ -224,7 +222,7 @@ class LanguageTool:
             if port != cls.port:
                 raise Error("already used port mismatch: {}, {}"
                             .format(cls.port, port))
-            params = {"language": DEFAULT_LANGUAGE, "text": ""}
+            params = {"language": FAILSAFE_LANGUAGE, "text": ""}
             data = urllib.parse.urlencode(params).encode()
             try:
                 with closing(urllib.request.urlopen(cls.url, data, 10)) as f:
@@ -301,6 +299,42 @@ class LanguageTool:
         }
 
 
+@total_ordering
+class LanguageTag(str):
+    """Language tag supported by LanguageTool
+    """
+    def __new__(cls, tag):
+        # Can’t use super() here because of 3to2.
+        return str.__new__(cls, cls._normalize(tag))
+
+    def __eq__(self, other):
+        try:
+            other = self._normalize(other)
+        except ValueError:
+            pass
+        return str(self) == other
+
+    def __lt__(self, other):
+        try:
+            other = self._normalize(other)
+        except ValueError:
+            pass
+        return str(self) < other
+
+    @staticmethod
+    def _normalize(tag):
+        if not tag:
+            raise ValueError("empty language tag")
+        languages = {l.lower().replace("-", "_"): l for l in get_languages()}
+        try:
+            return languages[tag.lower().replace("-", "_")]
+        except KeyError:
+            try:
+                return languages[LANGUAGE_RE.match(tag).group(1).lower()]
+            except (KeyError, AttributeError):
+                raise ValueError("unsupported language: {!r}".format(tag))
+
+
 def get_version():
     """Get LanguageTool version as a string.
     """
@@ -364,17 +398,6 @@ def get_languages_from_dir():
                 variants.append(fn)
     languages.update(variants)
     return languages
-
-
-def get_supported_language(language):
-    languages = {l.lower().replace("-", "_"): l for l in get_languages()}
-    try:
-        return languages[language.lower().replace("-", "_")]
-    except KeyError:
-        try:
-            return languages[LANGUAGE_RE.match(language).group(1).lower()]
-        except (KeyError, AttributeError):
-            raise ValueError("unsupported language: {}".format(language))
 
 
 def get_language_tool_dir():
