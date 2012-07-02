@@ -251,9 +251,8 @@ class LanguageTool:
             pass
 
     def check(self, text: str, srctext=None) -> [Match]:
-        """
-        Tokenize the text into sentences and match those sentences
-        against all currently active rules.
+        """Tokenize the text into sentences and match those sentences
+           against all currently active rules.
         """
         params = {"language": self.language, "text": text}
         if self.motherTongue:
