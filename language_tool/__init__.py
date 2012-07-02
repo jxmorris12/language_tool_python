@@ -306,7 +306,7 @@ class LanguageTool:
         except IOError as e:
             raise Error("{}: {}".format(url, e))
         return {
-            LANGUAGE_TAGS_MAPPING.get(e.attrib["name"], e.attrib["abbr"])
+            LANGUAGE_TAGS_MAPPING.get(e.get("name"), e.get("abbr"))
             for e in tree.getroot()
         }
 
