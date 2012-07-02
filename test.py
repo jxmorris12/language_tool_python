@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Test suit for language_tool
+"""Test suite for language_tool
 """
 import unittest
 from collections import namedtuple
