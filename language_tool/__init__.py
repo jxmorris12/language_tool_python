@@ -60,6 +60,12 @@ LANGUAGE_TAGS_MAPPING = {
     "Portuguese (Portugal)": "pt-PT",
 }
 
+if os.name == "nt":
+    startupinfo = subprocess.STARTUPINFO()
+    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+else:
+    startupinfo = None
+
 cache = {}
 
 
@@ -141,12 +147,6 @@ class LanguageTool:
     _instances = WeakValueDictionary()
     _PORT_RE = re.compile(r"port (\d+)", re.I)
 
-    if os.name == "nt":
-        _startupinfo = subprocess.STARTUPINFO()
-        _startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-    else:
-        _startupinfo = None
-
     def __init__(self, language=None, motherTongue=None):
         if not self._server_is_alive():
             while True:
@@ -206,12 +206,14 @@ class LanguageTool:
             pass
         else:
             # Need to PIPE all handles: http://bugs.python.org/issue3905
-            cls._server = subprocess.Popen(server_cmd,
-                                           stdin=subprocess.PIPE,
-                                           stdout=subprocess.PIPE,
-                                           stderr=subprocess.PIPE,
-                                           universal_newlines=True,
-                                           startupinfo=cls._startupinfo)
+            cls._server = subprocess.Popen(
+                server_cmd,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                universal_newlines=True,
+                startupinfo=startupinfo
+            )
             match = cls._PORT_RE.search(cls._server.stdout.readline())
             if match:
                 port = int(match.group(1))
@@ -232,7 +234,7 @@ class LanguageTool:
             params = {"language": FAILSAFE_LANGUAGE, "text": ""}
             data = urllib.parse.urlencode(params).encode()
             try:
-                with closing(urllib.request.urlopen(cls.url, data, 10)) as f:
+                with closing(urllib.request.urlopen(cls.url, data, 15)) as f:
                     tree = ElementTree.parse(f)
             except (urllib.error.URLError, socket.error, socket.timeout) as e:
                 raise ServerError("{}: {}".format(cls.url, e))
@@ -353,11 +355,18 @@ def get_version():
     except KeyError:
         try:
             # LanguageTool 1.9+
-            s = subprocess.check_output(
+            p = subprocess.Popen(
                 get_version_cmd(),
-                stdin=subprocess.PIPE, stderr=subprocess.PIPE,
-                universal_newlines=True
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                universal_newlines=True,
+                startupinfo=startupinfo
             )
+            try:
+                s = p.communicate(timeout=15)[0]
+            except TypeError:
+                s = p.communicate()[0]
         except subprocess.CalledProcessError:
             s = get_language_tool_dir()
         match = re.search(r"LanguageTool-?.*?(\S+)$", s)
