@@ -46,8 +46,6 @@ __all__ = ["LanguageTool", "Error", "get_languages",
 FAILSAFE_LANGUAGE = "en"
 FIX_SENTENCES = False
 LANGUAGE_RE = re.compile(r"^([a-z]{2,3})(?:[_-]([a-z]{2}))?$", re.I)
-cache = {}
-
 LANGUAGE_TAGS_MAPPING = {
     "English (Australian)": "en-AU",
     "English (Canadian)": "en-CA",
@@ -61,6 +59,8 @@ LANGUAGE_TAGS_MAPPING = {
     "Portuguese (Brazil)": "pt-BR",
     "Portuguese (Portugal)": "pt-PT",
 }
+
+cache = {}
 
 
 class Error(Exception):
@@ -131,21 +131,21 @@ if FIX_SENTENCES:
 class LanguageTool:
     """Main class used for checking text against different rules
     """
+    URL_FORMAT = "http://localhost:{port}/"
     MIN_PORT = 8081
     MAX_PORT = 8083
     TIMEOUT = 30
-    URL_FORMAT = "http://localhost:{}/"
+
+    port = MIN_PORT
+    _server = None
+    _instances = WeakValueDictionary()
     _PORT_RE = re.compile(r"port (\d+)", re.I)
 
-    server = None
-    port = MIN_PORT
-    _instances = WeakValueDictionary()
-
     if os.name == "nt":
-        startupinfo = subprocess.STARTUPINFO()
-        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        _startupinfo = subprocess.STARTUPINFO()
+        _startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
     else:
-        startupinfo = None
+        _startupinfo = None
 
     def __init__(self, language=None, motherTongue=None):
         if not self._server_is_alive():
@@ -198,19 +198,19 @@ class LanguageTool:
 
     @classmethod
     def _start_server(cls):
-        cls.url = cls.URL_FORMAT.format(cls.port)
+        cls.url = cls.URL_FORMAT.format(port=cls.port)
         try:
             server_cmd = get_server_cmd(cls.port)
         except Error:
             pass
         else:
-            cls.server = subprocess.Popen(server_cmd,
-                                          stdin=subprocess.PIPE,
-                                          stdout=subprocess.PIPE,
-                                          stderr=subprocess.PIPE,
-                                          universal_newlines=True,
-                                          startupinfo=cls.startupinfo)
-            match = cls._PORT_RE.search(cls.server.stdout.readline())
+            cls._server = subprocess.Popen(server_cmd,
+                                           stdin=subprocess.PIPE,
+                                           stdout=subprocess.PIPE,
+                                           stderr=subprocess.PIPE,
+                                           universal_newlines=True,
+                                           startupinfo=cls._startupinfo)
+            match = cls._PORT_RE.search(cls._server.stdout.readline())
             if match:
                 port = int(match.group(1))
                 if port != cls.port:
@@ -218,15 +218,15 @@ class LanguageTool:
                                 .format(cls.port, port))
             else:
                 cls._terminate_server()
-                cls.err_msg = cls.server.communicate()[1].strip()
-                cls.server = None
+                cls.err_msg = cls._server.communicate()[1].strip()
+                cls._server = None
                 match = cls._PORT_RE.search(cls.err_msg)
                 if not match:
                     raise Error(cls.err_msg)
                 port = int(match.group(1))
                 if port != cls.port:
                     raise Error(cls.err_msg)
-        if not cls.server:
+        if not cls._server:
             params = {"language": FAILSAFE_LANGUAGE, "text": ""}
             data = urllib.parse.urlencode(params).encode()
             try:
@@ -241,12 +241,12 @@ class LanguageTool:
 
     @classmethod
     def _server_is_alive(cls):
-        return cls.server and cls.server.poll() is None
+        return cls._server and cls._server.poll() is None
 
     @classmethod
     def _terminate_server(cls):
         try:
-            cls.server.terminate()
+            cls._server.terminate()
         except OSError:
             pass
 
