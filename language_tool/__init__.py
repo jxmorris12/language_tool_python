@@ -160,9 +160,9 @@ class LanguageTool:
                         raise
         if language is None:
             try:
-                self._language = LanguageTag(get_locale_language())
+                self.language = get_locale_language()
             except ValueError:
-                self._language = LanguageTag(FAILSAFE_LANGUAGE)
+                self.language = FAILSAFE_LANGUAGE
         else:
             self.language = language
         self.motherTongue = motherTongue
@@ -181,6 +181,7 @@ class LanguageTool:
     @language.setter
     def language(self, language):
         self._language = LanguageTag(language)
+        self.enabled = self.disabled = None
 
     @property
     def motherTongue(self):
@@ -204,6 +205,7 @@ class LanguageTool:
         except Error:
             pass
         else:
+            # Need to PIPE all handles: http://bugs.python.org/issue3905
             cls._server = subprocess.Popen(server_cmd,
                                            stdin=subprocess.PIPE,
                                            stdout=subprocess.PIPE,
@@ -255,10 +257,14 @@ class LanguageTool:
            against all currently active rules.
         """
         params = {"language": self.language, "text": text}
-        if self.motherTongue:
+        if self.motherTongue is not None:
             params["motherTongue"] = self.motherTongue
-        if srctext:
+        if srctext is not None:
             params["srctext"] = srctext
+        if self.enabled is not None:
+            params["enabled"] = ",".join(self.enabled)
+        if self.disabled is not None:
+            params["disabled"] = ",".join(self.disabled)
         data = urllib.parse.urlencode(params).encode()
         second_try = False
         try:
