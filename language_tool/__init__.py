@@ -199,29 +199,34 @@ class LanguageTool:
     @classmethod
     def _start_server(cls):
         cls.url = cls.URL_FORMAT.format(cls.port)
-        cls.server = subprocess.Popen(get_server_cmd(cls.port),
-                                      stdin=subprocess.PIPE,
-                                      stdout=subprocess.PIPE,
-                                      stderr=subprocess.PIPE,
-                                      universal_newlines=True,
-                                      startupinfo=cls.startupinfo)
-        match = cls._PORT_RE.search(cls.server.stdout.readline())
-        if match:
-            port = int(match.group(1))
-            if port != cls.port:
-                raise Error("requested port {}, but got {}"
-                            .format(cls.port, port))
+        try:
+            server_cmd = get_server_cmd(cls.port)
+        except Error:
+            pass
         else:
-            cls._terminate_server()
-            cls.err_msg = cls.server.communicate()[1].strip()
-            cls.server = None
-            match = cls._PORT_RE.search(cls.err_msg)
-            if not match:
-                raise Error(cls.err_msg)
-            port = int(match.group(1))
-            if port != cls.port:
-                raise Error("already used port mismatch: {}, {}"
-                            .format(cls.port, port))
+            cls.server = subprocess.Popen(server_cmd,
+                                          stdin=subprocess.PIPE,
+                                          stdout=subprocess.PIPE,
+                                          stderr=subprocess.PIPE,
+                                          universal_newlines=True,
+                                          startupinfo=cls.startupinfo)
+            match = cls._PORT_RE.search(cls.server.stdout.readline())
+            if match:
+                port = int(match.group(1))
+                if port != cls.port:
+                    raise Error("requested port {}, but got {}"
+                                .format(cls.port, port))
+            else:
+                cls._terminate_server()
+                cls.err_msg = cls.server.communicate()[1].strip()
+                cls.server = None
+                match = cls._PORT_RE.search(cls.err_msg)
+                if not match:
+                    raise Error(cls.err_msg)
+                port = int(match.group(1))
+                if port != cls.port:
+                    raise Error(cls.err_msg)
+        if not cls.server:
             params = {"language": FAILSAFE_LANGUAGE, "text": ""}
             data = urllib.parse.urlencode(params).encode()
             try:
