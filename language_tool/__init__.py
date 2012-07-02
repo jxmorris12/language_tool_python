@@ -18,10 +18,10 @@
 
 import atexit
 import glob
+import http.client
 import locale
 import os
 import re
-import socket
 import subprocess
 import sys
 import urllib.parse
@@ -236,7 +236,7 @@ class LanguageTool:
             try:
                 with closing(urllib.request.urlopen(cls.url, data, 15)) as f:
                     tree = ElementTree.parse(f)
-            except (urllib.error.URLError, socket.error, socket.timeout) as e:
+            except (IOError, http.client.HTTPException) as e:
                 raise ServerError("{}: {}".format(cls.url, e))
             root = tree.getroot()
             if root.tag != "matches":
@@ -277,12 +277,12 @@ class LanguageTool:
                     ) as f:
                         tree = ElementTree.parse(f)
                     break
-                except (urllib.error.URLError, socket.error):
+                except IOError:
                     if second_try:
                         raise
                     second_try = True
                     self._start_server()
-        except (urllib.error.URLError, socket.error, socket.timeout) as e:
+        except IOError as e:
             raise Error("{}: {}".format(self.url, e))
         return [Match(e.attrib, self.language) for e in tree.getroot()]
 
@@ -298,12 +298,12 @@ class LanguageTool:
                     ) as f:
                         tree = ElementTree.parse(f)
                     break
-                except (urllib.error.URLError, socket.error, AttributeError):
+                except (IOError, AttributeError):
                     if second_try:
                         raise
                     second_try = True
                     cls._start_server()
-        except (urllib.error.URLError, socket.error, socket.timeout) as e:
+        except IOError as e:
             raise Error("{}: {}".format(url, e))
         return {
             LANGUAGE_TAGS_MAPPING.get(e.attrib["name"], e.attrib["abbr"])
