@@ -458,7 +458,7 @@ def get_language_tool_dir():
                 language_tool_dir = get_lt_dir(base_dir)
             if not language_tool_dir:
                 raise PathError("can’t find LanguageTool directory in {!r}"
-                            .format(base_dir))
+                                .format(base_dir))
         cache["language_tool_dir"] = language_tool_dir
     return language_tool_dir
 
@@ -508,7 +508,7 @@ def get_jar_info():
                 break
         else:
             raise PathError("can’t find {!r} in {!r}"
-                        .format(jar_names[0], get_language_tool_dir()))
+                            .format(jar_names[0], get_language_tool_dir()))
         cache["jar_info"] = java_path, jar_path
     return java_path, jar_path
 
