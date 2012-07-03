@@ -22,6 +22,7 @@ import http.client
 import locale
 import os
 import re
+import socket
 import subprocess
 import sys
 import urllib.parse
@@ -145,7 +146,7 @@ if FIX_SENTENCES:
 class LanguageTool:
     """Main class used for checking text against different rules
     """
-    URL_FORMAT = "http://localhost:{port}/"
+    HOST = socket.gethostbyname("localhost")
     MIN_PORT = 8081
     MAX_PORT = 8083
     TIMEOUT = 30
@@ -207,7 +208,7 @@ class LanguageTool:
 
     @classmethod
     def _start_server(cls):
-        cls.url = cls.URL_FORMAT.format(port=cls.port)
+        cls.url = "http://{host}:{port}".format(host=cls.HOST, port=cls.port)
         try:
             server_cmd = get_server_cmd(cls.port)
         except PathError:
