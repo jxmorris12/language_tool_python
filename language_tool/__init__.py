@@ -78,6 +78,14 @@ class ServerError(Error):
     pass
 
 
+class JavaError(Error):
+    pass
+
+
+class PathError(Error):
+    pass
+
+
 class Match:
     """Hold information about where a rule matches text.
     """
@@ -202,7 +210,8 @@ class LanguageTool:
         cls.url = cls.URL_FORMAT.format(port=cls.port)
         try:
             server_cmd = get_server_cmd(cls.port)
-        except Error:
+        except PathError:
+            # Can’t find path to LanguageTool.
             pass
         else:
             # Need to PIPE all handles: http://bugs.python.org/issue3905
@@ -231,6 +240,7 @@ class LanguageTool:
                 if port != cls.port:
                     raise Error(cls.err_msg)
         if not cls._server:
+            # Couldn’t start the server, so maybe there is already one running.
             params = {"language": FAILSAFE_LANGUAGE, "text": ""}
             data = urllib.parse.urlencode(params).encode()
             try:
@@ -381,9 +391,9 @@ def get_version_info():
     """Get LanguageTool version as a tuple.
     """
     VersionInfo = namedtuple("VersionInfo",
-                             ("major", "minor", "micro", "release_level"))
+                             ("major", "minor", "micro", "releaselevel"))
     info_list = get_version().split("-")
-    release_level = "" if len(info_list) < 2 else info_list[-1]
+    release_level = "final" if len(info_list) < 2 else info_list[-1]
     info_list = [int(e) if e.isdigit() else e
                  for e in info_list[0].split(".")][:3]
     info_list += [0] * (3 - len(info_list))
@@ -447,7 +457,7 @@ def get_language_tool_dir():
             else:
                 language_tool_dir = get_lt_dir(base_dir)
             if not language_tool_dir:
-                raise Error("can’t find LanguageTool directory in {!r}"
+                raise PathError("can’t find LanguageTool directory in {!r}"
                             .format(base_dir))
         cache["language_tool_dir"] = language_tool_dir
     return language_tool_dir
@@ -490,14 +500,14 @@ def get_jar_info():
     except KeyError:
         java_path = which("java")
         if not java_path:
-            raise Error("can’t find Java")
+            raise JavaError("can’t find Java")
         jar_names = ["LanguageTool.jar", "LanguageTool.uno.jar"]
         for jar_name in jar_names:
             jar_path = os.path.join(get_language_tool_dir(), jar_name)
             if os.path.isfile(jar_path):
                 break
         else:
-            raise Error("can’t find {!r} in {!r}"
+            raise PathError("can’t find {!r} in {!r}"
                         .format(jar_names[0], get_language_tool_dir()))
         cache["jar_info"] = java_path, jar_path
     return java_path, jar_path
