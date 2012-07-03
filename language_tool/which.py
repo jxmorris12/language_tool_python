@@ -81,7 +81,9 @@ else:
 
 def main():
     for arg in sys.argv[1:]:
-        print(which(arg))
+        path = which(arg)
+        if path:
+            print(path)
 
 
 if __name__ == "__main__":
