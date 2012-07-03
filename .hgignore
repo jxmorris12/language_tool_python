@@ -9,4 +9,4 @@ MANIFEST
 *.pyo
 *$py.class
 
-LanguageTool-*
+LanguageTool*
