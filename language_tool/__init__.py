@@ -364,25 +364,24 @@ def get_version():
     try:
         return cache["version"]
     except KeyError:
-        try:
-            # LanguageTool 1.9+
-            p = subprocess.Popen(
-                get_version_cmd(),
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                universal_newlines=True,
-                startupinfo=startupinfo
-            )
-            try:
-                s = p.communicate(timeout=15)[0]
-            except TypeError:
-                s = p.communicate()[0]
-        except subprocess.CalledProcessError:
-            s = get_language_tool_dir()
-        match = re.search(r"LanguageTool-?.*?(\S+)$", s)
+        version_re = re.compile(r"LanguageTool-?.*?(\S+)$")
+
+        # LanguageTool 1.9+
+        proc = subprocess.Popen(
+            get_version_cmd(),
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
+            startupinfo=startupinfo
+        )
+        out = proc.communicate()[0]
+        match = version_re.search(out)
+
         if not match:
-            raise Error("unexpected version output: {!r}".format(s))
+            match = version_re.search(get_language_tool_dir())
+            if not match:
+                raise Error("unexpected version output: {!r}".format(out))
         version = match.group(1)
         cache["version"] = version
     return version
