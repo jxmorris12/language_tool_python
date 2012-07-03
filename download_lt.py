@@ -112,15 +112,22 @@ def download_lt(update=False):
     with closing(TemporaryFile()) as t:
         with closing(urlopen(url)) as u:
             size = int(u.headers["Content-Length"])
-            print(
-                "Downloading {!r} ({:.1f} MiB)..."
+            sys.stdout.write(
+                "Downloading {!r} ({:.1f} MiB)...\n"
                 .format(filename, size / 1048576.)
             )
+            sys.stdout.flush()
+            chunk_size = size // 100
+            data_len = 0
             while True:
-                data = u.read()
+                data = u.read(chunk_size)
+                data_len += len(data)
                 if not data:
                     break
                 t.write(data)
+                sys.stdout.write("\r{:.0%}".format(data_len / size))
+                sys.stdout.flush()
+            sys.stdout.write("\n")
         t.seek(0)
         for old_path in old_path_list:
             if os.path.isdir(old_path):
