@@ -20,9 +20,9 @@ Example usage
 Installation
 ------------
 
-You can use `pip <http://www.pip-installer.org>`_ to install or uninstall::
+You can use the setup script::
 
-  $ pip install language_tool
+  $ ./setup.py install
 
 On Windows, you can use one of the MSI binary packages provided
 on the `download page
