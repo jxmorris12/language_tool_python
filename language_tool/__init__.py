@@ -146,6 +146,9 @@ if FIX_SENTENCES:
 class LanguageTool:
     """Main class used for checking text against different rules
     """
+    DEFAULT_ENABLED = None
+    DEFAULT_DISABLED = {"HUNSPELL_RULE", "HUNSPELL_NO_SUGGEST_RULE"}
+
     HOST = socket.gethostbyname("localhost")
     MIN_PORT = 8081
     MAX_PORT = 8083
@@ -190,7 +193,8 @@ class LanguageTool:
     @language.setter
     def language(self, language):
         self._language = LanguageTag(language)
-        self.enabled = self.disabled = None
+        self.enabled = self.DEFAULT_ENABLED
+        self.disabled = self.DEFAULT_DISABLED
 
     @property
     def motherTongue(self):
