@@ -45,7 +45,6 @@ __all__ = ["LanguageTool", "Error", "get_languages",
            "get_language_tool_dir", "set_language_tool_dir"]
 
 FAILSAFE_LANGUAGE = "en"
-FIX_SENTENCES = False
 LANGUAGE_RE = re.compile(r"^([a-z]{2,3})(?:[_-]([a-z]{2}))?$", re.I)
 LANGUAGE_TAGS_MAPPING = {
     "English (Australian)": "en-AU",
@@ -116,31 +115,6 @@ class Match:
 
     def __getattr__(self, name):
         return None
-
-
-if FIX_SENTENCES:
-    try:
-        import translit
-    except ImportError:
-        translit = None
-        import warnings
-        warnings.warn("translit package is unavailable", ImportWarning)
-    else:
-        def fix_sentence(text, language=None):
-            text = text.strip()
-            if text[0].islower():
-                text = text.capitalize()
-            if text[-1] not in ".?!…,:;":
-                text += "."
-            text = translit.upgrade(text, language)
-            return text
-
-        class Match(Match):
-            def __init__(self, attrib, language=None):
-                super().__init__(attrib, language)
-                self.msg = fix_sentence(self.msg, language)
-                self.replacements = [translit.upgrade(r, language)
-                                     for r in self.replacements]
 
 
 class LanguageTool:
