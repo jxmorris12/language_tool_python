@@ -3,8 +3,9 @@
 """
 import unittest
 from collections import namedtuple
+import warnings
 
-from language_tool import LanguageTool
+import language_tool
 
 
 class TestLanguageTool(unittest.TestCase):
@@ -36,12 +37,31 @@ class TestLanguageTool(unittest.TestCase):
                     Match(0, 82, "UPPERCASE_SENTENCE_START"),
                 ]
             ),
+            Test(
+                "C'est un soucis, comme même!",
+                [
+                    Match(0, 6, "ACCORD_NOMBRE"),
+                    Match(0, 17, "COMME_MEME"),
+                    Match(0, 23, "FRENCH_WHITESPACE"),
+                ]
+            ),
+        ],
+        "ja": [
+            Test("日本語", []),
         ],
     }
 
     def test_samples(self):
+        languages = language_tool.get_languages()
         for language, tests in self.tests.items():
-            lang_tool = LanguageTool(language)
+            if language not in languages:
+                version = language_tool.get_version()
+                warnings.warn(
+                    "LanguageTool {} doesn’t support language {!r}"
+                    .format(version, language)
+                )
+                continue
+            lang_tool = language_tool.LanguageTool(language)
             for text, expected_matches in tests:
                 matches = lang_tool.check(text)
                 for expected_match in expected_matches:
@@ -55,6 +75,14 @@ class TestLanguageTool(unittest.TestCase):
                     else:
                         raise IndexError(
                             "can’t find {!r}".format(expected_match))
+
+    def test_languages(self):
+        languages = language_tool.get_languages()
+        self.assertIn("en", languages)
+
+    def test_version(self):
+        version = language_tool.get_version()
+        self.assertTrue(version)
 
 
 if __name__ == "__main__":
