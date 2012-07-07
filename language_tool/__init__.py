@@ -27,6 +27,7 @@ import subprocess
 import sys
 import urllib.parse
 import urllib.request
+import warnings
 from collections import namedtuple
 from contextlib import closing
 from functools import total_ordering
@@ -37,6 +38,7 @@ try:
 except ImportError:
     from xml.etree import ElementTree
 
+from .country_codes import get_country_code
 from .which import which
 
 
@@ -46,19 +48,7 @@ __all__ = ["LanguageTool", "Error", "get_languages",
 
 FAILSAFE_LANGUAGE = "en"
 LANGUAGE_RE = re.compile(r"^([a-z]{2,3})(?:[_-]([a-z]{2}))?$", re.I)
-LANGUAGE_TAGS_MAPPING = {
-    "English (Australian)": "en-AU",
-    "English (Canadian)": "en-CA",
-    "English (GB)": "en-GB",
-    "English (New Zealand)": "en-NZ",
-    "English (South African)": "en-ZA",
-    "English (US)": "en-US",
-    "German (Austria)": "de-AT",
-    "German (Germany)": "de-DE",
-    "German (Swiss)": "de-CH",
-    "Portuguese (Brazil)": "pt-BR",
-    "Portuguese (Portugal)": "pt-PT",
-}
+
 
 if os.name == "nt":
     startupinfo = subprocess.STARTUPINFO()
@@ -269,11 +259,22 @@ class LanguageTool:
         if not cls._server_is_alive():
             cls._start_server_on_free_port()
         url = urllib.parse.urljoin(cls.url, "Languages")
-        root = cls._get_root(url, num_tries=1)
-        return {
-            LANGUAGE_TAGS_MAPPING.get(e.get("name"), e.get("abbr"))
-            for e in root
-        }
+        languages = set()
+        for e in cls._get_root(url, num_tries=1):
+            language = e.get("abbr")
+            if len(re.split(r"[_-]", language)) < 2:
+                match = re.search(r"\((.*?)\)", e.get("name"))
+                if match:
+                    country_name = match.group(1)
+                    try:
+                        country_code = get_country_code(country_name)
+                    except KeyError:
+                        warnings.warn(
+                            "unknown language: {!r}".format(e.get("name")))
+                    else:
+                        language += "-" + country_code
+            languages.add(language)
+        return languages
 
     @classmethod
     def _get_root(cls, url, data=None, num_tries=2):
