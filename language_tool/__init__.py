@@ -161,15 +161,7 @@ class LanguageTool:
 
     def __init__(self, language=None, motherTongue=None):
         if not self._server_is_alive():
-            while True:
-                try:
-                    self._start_server()
-                    break
-                except ServerError:
-                    if self.MIN_PORT <= LanguageTool.port < self.MAX_PORT:
-                        LanguageTool.port += 1
-                    else:
-                        raise
+            self._start_server_on_free_port()
         if language is None:
             try:
                 self.language = get_locale_language()
@@ -211,8 +203,20 @@ class LanguageTool:
                               else LanguageTag(motherTongue))
 
     @classmethod
+    def _start_server_on_free_port(cls):
+        while True:
+            cls.url = "http://{}:{}".format(cls.HOST, cls.port)
+            try:
+                cls._start_server()
+                break
+            except ServerError:
+                if cls.MIN_PORT <= cls.port < cls.MAX_PORT:
+                    cls.port += 1
+                else:
+                    raise
+
+    @classmethod
     def _start_server(cls):
-        cls.url = "http://{host}:{port}".format(host=cls.HOST, port=cls.port)
         try:
             server_cmd = get_server_cmd(cls.port)
         except PathError:
@@ -273,9 +277,9 @@ class LanguageTool:
         """Tokenize the text into sentences and match those sentences
            against all currently active rules.
         """
-        params = {"language": self.language, "text": text}
+        params = {"language": self.language, "text": text.encode("utf-8")}
         if srctext is not None:
-            params["srctext"] = srctext
+            params["srctext"] = srctext.encode("utf-8")
         if self.motherTongue is not None:
             params["motherTongue"] = self.motherTongue
         if self.enabled is not None:
@@ -283,47 +287,33 @@ class LanguageTool:
         if self.disabled is not None:
             params["disabled"] = ",".join(self.disabled)
         data = urllib.parse.urlencode(params).encode()
-        second_try = False
-        try:
-            while True:
-                try:
-                    with closing(
-                        urllib.request.urlopen(self.url, data, self.TIMEOUT)
-                    ) as f:
-                        tree = ElementTree.parse(f)
-                    break
-                except IOError:
-                    if second_try:
-                        raise
-                    second_try = True
-                    self._start_server()
-        except IOError as e:
-            raise Error("{}: {}".format(self.url, e))
-        return [Match(e.attrib, self.language) for e in tree.getroot()]
+        root = self._get_root(self.url, data)
+        return [Match(e.attrib, self.language) for e in root]
 
     @classmethod
     def _get_languages(cls):
-        second_try = False
-        try:
-            while True:
-                try:
-                    url = urllib.parse.urljoin(cls.url, "Languages")
-                    with closing(
-                        urllib.request.urlopen(url, timeout=cls.TIMEOUT)
-                    ) as f:
-                        tree = ElementTree.parse(f)
-                    break
-                except (IOError, AttributeError):
-                    if second_try:
-                        raise
-                    second_try = True
-                    cls._start_server()
-        except IOError as e:
-            raise Error("{}: {}".format(url, e))
+        if not cls._server_is_alive():
+            cls._start_server_on_free_port()
+        url = urllib.parse.urljoin(cls.url, "Languages")
+        root = cls._get_root(url, num_tries=1)
         return {
             LANGUAGE_TAGS_MAPPING.get(e.get("name"), e.get("abbr"))
-            for e in tree.getroot()
+            for e in root
         }
+
+    @classmethod
+    def _get_root(cls, url, data=None, num_tries=2):
+        for n in range(num_tries):
+            try:
+                with closing(
+                    urllib.request.urlopen(url, data, cls.TIMEOUT)
+                ) as f:
+                    return ElementTree.parse(f).getroot()
+            except IOError as e:
+                if n + 1 < num_tries:
+                    cls._start_server()
+                else:
+                    raise Error("{}: {}".format(cls.url, e))
 
 
 @total_ordering
