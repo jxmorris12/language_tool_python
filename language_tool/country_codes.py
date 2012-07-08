@@ -207,14 +207,12 @@ def get_country_code(country_name):
     if country_name in COUNTRY_CODES.values():
         return country_name
 
-    codes = difflib.get_close_matches(
-        country_name, COUNTRY_CODES.keys(), 1)
-    if codes:
-        return COUNTRY_CODES[codes[0]]
+    matches = difflib.get_close_matches(country_name, COUNTRY_CODES, 1)
+    if matches:
+        return COUNTRY_CODES[matches[0]]
 
-    codes = difflib.get_close_matches(
-        country_name, LANGUAGE_TO_COUNTRY.keys(), 1)
-    if codes:
-        return LANGUAGE_TO_COUNTRY[codes[0]]
+    matches = difflib.get_close_matches(country_name, LANGUAGE_TO_COUNTRY, 1)
+    if matches:
+        return LANGUAGE_TO_COUNTRY[matches[0]]
 
     raise KeyError(country_name)
