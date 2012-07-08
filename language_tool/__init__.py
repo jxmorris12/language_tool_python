@@ -205,7 +205,7 @@ class LanguageTool:
                                 .format(cls.port, port))
             else:
                 cls._terminate_server()
-                cls.err_msg = cls._server.communicate()[1].strip()
+                cls.err_msg = cls._server.communicate("")[1].strip()
                 cls._server = None
                 match = cls._PORT_RE.search(cls.err_msg)
                 if not match:
@@ -343,7 +343,7 @@ def get_version():
             universal_newlines=True,
             startupinfo=startupinfo
         )
-        out = proc.communicate()[0]
+        out = proc.communicate("")[0]
         match = version_re.search(out)
 
         if not match:
