@@ -29,7 +29,6 @@ import urllib.parse
 import urllib.request
 import warnings
 from collections import namedtuple
-from contextlib import closing
 from functools import total_ordering
 from weakref import WeakValueDictionary
 try:
@@ -49,6 +48,8 @@ __all__ = ["LanguageTool", "Error", "get_languages",
 FAILSAFE_LANGUAGE = "en"
 LANGUAGE_RE = re.compile(r"^([a-z]{2,3})(?:[_-]([a-z]{2}))?$", re.I)
 
+# http://mail.python.org/pipermail/python-dev/2011-July/112551.html
+USE_URLOPEN_RESOURCE_WARNING_FIX = (3, 1) < sys.version_info < (3, 4)
 
 if os.name == "nt":
     startupinfo = subprocess.STARTUPINFO()
@@ -217,7 +218,7 @@ class LanguageTool:
             params = {"language": FAILSAFE_LANGUAGE, "text": ""}
             data = urllib.parse.urlencode(params).encode()
             try:
-                with closing(urllib.request.urlopen(cls.url, data, 15)) as f:
+                with urlopen(cls.url, data, 15) as f:
                     tree = ElementTree.parse(f)
             except (IOError, http.client.HTTPException) as e:
                 raise ServerError("{}: {}".format(cls.url, e))
@@ -280,9 +281,7 @@ class LanguageTool:
     def _get_root(cls, url, data=None, num_tries=2):
         for n in range(num_tries):
             try:
-                with closing(
-                    urllib.request.urlopen(url, data, cls.TIMEOUT)
-                ) as f:
+                with urlopen(url, data, cls.TIMEOUT) as f:
                     return ElementTree.parse(f).getroot()
             except IOError as e:
                 if n + 1 < num_tries:
@@ -498,3 +497,34 @@ def terminate_server():
     """
     if LanguageTool._server_is_alive():
         LanguageTool._terminate_server()
+
+
+if USE_URLOPEN_RESOURCE_WARNING_FIX:
+    class ClosingHTTPResponse(http.client.HTTPResponse):
+        def __init__(self, sock, *args, **kwargs):
+            super().__init__(sock, *args, **kwargs)
+            self.sock = sock
+
+        def __exit__(self, exc_type, exc_value, traceback):
+            self.sock.close()
+            return super().__exit__(exc_type, exc_value, traceback)
+
+    class ClosingHTTPConnection(http.client.HTTPConnection):
+        response_class = ClosingHTTPResponse
+
+    class ClosingHTTPHandler(urllib.request.HTTPHandler):
+        def http_open(self, req):
+            return self.do_open(ClosingHTTPConnection, req)
+
+    urlopen = urllib.request.build_opener(ClosingHTTPHandler).open
+
+else:
+    try:
+        urllib.response.addinfourl.__exit__
+    except AttributeError:
+        from contextlib import closing
+
+        def urlopen(*args, **kwargs):
+            return closing(urllib.request.urlopen(*args, **kwargs))
+    else:
+        urlopen = urllib.request.urlopen

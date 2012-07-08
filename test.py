@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Test suite for language_tool
 """
+
 import unittest
-from collections import namedtuple
 import warnings
+from collections import namedtuple
 
 import language_tool
 from language_tool.country_codes import get_country_code
