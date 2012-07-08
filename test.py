@@ -52,30 +52,6 @@ class TestLanguageTool(unittest.TestCase):
         ],
     }
 
-    country_tests = {
-        "Australian": "AU",
-        "Canadian": "CA",
-        "GB": "GB",
-        "New Zealand": "NZ",
-        "South African": "ZA",
-        "US": "US",
-        "Austria": "AT",
-        "Germany": "DE",
-        "Swiss": "CH",
-        "Brazil": "BR",
-        "Portugal": "PT",
-
-        "Australia": "AU",
-        "Canada": "CA",
-        "United Kingdom": "GB",
-        "South Africa": "ZA",
-        "United States": "US",
-        "Switzerland": "CH",
-
-        "Austrian": "AT",
-        "Brazilian": "BR",
-    }
-
     def test_samples(self):
         languages = language_tool.get_languages()
         for language, tests in self.tests.items():
@@ -109,8 +85,34 @@ class TestLanguageTool(unittest.TestCase):
         version = language_tool.get_version()
         self.assertTrue(version)
 
+
+class TestCountryCodes(unittest.TestCase):
+    tests = {
+        "Australian": "AU",
+        "Canadian": "CA",
+        "GB": "GB",
+        "New Zealand": "NZ",
+        "South African": "ZA",
+        "US": "US",
+        "Austria": "AT",
+        "Germany": "DE",
+        "Swiss": "CH",
+        "Brazil": "BR",
+        "Portugal": "PT",
+
+        "Australia": "AU",
+        "Canada": "CA",
+        "United Kingdom": "GB",
+        "South Africa": "ZA",
+        "United States": "US",
+        "Switzerland": "CH",
+
+        "Austrian": "AT",
+        "Brazilian": "BR",
+    }
+
     def test_country_codes(self):
-        for country, code in self.country_tests.items():
+        for country, code in self.tests.items():
             self.assertEqual(get_country_code(country), code)
 
 
