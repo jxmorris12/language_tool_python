@@ -505,11 +505,11 @@ if USE_URLOPEN_RESOURCE_WARNING_FIX:
     class ClosingHTTPResponse(http.client.HTTPResponse):
         def __init__(self, sock, *args, **kwargs):
             super().__init__(sock, *args, **kwargs)
-            self.sock = sock
+            self._socket_close = sock.close
 
-        def __exit__(self, exc_type, exc_value, traceback):
-            self.sock.close()
-            return super().__exit__(exc_type, exc_value, traceback)
+        def close(self):
+            super().close()
+            self._socket_close()
 
     class ClosingHTTPConnection(http.client.HTTPConnection):
         response_class = ClosingHTTPResponse
