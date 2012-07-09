@@ -41,8 +41,8 @@ from .country_codes import get_country_code
 from .which import which
 
 
-__all__ = ["LanguageTool", "Error", "get_languages",
-           "get_version", "get_version_info",
+__all__ = ["LanguageTool", "Error",
+           "get_languages", "get_version", "get_version_info",
            "get_language_tool_dir", "set_language_tool_dir"]
 
 FAILSAFE_LANGUAGE = "en"
