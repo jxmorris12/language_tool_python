@@ -486,11 +486,7 @@ def get_jar_info():
 def get_locale_language():
     """Get the language code for the current locale setting.
     """
-    language = locale.getlocale()[0]
-    if not language:
-        locale.setlocale(locale.LC_ALL, "")
-        language = locale.getlocale()[0]
-    return language
+    return locale.getlocale()[0] or locale.getdefaultlocale()[0]
 
 
 @atexit.register
