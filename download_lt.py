@@ -29,6 +29,8 @@ except ImportError:
         from distutils.version import LooseVersion
         NormalizedVersion = None
 
+import language_tool
+
 
 BASE_URL = "http://www.languagetool.org/download/"
 PACKAGE_PATH = "language_tool"
@@ -53,14 +55,15 @@ else:
 
 
 def download_lt(update=False):
+    """Download and extract LanguageTool distribution into package directory.
+    """
     assert os.path.isdir(PACKAGE_PATH)
-    old_path_list = [
-        path for path in
-        glob.glob(os.path.join(PACKAGE_PATH, "LanguageTool*"))
-        if os.path.isdir(path)
-    ]
+    try:
+        lt_dir = language_tool.get_language_tool_dir()
+    except language_tool.Error:
+        lt_dir = None
 
-    if old_path_list and not update:
+    if lt_dir and not update:
         return
 
     contents = ""
@@ -86,28 +89,23 @@ def download_lt(update=False):
         ]
 
     filename, version = matches[-1]
+
+    if lt_dir:
+        try:
+            installed_version = Version(language_tool.get_version())
+            update_needed = installed_version < version
+        except TypeError:
+            update_needed = True
+    else:
+        update_needed = True
+
+    if not update_needed:
+        print("No update needed: {!s}".format(installed_version))
+        return
+
     url = urljoin(BASE_URL, filename)
     dirname = os.path.splitext(filename)[0]
     extract_path = os.path.join(PACKAGE_PATH, dirname)
-
-    if extract_path in old_path_list:
-        print("No update needed: {!r}".format(dirname))
-        return
-
-    for old_path in old_path_list:
-        match = re.search("LanguageTool-(\d+.*?)$", old_path)
-        if match:
-            current_version = Version(match.group(1))
-            try:
-                version_test = current_version > version
-            except TypeError:
-                continue
-            if version_test:
-                print(
-                    "Local version: {!r}, Remote version: {!r}"
-                    .format(str(current_version), str(version))
-                )
-                return
 
     with closing(TemporaryFile()) as t:
         with closing(urlopen(url)) as u:
@@ -130,12 +128,13 @@ def download_lt(update=False):
                 sys.stdout.flush()
             sys.stdout.write("\n")
         t.seek(0)
-        for old_path in old_path_list:
-            if os.path.isdir(old_path):
-                shutil.rmtree(old_path)
+
+        if lt_dir and os.path.isdir(lt_dir):
+            shutil.rmtree(lt_dir)
+
         with closing(ZipFile(t)) as z:
             z.extractall(extract_path)
 
 
 if __name__ == "__main__":
-    sys.exit(download_lt(update=True))
+    sys.exit(download_lt(update="--no-update" not in sys.argv))
