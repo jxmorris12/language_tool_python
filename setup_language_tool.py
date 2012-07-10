@@ -1,12 +1,6 @@
 import sys
 
-if sys.version_info[0] < 3:
-    import subprocess
-
-    def download_lt(update=False):
-        return subprocess.call(["download_lt.py", "--no-update"])
-else:
-    from download_lt import download_lt
+from download_lt import download_lt
 
 
 def hook(config):
