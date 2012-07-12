@@ -20,7 +20,7 @@ Example usage
 Installation
 ------------
 
-You can use the setup script::
+You can use the ``setup.py`` script::
 
   $ ./setup.py install
 

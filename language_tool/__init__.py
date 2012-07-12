@@ -1,7 +1,7 @@
 """LanguageTool through server mode
 """
 #   © 2012 spirit <hiddenspirit@gmail.com>
-#   https://bitbucket.org/spirit/language_tool/
+#   https://bitbucket.org/spirit/language_tool
 #
 #   This program is free software: you can redistribute it and/or modify it
 #   under the terms of the GNU Lesser General Public License as published
