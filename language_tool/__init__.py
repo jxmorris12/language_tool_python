@@ -60,6 +60,42 @@ else:
 cache = {}
 
 
+# For Python 3.2-
+try:
+    subprocess.TimeoutExpired #@UndefinedVariable
+except AttributeError:
+    import time
+
+    class TimeoutExpired(Exception):
+        """Raised when the timeout expires while waiting for a child process.
+        """
+
+    def Popen_wait(self, timeout=None):
+        """Wait for child process to terminate.
+        """
+        if timeout is None:
+            return _Popen_wait(self)
+        deadline = time.time() + timeout
+        while self.poll() is None:
+            if time.time() > deadline:
+                raise TimeoutExpired
+            time.sleep(0.01)
+        return self.returncode
+
+    def Popen_communicate(self, input=None, timeout=None): #@ReservedAssignment
+        """Interact with process.
+        """
+        if timeout is not None:
+            self.wait(timeout)
+        return _Popen_communicate(self, input)
+
+    _Popen_wait = subprocess.Popen.wait
+    _Popen_communicate = subprocess.Popen.communicate
+    subprocess.Popen.wait = Popen_wait
+    subprocess.Popen.communicate = Popen_communicate
+    subprocess.TimeoutExpired = TimeoutExpired
+
+
 class Error(Exception):
     """LanguageTool Error
     """
@@ -215,7 +251,7 @@ class LanguageTool:
             params = {"language": FAILSAFE_LANGUAGE, "text": ""}
             data = urllib.parse.urlencode(params).encode()
             try:
-                with urlopen(cls.url, data, 15) as f:
+                with urlopen(cls.url, data, cls.TIMEOUT) as f:
                     tree = ElementTree.parse(f)
             except (IOError, http.client.HTTPException) as e:
                 raise ServerError("{}: {}".format(cls.url, e))
@@ -345,7 +381,7 @@ def get_version():
             universal_newlines=True,
             startupinfo=startupinfo
         )
-        out = proc.communicate("")[0]
+        out = proc.communicate("", LanguageTool.TIMEOUT)[0]
         match = version_re.search(out)
 
         if not match:
@@ -363,11 +399,11 @@ def get_version_info():
     VersionInfo = namedtuple("VersionInfo",
                              ("major", "minor", "micro", "releaselevel"))
     info_list = get_version().split("-")
-    release_level = "final" if len(info_list) < 2 else info_list[-1]
+    releaselevel = "final" if len(info_list) < 2 else info_list[-1]
     info_list = [int(e) if e.isdigit() else e
                  for e in info_list[0].split(".")][:3]
     info_list += [0] * (3 - len(info_list))
-    return VersionInfo(*info_list, release_level=release_level)
+    return VersionInfo(*info_list, releaselevel=releaselevel)
 
 
 def get_languages():
