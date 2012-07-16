@@ -23,7 +23,6 @@ import locale
 import os
 import re
 import socket
-import subprocess
 import sys
 import urllib.parse
 import urllib.request
@@ -37,6 +36,7 @@ try:
 except ImportError:
     from xml.etree import ElementTree
 
+from .backports import subprocess
 from .country_codes import get_country_code
 from .which import which
 
@@ -58,42 +58,6 @@ else:
     startupinfo = None
 
 cache = {}
-
-
-# For Python 3.2-
-try:
-    subprocess.TimeoutExpired #@UndefinedVariable
-except AttributeError:
-    import time
-
-    class TimeoutExpired(Exception):
-        """Raised when the timeout expires while waiting for a child process.
-        """
-
-    def Popen_wait(self, timeout=None):
-        """Wait for child process to terminate.
-        """
-        if timeout is None:
-            return _Popen_wait(self)
-        deadline = time.time() + timeout
-        while self.poll() is None:
-            if time.time() > deadline:
-                raise TimeoutExpired
-            time.sleep(0.01)
-        return self.returncode
-
-    def Popen_communicate(self, input=None, timeout=None): #@ReservedAssignment
-        """Interact with process.
-        """
-        if timeout is not None:
-            self.wait(timeout)
-        return _Popen_communicate(self, input)
-
-    _Popen_wait = subprocess.Popen.wait
-    _Popen_communicate = subprocess.Popen.communicate
-    subprocess.Popen.wait = Popen_wait
-    subprocess.Popen.communicate = Popen_communicate
-    subprocess.TimeoutExpired = TimeoutExpired
 
 
 class Error(Exception):
