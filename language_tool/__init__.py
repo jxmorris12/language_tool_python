@@ -30,13 +30,8 @@ import warnings
 from collections import namedtuple
 from functools import total_ordering
 from weakref import WeakValueDictionary
-try:
-    # Deprecated since Python 3.3
-    from xml.etree import cElementTree as ElementTree
-except ImportError:
-    from xml.etree import ElementTree
 
-from .backports import subprocess
+from .backports import ElementTree, subprocess
 from .country_codes import get_country_code
 from .which import which
 
