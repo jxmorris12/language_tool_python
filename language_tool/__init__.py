@@ -47,8 +47,8 @@ LANGUAGE_RE = re.compile(r"^([a-z]{2,3})(?:[_-]([a-z]{2}))?$", re.I)
 USE_URLOPEN_RESOURCE_WARNING_FIX = (3, 1) < sys.version_info < (3, 4)
 
 if os.name == "nt":
-    startupinfo = subprocess.STARTUPINFO()
-    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+    startupinfo = subprocess.STARTUPINFO() #@UndefinedVariable
+    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW #@UndefinedVariable
 else:
     startupinfo = None
 
@@ -78,6 +78,7 @@ class Match:
     _SLOTS = ("fromy", "fromx", "toy", "tox", "frompos", "topos",
               "ruleId", "subId", "msg", "replacements",
               "context", "contextoffset", "errorlength")
+    _frompos_cache, _topos_cache = None, None
 
     def __init__(self, attrib, text=None):
         for k, v in attrib.items():
@@ -85,11 +86,7 @@ class Match:
         if not isinstance(self.replacements, list):
             self.replacements = (self.replacements.split("#")
                                  if self.replacements else [])
-
-        # Need to calculate `frompos` and `topos` attributes
-        # if using unpatched LanguageTool server.
         self._lines = text
-        self._frompos_cache, self._topos_cache = None, None
 
     def __repr__(self):
         def _ordered_dict_repr():
@@ -106,6 +103,8 @@ class Match:
         return "{}({})".format(self.__class__.__name__, _ordered_dict_repr())
 
     def __getattr__(self, name):
+        # Fallback to calculated `frompos` and `topos` attributes
+        # if using unpatched LanguageTool server.
         if name == "frompos":
             return self._frompos
         elif name == "topos":

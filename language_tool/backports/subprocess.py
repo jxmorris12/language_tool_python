@@ -2,14 +2,13 @@
 """
 
 from __future__ import absolute_import
-
-from subprocess import *
-
+from subprocess import PIPE, Popen #@UnusedImport
+from subprocess import * #@UnusedWildImport
 
 try:
-    TimeoutExpired
+    TimeoutExpired #@UndefinedVariable
 except NameError:
-    import time
+    import time #@Reimport
 
     class SubprocessError(Exception):
         """Exception classes used by this module.
@@ -58,7 +57,7 @@ except NameError:
             time.sleep(0.01)
         return self.returncode
 
-    def Popen_communicate(self, input=None, timeout=None):
+    def Popen_communicate(self, input=None, timeout=None): #@ReservedAssignment
         """Interact with process.
         """
         if timeout is not None:
