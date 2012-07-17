@@ -37,7 +37,7 @@ from .which import which
 
 
 __all__ = ["LanguageTool", "Error",
-           "get_languages", "get_version", "get_version_info",
+           "get_languages", "correct", "get_version", "get_version_info",
            "get_language_tool_dir", "set_language_tool_dir"]
 
 FAILSAFE_LANGUAGE = "en"
@@ -181,6 +181,11 @@ class LanguageTool:
         root = self._get_root(self.url, data)
         return [Match(e.attrib, self.language) for e in root]
 
+    def correct(self, text: str, srctext=None) -> str:
+        """Automatically apply suggestions to the text.
+        """
+        return correct(text, self.check(text, srctext))
+
     @classmethod
     def _get_languages(cls):
         if not cls._server_is_alive():
@@ -321,6 +326,23 @@ class LanguageTag(str):
                 return languages[LANGUAGE_RE.match(tag).group(1).lower()]
             except (KeyError, AttributeError):
                 raise ValueError("unsupported language: {!r}".format(tag))
+
+
+def correct(text: str, matches: [Match]) -> str:
+    """Automatically apply suggestions to the text.
+    """
+    ltext = list(text)
+    matches = [match for match in matches if match.replacements]
+    errors = [ltext[match.frompos:match.topos] for match in matches]
+    offset = 0
+    for n, match in enumerate(matches):
+        frompos, topos = match.frompos + offset, match.topos + offset
+        if ltext[frompos:topos] != errors[n]:
+            continue
+        repl = match.replacements[0]
+        ltext[frompos:topos] = list(repl)
+        offset += len(repl) - len(errors[n])
+    return "".join(ltext)
 
 
 def get_version():
