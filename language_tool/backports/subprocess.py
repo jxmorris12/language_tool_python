@@ -2,7 +2,7 @@
 """
 
 from __future__ import absolute_import
-from subprocess import PIPE, Popen #@UnusedImport
+from subprocess import Popen, PIPE, STDOUT, call, check_call, check_output, CalledProcessError #@UnusedImport
 from subprocess import * #@UnusedWildImport
 
 try:

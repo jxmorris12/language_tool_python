@@ -31,7 +31,17 @@ from collections import namedtuple
 from functools import total_ordering
 from weakref import WeakValueDictionary
 
-from .backports import ElementTree, subprocess
+try:
+    from collections.abc import Sequence
+except ImportError:
+    from collections import Sequence
+
+try:
+    from xml.etree import cElementTree as ElementTree
+except ImportError:
+    from xml.etree import ElementTree
+
+from .backports import subprocess
 from .country_codes import get_country_code
 from .which import which
 
@@ -169,8 +179,8 @@ class LanguageTool:
     @language.setter
     def language(self, language):
         self._language = LanguageTag(language)
-        self.enabled = None
-        self.disabled = self.spell_checking_rules
+        self.reset_disabled()
+        self.reset_enabled()
 
     @property
     def motherTongue(self):
@@ -200,10 +210,10 @@ class LanguageTool:
             params["srctext"] = srctext.encode("utf-8")
         if self.motherTongue is not None:
             params["motherTongue"] = self.motherTongue
-        if self.enabled is not None:
-            params["enabled"] = ",".join(self.enabled)
         if self.disabled is not None:
             params["disabled"] = ",".join(self.disabled)
+        if self.enabled is not None:
+            params["enabled"] = ",".join(self.enabled)
         data = urllib.parse.urlencode(params).encode()
         root = self._get_root(self.url, data)
         return [Match(e.attrib, text) for e in root]
@@ -212,6 +222,32 @@ class LanguageTool:
         """Automatically apply suggestions to the text.
         """
         return correct(text, self.check(text, srctext))
+
+    def disable(self, rules: Sequence):
+        """Disable specified rules.
+        """
+        if self.disabled is None:
+            self.disabled = set()
+        for rule in rules:
+            self.disabled.add(rule)
+
+    def enable(self, rules: Sequence):
+        """Enable specified rules.
+        """
+        if self.enabled is None:
+            self.enabled = set()
+        for rule in rules:
+            self.enabled.add(rule)
+
+    def reset_disabled(self):
+        """Reset disabled rules.
+        """
+        self.disabled = self.spell_checking_rules
+
+    def reset_enabled(self):
+        """Reset enabled rules.
+        """
+        self.enabled = None
 
     @classmethod
     def _get_languages(cls):
