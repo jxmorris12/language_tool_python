@@ -37,6 +37,12 @@ def get_rules(rules: str) -> set:
     return {rule.strip() for rule in rules.split(",")}
 
 
+def get_text(file, encoding):
+    with open(file, encoding=encoding) as f:
+        text = "\n".join(f.readlines())
+    return text
+
+
 def main():
     args = parse_args()
 
@@ -51,22 +57,30 @@ def main():
         file = sys.stdin.fileno()
         encoding = args.encoding if args.encoding else sys.stdin.encoding
 
-    with open(file, encoding=encoding) as f:
-        text = "\n".join(f.readlines())
+    lang_tool = language_tool.LanguageTool(motherTongue=args.motherTongue)
+    guess_language = None
 
-    language = args.language
-
-    if language and language.lower() == "auto":
-        try:
-            from guess_language import guess_language
-        except ImportError:
-            print("guess_language is unavailable.", file=sys.stderr)
-            language = None
+    if args.language:
+        if args.language.lower() == "auto":
+            try:
+                from guess_language import guess_language
+            except ImportError:
+                print("guess_language is unavailable.", file=sys.stderr)
+                return 1
+            else:
+                text = get_text(file, encoding)
+                language = guess_language(text)
+                print("Detected language: {!r}".format(language),
+                      file=sys.stderr)
+                if not language:
+                    return 1
+                lang_tool.language = language
         else:
-            language = guess_language(text)
-            print("Language detected as: {!r}".format(language), file=sys.stderr)
+            lang_tool.language = args.language
 
-    lang_tool = language_tool.LanguageTool(language, args.motherTongue)
+    if not guess_language:
+        print("Language: {!r}".format(lang_tool.language))
+        text = get_text(file, encoding)
 
     if args.disable is not None:
         lang_tool.disable(get_rules(args.disable))
