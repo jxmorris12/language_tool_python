@@ -79,28 +79,56 @@ class Match:
               "ruleId", "subId", "msg", "replacements",
               "context", "contextoffset", "errorlength")
 
-    def __init__(self, attrib, language=None):
+    def __init__(self, attrib, text=None):
         for k, v in attrib.items():
             setattr(self, k, int(v) if v.isdigit() else v)
         if not isinstance(self.replacements, list):
             self.replacements = (self.replacements.split("#")
                                  if self.replacements else [])
 
+        # Need to calculate `frompos` and `topos` attributes
+        # if using unpatched LanguageTool server.
+        self._lines = text
+        self._frompos_cache, self._topos_cache = None, None
+
     def __repr__(self):
         def _ordered_dict_repr():
+            attrs = (self._SLOTS +
+                     tuple(set(self.__dict__).difference(self._SLOTS)))
             return "{{{}}}".format(
                 ", ".join(
-                    "{!r}: {!r}".format(k, self.__dict__[k])
-                    for k in self._SLOTS +
-                    tuple(set(self.__dict__).difference(self._SLOTS))
-                    if getattr(self, k) is not None
+                    "{!r}: {!r}".format(attr, self.__dict__[attr])
+                    for attr in attrs
+                    if attr in self.__dict__ and not attr.startswith("_")
                 )
             )
 
         return "{}({})".format(self.__class__.__name__, _ordered_dict_repr())
 
     def __getattr__(self, name):
+        if name == "frompos":
+            return self._frompos
+        elif name == "topos":
+            return self._topos
         return None
+
+    @property
+    def _frompos(self):
+        if self._frompos_cache is None:
+            self._frompos_cache = self._get_pos(self.fromy, self.fromx)
+        return self._frompos_cache
+
+    @property
+    def _topos(self):
+        if self._topos_cache is None:
+            self._topos_cache = self._get_pos(self.toy, self.tox)
+        return self._topos_cache
+
+    def _get_pos(self, y, x):
+        if not isinstance(self._lines, list):
+            self._lines = self._lines.split("\n")
+        prev_lines = self._lines[:y]
+        return sum([len(line) for line in prev_lines]) + len(prev_lines) + x
 
 
 class LanguageTool:
@@ -179,7 +207,7 @@ class LanguageTool:
             params["disabled"] = ",".join(self.disabled)
         data = urllib.parse.urlencode(params).encode()
         root = self._get_root(self.url, data)
-        return [Match(e.attrib, self.language) for e in root]
+        return [Match(e.attrib, text) for e in root]
 
     def correct(self, text: str, srctext=None) -> str:
         """Automatically apply suggestions to the text.
