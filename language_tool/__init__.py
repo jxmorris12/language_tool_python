@@ -159,6 +159,62 @@ class LanguageTool:
         self._motherTongue = (None if motherTongue is None
                               else LanguageTag(motherTongue))
 
+    @property
+    def spell_checking_rules(self):
+        return {"HUNSPELL_RULE", "HUNSPELL_NO_SUGGEST_RULE",
+                "MORFOLOGIK_RULE_" + self.language.replace("-", "_").upper()}
+
+    def check(self, text: str, srctext=None) -> [Match]:
+        """Tokenize the text into sentences and match those sentences
+           against all currently active rules.
+        """
+        params = {"language": self.language, "text": text.encode("utf-8")}
+        if srctext is not None:
+            params["srctext"] = srctext.encode("utf-8")
+        if self.motherTongue is not None:
+            params["motherTongue"] = self.motherTongue
+        if self.enabled is not None:
+            params["enabled"] = ",".join(self.enabled)
+        if self.disabled is not None:
+            params["disabled"] = ",".join(self.disabled)
+        data = urllib.parse.urlencode(params).encode()
+        root = self._get_root(self.url, data)
+        return [Match(e.attrib, self.language) for e in root]
+
+    @classmethod
+    def _get_languages(cls):
+        if not cls._server_is_alive():
+            cls._start_server_on_free_port()
+        url = urllib.parse.urljoin(cls.url, "Languages")
+        languages = set()
+        for e in cls._get_root(url, num_tries=1):
+            language = e.get("abbr")
+            if len(re.split(r"[_-]", language)) < 2:
+                match = re.search(r"\((.*?)\)", e.get("name"))
+                if match:
+                    country_name = match.group(1)
+                    try:
+                        country_code = get_country_code(country_name)
+                    except KeyError:
+                        warnings.warn(
+                            "unknown language: {!r}".format(e.get("name")))
+                    else:
+                        language += "-" + country_code
+            languages.add(language)
+        return languages
+
+    @classmethod
+    def _get_root(cls, url, data=None, num_tries=2):
+        for n in range(num_tries):
+            try:
+                with urlopen(url, data, cls.TIMEOUT) as f:
+                    return ElementTree.parse(f).getroot()
+            except IOError as e:
+                if n + 1 < num_tries:
+                    cls._start_server()
+                else:
+                    raise Error("{}: {}".format(cls.url, e))
+
     @classmethod
     def _start_server_on_free_port(cls):
         while True:
@@ -229,62 +285,6 @@ class LanguageTool:
             cls._server.terminate()
         except OSError:
             pass
-
-    def check(self, text: str, srctext=None) -> [Match]:
-        """Tokenize the text into sentences and match those sentences
-           against all currently active rules.
-        """
-        params = {"language": self.language, "text": text.encode("utf-8")}
-        if srctext is not None:
-            params["srctext"] = srctext.encode("utf-8")
-        if self.motherTongue is not None:
-            params["motherTongue"] = self.motherTongue
-        if self.enabled is not None:
-            params["enabled"] = ",".join(self.enabled)
-        if self.disabled is not None:
-            params["disabled"] = ",".join(self.disabled)
-        data = urllib.parse.urlencode(params).encode()
-        root = self._get_root(self.url, data)
-        return [Match(e.attrib, self.language) for e in root]
-
-    @classmethod
-    def _get_languages(cls):
-        if not cls._server_is_alive():
-            cls._start_server_on_free_port()
-        url = urllib.parse.urljoin(cls.url, "Languages")
-        languages = set()
-        for e in cls._get_root(url, num_tries=1):
-            language = e.get("abbr")
-            if len(re.split(r"[_-]", language)) < 2:
-                match = re.search(r"\((.*?)\)", e.get("name"))
-                if match:
-                    country_name = match.group(1)
-                    try:
-                        country_code = get_country_code(country_name)
-                    except KeyError:
-                        warnings.warn(
-                            "unknown language: {!r}".format(e.get("name")))
-                    else:
-                        language += "-" + country_code
-            languages.add(language)
-        return languages
-
-    @classmethod
-    def _get_root(cls, url, data=None, num_tries=2):
-        for n in range(num_tries):
-            try:
-                with urlopen(url, data, cls.TIMEOUT) as f:
-                    return ElementTree.parse(f).getroot()
-            except IOError as e:
-                if n + 1 < num_tries:
-                    cls._start_server()
-                else:
-                    raise Error("{}: {}".format(cls.url, e))
-
-    @property
-    def spell_checking_rules(self):
-        return {"HUNSPELL_RULE", "HUNSPELL_NO_SUGGEST_RULE",
-                "MORFOLOGIK_RULE_" + self.language.replace("-", "_").upper()}
 
 
 @total_ordering
