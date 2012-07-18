@@ -2,10 +2,14 @@
 """
 
 from __future__ import absolute_import
+import sys
 from subprocess import (Popen, PIPE, STDOUT, #@UnusedImport
                         call, check_call, check_output, #@UnusedImport
                         CalledProcessError) #@UnusedImport
+if sys.platform == "win32":
+    from subprocess import STARTUPINFO #@UnusedImport
 from subprocess import * #@UnusedWildImport
+
 
 try:
     TimeoutExpired #@UndefinedVariable
