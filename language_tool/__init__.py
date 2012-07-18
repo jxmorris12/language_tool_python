@@ -112,6 +112,18 @@ class Match:
 
         return "{}({})".format(self.__class__.__name__, _ordered_dict_repr())
 
+    def __str__(self):
+        ruleId = self.ruleId
+        if self.subId is not None:
+            ruleId += "[{}]".format(self.subId)
+        s = "Line {}, column {}, Rule ID: {}".format(
+            self.fromy + 1, self.fromx + 1, ruleId)
+        if self.msg:
+            s += "\nMessage: {}".format(self.msg)
+        if self.replacements:
+            s += "\nSuggestion: {}".format("; ".join(self.replacements))
+        return s
+
     def __getattr__(self, name):
         # Fallback to calculated `frompos` and `topos` attributes
         # if using unpatched LanguageTool server.
