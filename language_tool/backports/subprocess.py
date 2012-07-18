@@ -3,9 +3,9 @@
 
 from __future__ import absolute_import
 import sys
-from subprocess import (Popen, PIPE, STDOUT, #@UnusedImport
-                        call, check_call, check_output, #@UnusedImport
-                        CalledProcessError) #@UnusedImport
+import subprocess #@UnusedImport
+from subprocess import (Popen, PIPE, STDOUT, CalledProcessError, #@UnusedImport
+                        call, check_call, check_output) #@UnusedImport
 if sys.platform == "win32":
     from subprocess import STARTUPINFO #@UnusedImport
 from subprocess import * #@UnusedWildImport
@@ -70,6 +70,7 @@ except NameError:
             self.wait(timeout)
         return _Popen_communicate(self, input)
 
+    subprocess.CalledProcessError = CalledProcessError
     _Popen_init = Popen.__init__
     _Popen_wait = Popen.wait
     _Popen_communicate = Popen.communicate

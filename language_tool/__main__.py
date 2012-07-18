@@ -44,7 +44,6 @@ def get_rules(rules: str) -> set:
 def get_text(file, encoding):
     with open(file, encoding=encoding) as f:
         text = "\n".join(f.readlines())
-    print(ascii(text))
     return text
 
 

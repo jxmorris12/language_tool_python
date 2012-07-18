@@ -24,9 +24,8 @@ You can use the ``setup.py`` script::
 
   $ ./setup.py install
 
-On Windows, you can use one of the MSI binary packages provided
-on the `download page
-<https://bitbucket.org/spirit/language_tool/downloads>`_.
+On Windows, you can use one of the MSI binary packages provided on the
+`download page <https://bitbucket.org/spirit/language_tool/downloads>`_.
 
 
 Requirements
