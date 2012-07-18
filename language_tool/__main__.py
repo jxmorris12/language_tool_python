@@ -2,6 +2,7 @@
 """
 
 import argparse
+import locale
 import os
 import re
 import sys
@@ -17,8 +18,8 @@ def parse_args():
         prog="{} -m {}".format(os.path.basename(sys.executable),
                                "language_tool")
     )
-    parser.add_argument("file", nargs="?",
-                        help="plain text file")
+    parser.add_argument("file",
+                        help='plain text file or "-" for stdin')
     parser.add_argument("--encoding",
                         help="input encoding")
     parser.add_argument("--language", metavar="CODE",
@@ -53,12 +54,15 @@ def main():
         print("LanguageTool {}".format(language_tool.get_version()))
         return
 
-    if args.file:
-        file = args.file
-        encoding = args.encoding if args.encoding else DEFAULT_ENCODING
-    else:
+    if args.file == "-":
         file = sys.stdin.fileno()
-        encoding = args.encoding if args.encoding else sys.stdin.encoding
+        encoding = args.encoding or (
+            sys.stdin.encoding if sys.stdin.isatty()
+            else locale.getpreferredencoding()
+        )
+    else:
+        file = args.file
+        encoding = args.encoding or "utf-8"
 
     lang_tool = language_tool.LanguageTool(motherTongue=args.mother_tongue)
     guess_language = None
