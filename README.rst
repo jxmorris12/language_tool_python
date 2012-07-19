@@ -63,6 +63,6 @@ The installation process should take care of downloading LanguageTool
 (it may take a few minutes).
 Otherwise, you can manually download `LanguageTool-stable.zip
 <http://www.languagetool.org/download/LanguageTool-stable.zip>`_
-and unzip it into a subdirectory inside the language_tool package.
+and unzip it into a subdirectory inside the ``language_tool`` package.
 
 LanguageTool requires Java 6 or later.
