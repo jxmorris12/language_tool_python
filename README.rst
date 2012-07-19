@@ -5,16 +5,40 @@ language_tool – LanguageTool through server mode
 Example usage
 -------------
 
->>> from language_tool import LanguageTool
->>> lang_tool = LanguageTool("en")
+>>> import language_tool
+>>> lang_tool = language_tool.LanguageTool("en-US")
 >>> text = "but it’s suppose to be all yellowy."
 >>> matches = lang_tool.check(text)
 >>> len(matches)
 2
+
+
+Check out some ``Match`` object attributes:
+
+>>> matches[0].fromy, matches[0].fromx
+(0, 0)
 >>> matches[0].ruleId, matches[0].replacements
 ('UPPERCASE_SENTENCE_START', ['But'])
+>>> matches[1].fromy, matches[1].fromx
+(0, 9)
 >>> matches[1].ruleId, matches[1].replacements
 ('SUPPOSE_TO', ['supposed'])
+
+
+Print a ``Match`` object:
+
+>>> print(matches[1])
+Line 1, column 10, Rule ID: SUPPOSE_TO[1]
+Message: Probably you should use a past participle here: 'supposed'.
+Suggestion: supposed
+but it’s suppose to be all yellowy.
+         ^^^^^^^
+
+
+Automatically apply suggestions to the text:
+
+>>> language_tool.correct(text, matches)
+'But it’s supposed to be all yellowy.'
 
 
 Installation
