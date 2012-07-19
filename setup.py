@@ -362,7 +362,16 @@ def run_3to2(args=None):
     """
     args = BASE_ARGS_3TO2 if args is None else BASE_ARGS_3TO2 + args
     try:
-        return subprocess.call(["3to2"] + args)
+        # HACK: workaround for 3to2 never returning non-zero
+        # when using the -j option.
+        proc = subprocess.Popen(["3to2"] + args, stderr=subprocess.PIPE)
+        num_errors = 0
+        while proc.poll() is None:
+            line = proc.stderr.readline()
+            sys.stderr.write(line)
+            num_errors += line.count(": ParseError: ")
+        if proc.returncode or num_errors:
+            raise Exception("lib3to2 parsing error")
     except OSError:
         for path in glob.glob("*.egg"):
             if os.path.isdir(path) and not path in sys.path:
@@ -372,7 +381,8 @@ def run_3to2(args=None):
         except ImportError:
             raise OSError("3to2 script is unavailable.")
         else:
-            return lib3to2_main("lib3to2.fixes", args)
+            if lib3to2_main("lib3to2.fixes", args):
+                raise Exception("lib3to2 parsing error")
 
 
 def write_py2k_header(file_list):
