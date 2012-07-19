@@ -88,7 +88,8 @@ class Match:
     _SLOTS = ("fromy", "fromx", "toy", "tox", "frompos", "topos",
               "ruleId", "subId", "msg", "replacements",
               "context", "contextoffset", "errorlength")
-    _INT_SLOTS = {"fromy", "fromx", "toy", "tox", "frompos", "topos"}
+    _INT_SLOTS = {"fromy", "fromx", "toy", "tox", "frompos", "topos",
+                  "contextoffset", "errorlength"}
     _frompos_cache, _topos_cache = None, None
 
     def __init__(self, attrib, text=None):
@@ -123,6 +124,11 @@ class Match:
             s += "\nMessage: {}".format(self.msg)
         if self.replacements:
             s += "\nSuggestion: {}".format("; ".join(self.replacements))
+        s += "\n{}\n{}".format(
+            self.context,
+            " " * self.contextoffset + "^" * self.errorlength +
+            " " * (len(self.context) - self.contextoffset - self.errorlength)
+        )
         return s
 
     def __getattr__(self, name):

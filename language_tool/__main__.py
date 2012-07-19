@@ -99,7 +99,7 @@ def main():
     else:
         print()
         for n, match in enumerate(lang_tool.check(text)):
-            print("{}.".format(n + 1), match)
+            print("{}.)".format(n + 1), match)
             print()
 
 
