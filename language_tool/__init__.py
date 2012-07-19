@@ -278,6 +278,22 @@ class LanguageTool:
         """
         self.enabled = None
 
+    def enable_spellchecking(self):
+        """Enable spell-checking rules.
+        """
+        if self.disabled is None:
+            return
+        for rule in self.spell_checking_rules:
+            self.disabled.remove(rule)
+
+    def disable_spellchecking(self):
+        """Disable spell-checking rules.
+        """
+        if self.disabled is None:
+            self.disabled = set()
+        for rule in self.spell_checking_rules:
+            self.disabled.add(rule)
+
     @classmethod
     def _get_languages(cls):
         if not cls._server_is_alive():

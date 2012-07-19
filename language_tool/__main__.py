@@ -36,6 +36,8 @@ def parse_args():
                         help="print LanguageTool version number")
     parser.add_argument("--apply", action="store_true",
                         help="automatically apply suggestions if available")
+    parser.add_argument("--spell-check", action="store_true",
+                        help="enable spell-checking rules")
     return parser.parse_args()
 
 
@@ -93,6 +95,8 @@ def main():
             print("Language: {}".format(lang_tool.language))
         text = get_text(file, encoding)
 
+    if args.spell_check:
+        lang_tool.enable_spellchecking()
     if args.disable is not None:
         lang_tool.disable(args.disable)
     if args.enable is not None:
