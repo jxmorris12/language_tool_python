@@ -221,9 +221,21 @@ class LanguageTool:
                 "MORFOLOGIK_RULE_" + self.language.replace("-", "_").upper()}
 
     def check(self, text: str, srctext=None) -> [Match]:
-        """Tokenize the text into sentences and match those sentences
-           against all currently active rules.
+        """Match text against enabled rules.
         """
+        root = self._get_root(self.url, self._encode(text, srctext))
+        return [Match(e.attrib, text) for e in root]
+
+    def check_api(self, text: str, srctext=None) -> bytes:
+        """Match text against enabled rules.
+
+        Return result in XML format.
+        """
+        root = self._get_root(self.url, self._encode(text, srctext))
+        return (b'<?xml version="1.0" encoding="UTF-8"?>\n' +
+                ElementTree.tostring(root) + b"\n")
+
+    def _encode(self, text, srctext=None):
         params = {"language": self.language, "text": text.encode("utf-8")}
         if srctext is not None:
             params["srctext"] = srctext.encode("utf-8")
@@ -233,9 +245,7 @@ class LanguageTool:
             params["disabled"] = ",".join(self.disabled)
         if self.enabled is not None:
             params["enabled"] = ",".join(self.enabled)
-        data = urllib.parse.urlencode(params).encode()
-        root = self._get_root(self.url, data)
-        return [Match(e.attrib, text) for e in root]
+        return urllib.parse.urlencode(params).encode()
 
     def correct(self, text: str, srctext=None) -> str:
         """Automatically apply suggestions to the text.

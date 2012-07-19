@@ -30,6 +30,8 @@ def parse_args():
                         help="list of rule IDs to be disabled")
     parser.add_argument("--enable", metavar="RULES", type=get_rules,
                         help="list of rule IDs to be enabled")
+    parser.add_argument("--api", action="store_true",
+                        help="print results as XML")
     parser.add_argument("--version", action="store_true",
                         help="print LanguageTool version number")
     parser.add_argument("--apply", action="store_true",
@@ -77,8 +79,9 @@ def main():
             else:
                 text = get_text(file, encoding)
                 language = guess_language(text)
-                print("Detected language: {}".format(language),
-                      file=sys.stderr)
+                if not args.api:
+                    print("Detected language: {}".format(language),
+                          file=sys.stderr)
                 if not language:
                     return 1
                 lang_tool.language = language
@@ -86,7 +89,8 @@ def main():
             lang_tool.language = args.language
 
     if not guess_language:
-        print("Language: {}".format(lang_tool.language))
+        if not args.api:
+            print("Language: {}".format(lang_tool.language))
         text = get_text(file, encoding)
 
     if args.disable is not None:
@@ -94,7 +98,9 @@ def main():
     if args.enable is not None:
         lang_tool.enable(args.enable)
 
-    if args.apply:
+    if args.api:
+        print(lang_tool.check_api(text).decode("utf-8"))
+    elif args.apply:
         print(lang_tool.correct(text))
     else:
         print()
