@@ -27,7 +27,7 @@ import sys
 import urllib.parse
 import urllib.request
 import warnings
-from collections import namedtuple
+from collections import namedtuple, OrderedDict
 from functools import total_ordering
 from weakref import WeakValueDictionary
 
@@ -82,28 +82,34 @@ class PathError(Error):
     pass
 
 
+def replacement_list(string, sep="#"):
+    if isinstance(string, list):
+        return string
+    return string.split(sep) if string else []
+
+
 class Match:
     """Hold information about where a rule matches text.
     """
-    _SLOTS = ("fromy", "fromx", "toy", "tox", "frompos", "topos",
-              "ruleId", "subId", "msg", "replacements",
-              "context", "contextoffset", "errorlength")
-    _INT_SLOTS = {"fromy", "fromx", "toy", "tox", "frompos", "topos",
-                  "contextoffset", "errorlength"}
+    _SLOTS = OrderedDict([
+        ("fromy", int), ("fromx", int), ("toy", int), ("tox", int),
+        ("frompos", int), ("topos", int),
+        ("ruleId", str), ("subId", str), ("msg", str),
+        ("replacements", replacement_list),
+        ("context", str), ("contextoffset", int), ("errorlength", int),
+        ("url", str),
+    ])
     _frompos_cache, _topos_cache = None, None
 
     def __init__(self, attrib, text=None):
         for k, v in attrib.items():
-            setattr(self, k, int(v) if k in self._INT_SLOTS else v)
-        if not isinstance(self.replacements, list):
-            self.replacements = (self.replacements.split("#")
-                                 if self.replacements else [])
+            setattr(self, k, v)
         self._lines = text
 
     def __repr__(self):
         def _ordered_dict_repr():
-            attrs = (self._SLOTS +
-                     tuple(set(self.__dict__).difference(self._SLOTS)))
+            slots = list(self._SLOTS.keys())
+            attrs = slots + list(set(self.__dict__).difference(slots))
             return "{{{}}}".format(
                 ", ".join(
                     "{!r}: {!r}".format(attr, self.__dict__[attr])
@@ -129,6 +135,11 @@ class Match:
             #+" " * (len(self.context) - self.contextoffset - self.errorlength)
         )
         return s
+
+    def __setattr__(self, name, value):
+        if name in self._SLOTS:
+            value = self._SLOTS[name](value)
+        super().__setattr__(name, value)
 
     def __getattr__(self, name):
         # Fallback to calculated `frompos` and `topos` attributes
