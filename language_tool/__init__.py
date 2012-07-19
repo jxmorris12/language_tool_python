@@ -88,11 +88,12 @@ class Match:
     _SLOTS = ("fromy", "fromx", "toy", "tox", "frompos", "topos",
               "ruleId", "subId", "msg", "replacements",
               "context", "contextoffset", "errorlength")
+    _INT_SLOTS = {"fromy", "fromx", "toy", "tox", "frompos", "topos"}
     _frompos_cache, _topos_cache = None, None
 
     def __init__(self, attrib, text=None):
         for k, v in attrib.items():
-            setattr(self, k, int(v) if v.isdigit() else v)
+            setattr(self, k, int(v) if k in self._INT_SLOTS else v)
         if not isinstance(self.replacements, list):
             self.replacements = (self.replacements.split("#")
                                  if self.replacements else [])

@@ -43,7 +43,7 @@ def get_rules(rules: str) -> set:
 
 def get_text(file, encoding):
     with open(file, encoding=encoding) as f:
-        text = "\n".join(f.readlines())
+        text = "".join(f.readlines())
     return text
 
 
@@ -98,8 +98,8 @@ def main():
         print(lang_tool.correct(text))
     else:
         print()
-        for match in lang_tool.check(text):
-            print(match)
+        for n, match in enumerate(lang_tool.check(text)):
+            print("{}.".format(n + 1), match)
             print()
 
 
