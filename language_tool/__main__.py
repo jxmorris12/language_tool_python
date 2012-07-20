@@ -103,7 +103,7 @@ def main():
         lang_tool.enable(args.enable)
 
     if args.api:
-        print(lang_tool.check_api(text).decode("utf-8"))
+        print(lang_tool._check_api(text).decode("utf-8"))
     elif args.apply:
         print(lang_tool.correct(text))
     else:

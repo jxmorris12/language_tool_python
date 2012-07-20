@@ -172,12 +172,12 @@ class Match:
 class LanguageTool:
     """Main class used for checking text against different rules
     """
-    HOST = socket.gethostbyname("localhost")
-    MIN_PORT = 8081
-    MAX_PORT = 8083
-    TIMEOUT = 30
+    _HOST = socket.gethostbyname("localhost")
+    _MIN_PORT = 8081
+    _MAX_PORT = 8083
+    _TIMEOUT = 30
 
-    port = MIN_PORT
+    _port = _MIN_PORT
     _server = None
     _instances = WeakValueDictionary()
     _PORT_RE = re.compile(r"port (\d+)", re.I)
@@ -226,22 +226,20 @@ class LanguageTool:
                               else LanguageTag(motherTongue))
 
     @property
-    def spell_checking_rules(self):
+    def _spell_checking_rules(self):
         return {"HUNSPELL_RULE", "HUNSPELL_NO_SUGGEST_RULE",
                 "MORFOLOGIK_RULE_" + self.language.replace("-", "_").upper()}
 
     def check(self, text: str, srctext=None) -> [Match]:
         """Match text against enabled rules.
         """
-        root = self._get_root(self.url, self._encode(text, srctext))
+        root = self._get_root(self._url, self._encode(text, srctext))
         return [Match(e.attrib, text) for e in root]
 
-    def check_api(self, text: str, srctext=None) -> bytes:
-        """Match text against enabled rules.
-
-        Return result in XML format.
+    def _check_api(self, text: str, srctext=None) -> bytes:
+        """Match text against enabled rules (result in XML format).
         """
-        root = self._get_root(self.url, self._encode(text, srctext))
+        root = self._get_root(self._url, self._encode(text, srctext))
         return (b'<?xml version="1.0" encoding="UTF-8"?>\n' +
                 ElementTree.tostring(root) + b"\n")
 
@@ -281,7 +279,7 @@ class LanguageTool:
     def reset_disabled(self):
         """Reset disabled rules.
         """
-        self.disabled = self.spell_checking_rules
+        self.disabled = self._spell_checking_rules
 
     def reset_enabled(self):
         """Reset enabled rules.
@@ -293,7 +291,7 @@ class LanguageTool:
         """
         if self.disabled is None:
             return
-        for rule in self.spell_checking_rules:
+        for rule in self._spell_checking_rules:
             self.disabled.remove(rule)
 
     def disable_spellchecking(self):
@@ -301,14 +299,14 @@ class LanguageTool:
         """
         if self.disabled is None:
             self.disabled = set()
-        for rule in self.spell_checking_rules:
+        for rule in self._spell_checking_rules:
             self.disabled.add(rule)
 
     @classmethod
     def _get_languages(cls):
         if not cls._server_is_alive():
             cls._start_server_on_free_port()
-        url = urllib.parse.urljoin(cls.url, "Languages")
+        url = urllib.parse.urljoin(cls._url, "Languages")
         languages = set()
         for e in cls._get_root(url, num_tries=1):
             language = e.get("abbr")
@@ -330,31 +328,31 @@ class LanguageTool:
     def _get_root(cls, url, data=None, num_tries=2):
         for n in range(num_tries):
             try:
-                with urlopen(url, data, cls.TIMEOUT) as f:
+                with urlopen(url, data, cls._TIMEOUT) as f:
                     return ElementTree.parse(f).getroot()
             except IOError as e:
                 if n + 1 < num_tries:
                     cls._start_server()
                 else:
-                    raise Error("{}: {}".format(cls.url, e))
+                    raise Error("{}: {}".format(cls._url, e))
 
     @classmethod
     def _start_server_on_free_port(cls):
         while True:
-            cls.url = "http://{}:{}".format(cls.HOST, cls.port)
+            cls._url = "http://{}:{}".format(cls._HOST, cls._port)
             try:
                 cls._start_server()
                 break
             except ServerError:
-                if cls.MIN_PORT <= cls.port < cls.MAX_PORT:
-                    cls.port += 1
+                if cls._MIN_PORT <= cls._port < cls._MAX_PORT:
+                    cls._port += 1
                 else:
                     raise
 
     @classmethod
     def _start_server(cls):
         try:
-            server_cmd = get_server_cmd(cls.port)
+            server_cmd = get_server_cmd(cls._port)
         except PathError:
             # Can’t find path to LanguageTool.
             pass
@@ -371,32 +369,32 @@ class LanguageTool:
             match = cls._PORT_RE.search(cls._server.stdout.readline())
             if match:
                 port = int(match.group(1))
-                if port != cls.port:
+                if port != cls._port:
                     raise Error("requested port {}, but got {}"
-                                .format(cls.port, port))
+                                .format(cls._port, port))
             else:
                 cls._terminate_server()
-                cls.err_msg = cls._server.communicate("")[1].strip()
+                cls._err_msg = cls._server.communicate("")[1].strip()
                 cls._server = None
-                match = cls._PORT_RE.search(cls.err_msg)
+                match = cls._PORT_RE.search(cls._err_msg)
                 if not match:
-                    raise Error(cls.err_msg)
+                    raise Error(cls._err_msg)
                 port = int(match.group(1))
-                if port != cls.port:
-                    raise Error(cls.err_msg)
+                if port != cls._port:
+                    raise Error(cls._err_msg)
         if not cls._server:
             # Couldn’t start the server, so maybe there is already one running.
             params = {"language": FAILSAFE_LANGUAGE, "text": ""}
             data = urllib.parse.urlencode(params).encode()
             try:
-                with urlopen(cls.url, data, cls.TIMEOUT) as f:
+                with urlopen(cls._url, data, cls._TIMEOUT) as f:
                     tree = ElementTree.parse(f)
             except (IOError, http.client.HTTPException) as e:
-                raise ServerError("{}: {}".format(cls.url, e))
+                raise ServerError("{}: {}".format(cls._url, e))
             root = tree.getroot()
             if root.tag != "matches":
                 raise ServerError("unexpected root from {}: {!r}"
-                                  .format(cls.url, root.tag))
+                                  .format(cls._url, root.tag))
 
     @classmethod
     def _server_is_alive(cls):
@@ -480,7 +478,7 @@ def get_version():
             universal_newlines=True,
             startupinfo=startupinfo
         )
-        out = proc.communicate("", LanguageTool.TIMEOUT)[0]
+        out = proc.communicate("", LanguageTool._TIMEOUT)[0]
         match = version_re.search(out)
 
         if not match:
