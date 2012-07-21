@@ -48,7 +48,7 @@ from .which import which
 
 __all__ = ["LanguageTool", "Error",
            "get_languages", "correct", "get_version", "get_version_info",
-           "get_language_tool_dir", "set_language_tool_dir"]
+           "get_directory", "set_directory"]
 
 FAILSAFE_LANGUAGE = "en"
 LANGUAGE_RE = re.compile(r"^([a-z]{2,3})(?:[_-]([a-z]{2}))?$", re.I)
@@ -351,11 +351,12 @@ class LanguageTool:
 
     @classmethod
     def _start_server(cls):
+        err = None
         try:
             server_cmd = get_server_cmd(cls._port)
-        except PathError:
+        except PathError as e:
             # Can’t find path to LanguageTool.
-            pass
+            err = e
         else:
             # Need to PIPE all handles: http://bugs.python.org/issue3905
             cls._server = subprocess.Popen(
@@ -374,14 +375,14 @@ class LanguageTool:
                                 .format(cls._port, port))
             else:
                 cls._terminate_server()
-                cls._err_msg = cls._server.communicate("")[1].strip()
+                err_msg = cls._server.communicate("")[1].strip()
                 cls._server = None
-                match = cls._PORT_RE.search(cls._err_msg)
+                match = cls._PORT_RE.search(err_msg)
                 if not match:
-                    raise Error(cls._err_msg)
+                    raise Error(err_msg)
                 port = int(match.group(1))
                 if port != cls._port:
-                    raise Error(cls._err_msg)
+                    raise Error(err_msg)
         if not cls._server:
             # Couldn’t start the server, so maybe there is already one running.
             params = {"language": FAILSAFE_LANGUAGE, "text": ""}
@@ -390,6 +391,8 @@ class LanguageTool:
                 with urlopen(cls._url, data, cls._TIMEOUT) as f:
                     tree = ElementTree.parse(f)
             except (IOError, http.client.HTTPException) as e:
+                if err:
+                    raise err
                 raise ServerError("{}: {}".format(cls._url, e))
             root = tree.getroot()
             if root.tag != "matches":
@@ -482,7 +485,7 @@ def get_version():
         match = version_re.search(out)
 
         if not match:
-            match = version_re.search(get_language_tool_dir())
+            match = version_re.search(get_directory())
             if not match:
                 raise Error("unexpected version output: {!r}".format(out))
         version = match.group(1)
@@ -518,7 +521,7 @@ def get_languages():
 
 
 def get_languages_from_dir():
-    rules_path = os.path.join(get_language_tool_dir(), "rules")
+    rules_path = os.path.join(get_directory(), "rules")
     languages = {fn for fn in os.listdir(rules_path)
                  if os.path.isdir(os.path.join(rules_path, fn)) and
                  LANGUAGE_RE.match(fn)}
@@ -532,7 +535,7 @@ def get_languages_from_dir():
     return languages
 
 
-def get_language_tool_dir():
+def get_directory():
     """Get LanguageTool directory.
     """
     try:
@@ -566,7 +569,7 @@ def get_language_tool_dir():
     return language_tool_dir
 
 
-def set_language_tool_dir(path=None):
+def set_directory(path=None):
     """Set LanguageTool directory.
     """
     terminate_server()
@@ -606,12 +609,12 @@ def get_jar_info():
             raise JavaError("can’t find Java")
         jar_names = ["LanguageTool.jar", "LanguageTool.uno.jar"]
         for jar_name in jar_names:
-            jar_path = os.path.join(get_language_tool_dir(), jar_name)
+            jar_path = os.path.join(get_directory(), jar_name)
             if os.path.isfile(jar_path):
                 break
         else:
             raise PathError("can’t find {!r} in {!r}"
-                            .format(jar_names[0], get_language_tool_dir()))
+                            .format(jar_names[0], get_directory()))
         cache["jar_info"] = java_path, jar_path
     return java_path, jar_path
 
