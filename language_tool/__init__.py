@@ -87,6 +87,7 @@ def replacement_list(string, sep="#"):
     return string.split(sep) if string else []
 
 
+@total_ordering
 class Match:
     """Hold information about where a rule matches text.
     """
@@ -107,14 +108,15 @@ class Match:
 
     def __repr__(self):
         def _ordered_dict_repr():
-            slots = list(self._SLOTS.keys())
-            attrs = slots + list(set(self.__dict__).difference(slots))
+            slots = list(self._SLOTS)
+            slots += list(set(self.__dict__).difference(slots))
+            attrs = [slot for slot in slots
+                     if slot in self.__dict__ and not slot.startswith("_")]
             return "{{{}}}".format(
-                ", ".join(
-                    "{!r}: {!r}".format(attr, self.__dict__[attr])
+                ", ".join([
+                    "{!r}: {!r}".format(attr, getattr(self, attr))
                     for attr in attrs
-                    if attr in self.__dict__ and not attr.startswith("_")
-                )
+                ])
             )
 
         return "{}({})".format(self.__class__.__name__, _ordered_dict_repr())
@@ -135,6 +137,15 @@ class Match:
         )
         return s
 
+    def __eq__(self, other):
+        return list(self) == list(other)
+
+    def __lt__(self, other):
+        return list(self) < list(other)
+
+    def __iter__(self):
+        return iter(getattr(self, attr) for attr in self._SLOTS)
+
     def __setattr__(self, name, value):
         if name in self._SLOTS:
             value = self._SLOTS[name](value)
@@ -147,7 +158,11 @@ class Match:
             return self._frompos
         elif name == "topos":
             return self._topos
-        return None
+        elif name not in self._SLOTS:
+            raise AttributeError(
+                "{!r} object has no attribute {!r}"
+                .format(self.__class__.__name__, name)
+            )
 
     @property
     def _frompos(self):
