@@ -528,11 +528,16 @@ def get_directory():
 def set_directory(path=None):
     """Set LanguageTool directory.
     """
+    old_path = get_directory()
     terminate_server()
     cache.clear()
     if path:
         cache["language_tool_dir"] = path
-        get_jar_info()
+        try:
+            get_jar_info()
+        except Error:
+            cache["language_tool_dir"] = old_path
+            raise
 
 
 def get_server_cmd(port=None):
