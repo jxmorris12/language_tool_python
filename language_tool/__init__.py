@@ -46,8 +46,7 @@ from .country_codes import get_country_code
 from .which import which
 
 
-__all__ = ["LanguageTool", "Error",
-           "get_languages", "correct", "get_version", "get_version_info",
+__all__ = ["LanguageTool", "Error", "get_languages", "correct", "get_version",
            "get_directory", "set_directory"]
 
 FAILSAFE_LANGUAGE = "en"
@@ -491,19 +490,6 @@ def get_version():
         version = match.group(1)
         cache["version"] = version
     return version
-
-
-def get_version_info():
-    """Get LanguageTool version as a tuple.
-    """
-    VersionInfo = namedtuple("VersionInfo",
-                             ("major", "minor", "micro", "releaselevel"))
-    info_list = get_version().split("-")
-    releaselevel = "final" if len(info_list) < 2 else info_list[-1]
-    info_list = [int(e) if e.isdigit() else e
-                 for e in info_list[0].split(".")][:3]
-    info_list += [0] * (3 - len(info_list))
-    return VersionInfo(*info_list, releaselevel=releaselevel)
 
 
 def get_languages():
