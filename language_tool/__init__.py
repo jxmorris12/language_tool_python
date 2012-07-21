@@ -330,7 +330,7 @@ class LanguageTool:
             try:
                 with urlopen(url, data, cls._TIMEOUT) as f:
                     return ElementTree.parse(f).getroot()
-            except IOError as e:
+            except (IOError, http.client.HTTPException) as e:
                 if n + 1 < num_tries:
                     cls._start_server()
                 else:

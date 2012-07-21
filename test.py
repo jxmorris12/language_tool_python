@@ -11,12 +11,12 @@ from language_tool.country_codes import get_country_code
 
 
 class TestLanguageTool(unittest.TestCase):
-    Test = namedtuple("Test", ("text", "matches"))
+    CheckTest = namedtuple("CheckTest", ("text", "matches"))
     Match = namedtuple("Match", ("fromy", "fromx", "ruleId"))
 
-    tests = {
+    check_tests = {
         "en": [
-            Test(
+            CheckTest(
                 ("Paste your own text here... or check this text too see "
                  "a few of the problems that that LanguageTool can detect. "
                  "Did you notice that their is no spelcheckin included?"),
@@ -27,7 +27,7 @@ class TestLanguageTool(unittest.TestCase):
             ),
         ],
         "fr": [
-            Test(
+            CheckTest(
                 ("Se texte est un exemple pour pour vous montrer "
                  "le fonctionnement de LanguageTool. "
                  "notez que LanguageTool ne comporte pas "
@@ -39,33 +39,44 @@ class TestLanguageTool(unittest.TestCase):
                     Match(0, 82, "UPPERCASE_SENTENCE_START"),
                 ]
             ),
-            Test(
-                "C'est un soucis, comme même!",
+            CheckTest(
+                "je me rappelle de tout sans aucun soucis!",
                 [
-                    Match(0, 6, "ACCORD_NOMBRE"),
-                    Match(0, 17, "COMME_MEME"),
-                    Match(0, 23, "FRENCH_WHITESPACE"),
+                    Match(0, 0, "UPPERCASE_SENTENCE_START"),
+                    Match(0, 6, "RAPPELER_DE"),
+                    Match(0, 28, "ACCORD_NOMBRE"),
+                    Match(0, 34, "FRENCH_WHITESPACE"),
                 ]
             ),
         ],
-        "ja": [
-            Test("日本語", []),
-        ],
     }
 
-    def test_samples(self):
-        languages = language_tool.get_languages()
-        for language, tests in self.tests.items():
-            if language not in languages:
+    correct_tests = {
+        "en-US": {
+            "that would of been to impressive.":
+            "That would have been too impressive.",
+        },
+        "fr": {
+            "il monte en haut si il veut.":
+            "Il monte s’il veut.",
+        },
+    }
+
+    def setUp(self):
+        self.lang_tool = language_tool.LanguageTool()
+
+    def test_check(self):
+        for language, tests in self.check_tests.items():
+            try:
+                self.lang_tool.language = language
+            except ValueError:
                 version = language_tool.get_version()
                 warnings.warn(
                     "LanguageTool {} doesn’t support language {!r}"
                     .format(version, language)
                 )
-                continue
-            lang_tool = language_tool.LanguageTool(language)
             for text, expected_matches in tests:
-                matches = lang_tool.check(text)
+                matches = self.lang_tool.check(text)
                 for expected_match in expected_matches:
                     for match in matches:
                         if (
@@ -77,6 +88,19 @@ class TestLanguageTool(unittest.TestCase):
                     else:
                         raise IndexError(
                             "can’t find {!r}".format(expected_match))
+
+    def test_correct(self):
+        for language, tests in self.correct_tests.items():
+            try:
+                self.lang_tool.language = language
+            except ValueError:
+                version = language_tool.get_version()
+                warnings.warn(
+                    "LanguageTool {} doesn’t support language {!r}"
+                    .format(version, language)
+                )
+            for text, result in tests.items():
+                self.assertEqual(self.lang_tool.correct(text), result)
 
     def test_languages(self):
         languages = language_tool.get_languages()
