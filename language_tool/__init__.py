@@ -186,12 +186,13 @@ class LanguageTool:
             self._start_server_on_free_port()
         if language is None:
             try:
-                self.language = get_locale_language()
+                language = get_locale_language()
             except ValueError:
-                self.language = FAILSAFE_LANGUAGE
-        else:
-            self.language = language
+                language = FAILSAFE_LANGUAGE
+        self._language = LanguageTag(language)
         self.motherTongue = motherTongue
+        self.disabled = self._spell_checking_rules
+        self.enabled = set()
         self._instances[id(self)] = self
 
     def __del__(self):
@@ -207,8 +208,9 @@ class LanguageTool:
     @language.setter
     def language(self, language):
         self._language = LanguageTag(language)
-        self.reset_disabled()
-        self.reset_enabled()
+        self.disabled.clear()
+        self.enabled.clear()
+        self.disable_spellchecking()
 
     @property
     def motherTongue(self):
@@ -248,9 +250,9 @@ class LanguageTool:
             params["srctext"] = srctext.encode("utf-8")
         if self.motherTongue is not None:
             params["motherTongue"] = self.motherTongue
-        if self.disabled is not None:
+        if self.disabled:
             params["disabled"] = ",".join(self.disabled)
-        if self.enabled is not None:
+        if self.enabled:
             params["enabled"] = ",".join(self.enabled)
         return urllib.parse.urlencode(params).encode()
 
@@ -259,47 +261,15 @@ class LanguageTool:
         """
         return correct(text, self.check(text, srctext))
 
-    def disable(self, rules: Sequence):
-        """Disable specified rules.
-        """
-        if self.disabled is None:
-            self.disabled = set()
-        for rule in rules:
-            self.disabled.add(rule)
-
-    def enable(self, rules: Sequence):
-        """Enable specified rules.
-        """
-        if self.enabled is None:
-            self.enabled = set()
-        for rule in rules:
-            self.enabled.add(rule)
-
-    def reset_disabled(self):
-        """Reset disabled rules.
-        """
-        self.disabled = self._spell_checking_rules
-
-    def reset_enabled(self):
-        """Reset enabled rules.
-        """
-        self.enabled = None
-
     def enable_spellchecking(self):
         """Enable spell-checking rules.
         """
-        if self.disabled is None:
-            return
-        for rule in self._spell_checking_rules:
-            self.disabled.remove(rule)
+        self.disabled.difference_update(self._spell_checking_rules)
 
     def disable_spellchecking(self):
         """Disable spell-checking rules.
         """
-        if self.disabled is None:
-            self.disabled = set()
-        for rule in self._spell_checking_rules:
-            self.disabled.add(rule)
+        self.disabled.update(self._spell_checking_rules)
 
     @classmethod
     def _get_languages(cls):
@@ -527,9 +497,9 @@ def get_directory():
     try:
         language_tool_dir = cache["language_tool_dir"]
     except KeyError:
-        def version_key(s):
+        def version_key(string):
             return [int(e) if e.isdigit() else e
-                    for e in re.split(r"(\d+)", s)]
+                    for e in re.split(r"(\d+)", string)]
 
         def get_lt_dir(base_dir):
             paths = [

@@ -98,9 +98,9 @@ def main():
     if args.spell_check:
         lang_tool.enable_spellchecking()
     if args.disable is not None:
-        lang_tool.disable(args.disable)
+        lang_tool.disabled.update(args.disable)
     if args.enable is not None:
-        lang_tool.enable(args.enable)
+        lang_tool.enabled.update(args.enable)
 
     if args.api:
         print(lang_tool._check_api(text).decode("utf-8"))
