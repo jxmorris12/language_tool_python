@@ -42,7 +42,7 @@ def parse_args():
 
 
 def get_rules(rules: str) -> set:
-    return {rule.upper() for rule in re.findall(r"\w+", rules)}
+    return {rule.upper() for rule in re.findall(r"[\w\-]+", rules)}
 
 
 def get_text(file, encoding):
