@@ -20,23 +20,23 @@ def parse_args():
     )
     parser.add_argument("file",
                         help='plain text file or "-" for stdin')
-    parser.add_argument("--encoding",
+    parser.add_argument("-c", "--encoding",
                         help="input encoding")
-    parser.add_argument("--language", metavar="CODE",
+    parser.add_argument("-l", "--language", metavar="CODE",
                         help='language code of the input or "auto"')
-    parser.add_argument("--mother-tongue", metavar="CODE",
+    parser.add_argument("-m", "--mother-tongue", metavar="CODE",
                         help="language code of your first language")
-    parser.add_argument("--disable", metavar="RULES", type=get_rules,
+    parser.add_argument("-d", "--disable", metavar="RULES", type=get_rules,
                         help="list of rule IDs to be disabled")
-    parser.add_argument("--enable", metavar="RULES", type=get_rules,
+    parser.add_argument("-e", "--enable", metavar="RULES", type=get_rules,
                         help="list of rule IDs to be enabled")
     parser.add_argument("--api", action="store_true",
                         help="print results as XML")
     parser.add_argument("--version", action="store_true",
                         help="print LanguageTool version number")
-    parser.add_argument("--apply", action="store_true",
+    parser.add_argument("-a", "--apply", action="store_true",
                         help="automatically apply suggestions if available")
-    parser.add_argument("--spell-check", action="store_true",
+    parser.add_argument("-s", "--spell-check", action="store_true",
                         help="enable spell-checking rules")
     return parser.parse_args()
 
@@ -109,7 +109,7 @@ def main():
     else:
         print()
         for n, match in enumerate(lang_tool.check(text)):
-            print("{}.)".format(n + 1), match)
+            print("{}.) {}".format(n + 1, match))
             print()
 
 

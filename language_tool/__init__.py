@@ -214,6 +214,10 @@ class LanguageTool:
         if not self._instances and self._server_is_alive():
             self._terminate_server()
 
+    def __repr__(self):
+        return "{}(language={!r}, motherTongue={!r})".format(
+            self.__class__.__name__, self.language, self.motherTongue)
+
     @property
     def language(self):
         """The language to be used
