@@ -81,7 +81,7 @@ class PathError(Error):
     pass
 
 
-def replacement_list(string, sep="#"):
+def get_replacement_list(string, sep="#"):
     if isinstance(string, list):
         return string
     return string.split(sep) if string else []
@@ -95,7 +95,7 @@ class Match:
         ("fromy", int), ("fromx", int), ("toy", int), ("tox", int),
         ("frompos", int), ("topos", int),
         ("ruleId", str), ("subId", str), ("msg", str),
-        ("replacements", replacement_list),
+        ("replacements", get_replacement_list),
         ("context", str), ("contextoffset", int), ("errorlength", int),
         ("url", str),
     ])
@@ -166,12 +166,16 @@ class Match:
 
     @property
     def _frompos(self):
+        """Position of the start of the error
+        """
         if self._frompos_cache is None:
             self._frompos_cache = self._get_pos(self.fromy, self.fromx)
         return self._frompos_cache
 
     @property
     def _topos(self):
+        """Position of the end of the error
+        """
         if self._topos_cache is None:
             self._topos_cache = self._get_pos(self.toy, self.tox)
         return self._topos_cache
@@ -291,7 +295,9 @@ class LanguageTool:
         self.disabled.update(self._spell_checking_rules)
 
     @classmethod
-    def _get_languages(cls):
+    def _get_languages(cls) -> set:
+        """Get supported languages (by querying the server).
+        """
         if not cls._server_is_alive():
             cls._start_server_on_free_port()
         url = urllib.parse.urljoin(cls._url, "Languages")
@@ -453,7 +459,7 @@ def correct(text: str, matches: [Match]) -> str:
 
 
 def get_version():
-    """Get LanguageTool version as a string.
+    """Get LanguageTool version.
     """
     try:
         return cache["version"]
@@ -481,8 +487,8 @@ def get_version():
     return version
 
 
-def get_languages():
-    """Get available languages as a set.
+def get_languages() -> set:
+    """Get supported languages.
     """
     try:
         languages = cache["languages"]
@@ -495,7 +501,9 @@ def get_languages():
     return languages
 
 
-def get_languages_from_dir():
+def get_languages_from_dir() -> set:
+    """Get supported languages (by scanning the LanguageTool directory).
+    """
     rules_path = os.path.join(get_directory(), "rules")
     languages = {fn for fn in os.listdir(rules_path)
                  if os.path.isdir(os.path.join(rules_path, fn)) and
