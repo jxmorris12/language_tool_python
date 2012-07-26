@@ -125,7 +125,7 @@ COUNTRY_CODES = {
     "Namibia": "NA",
     "Nauru": "NR",
     "Nepal": "NP",
-    "Netherlands": "NL",    # Kingdom of the Netherlands
+    "Netherlands": "NL",  # Kingdom of the Netherlands
     "New Zealand": "NZ",
     "Nicaragua": "NI",
     "Niger": "NE",
@@ -172,6 +172,7 @@ COUNTRY_CODES = {
     "Suriname": "SR",
     "Swaziland": "SZ",
     "Sweden": "SE",
+    "Swiss": "CH",  # Switzerland
     "Switzerland": "CH",
     "Syria": "SY",
     "São Tomé and Príncipe": "ST",
@@ -203,21 +204,15 @@ COUNTRY_CODES = {
     "Zimbabwe": "ZW",
 }
 
-LANGUAGE_TO_COUNTRY = {
-    "Swiss": "CH",
-}
-
 
 def get_country_code(country_name):
+    """Lookup two-letter country code from country name.
+    """
     if country_name in COUNTRY_CODES.values():
         return country_name
 
     matches = difflib.get_close_matches(country_name, COUNTRY_CODES, 1)
     if matches:
         return COUNTRY_CODES[matches[0]]
-
-    matches = difflib.get_close_matches(country_name, LANGUAGE_TO_COUNTRY, 1)
-    if matches:
-        return LANGUAGE_TO_COUNTRY[matches[0]]
 
     raise KeyError(country_name)
