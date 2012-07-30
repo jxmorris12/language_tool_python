@@ -7,7 +7,7 @@ Example usage
 
 >>> import language_tool
 >>> lang_tool = language_tool.LanguageTool("en-US")
->>> text = "but it’s suppose to be all yellowy."
+>>> text = "A sentence with a error in the Hitchhiker’s Guide tot he Galaxy"
 >>> matches = lang_tool.check(text)
 >>> len(matches)
 2
@@ -16,29 +16,29 @@ Example usage
 Check out some ``Match`` object attributes:
 
 >>> matches[0].fromy, matches[0].fromx
-(0, 0)
+(0, 16)
 >>> matches[0].ruleId, matches[0].replacements
-('UPPERCASE_SENTENCE_START', ['But'])
+('EN_A_VS_AN', ['an'])
 >>> matches[1].fromy, matches[1].fromx
-(0, 9)
+(0, 50)
 >>> matches[1].ruleId, matches[1].replacements
-('SUPPOSE_TO', ['supposed'])
+('TOT_HE', ['to the'])
 
 
 Print a ``Match`` object:
 
 >>> print(matches[1])
-Line 1, column 10, Rule ID: SUPPOSE_TO[1]
-Message: Probably you should use a past participle here: 'supposed'.
-Suggestion: supposed
-but it’s suppose to be all yellowy.
-         ^^^^^^^
+Line 1, column 51, Rule ID: TOT_HE[1]
+Message: Did you mean 'to the'?
+Suggestion: to the
+... with a error in the Hitchhiker’s Guide tot he Galaxy
+                                           ^^^^^^
 
 
 Automatically apply suggestions to the text:
 
 >>> language_tool.correct(text, matches)
-'But it’s supposed to be all yellowy.'
+'A sentence with an error in the Hitchhiker’s Guide to the Galaxy'
 
 
 Installation
