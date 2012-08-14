@@ -30,7 +30,7 @@ except ImportError:
         NormalizedVersion = None
 
 
-BASE_URL = "http://www.languagetool.org/download/"
+BASE_URLS = ["http://www.languagetool.org/download/"]
 PACKAGE_PATH = "language_tool"
 
 
@@ -52,6 +52,15 @@ else:
         pass
 
 
+def get_common_prefix(z):
+    """Get common directory in a zip file if any.
+    """
+    l = z.namelist()
+    if l and all(n.startswith(l[0]) for n in l[1:]):
+        return l[0]
+    return None
+
+
 def download_lt(update=False):
     assert os.path.isdir(PACKAGE_PATH)
     old_path_list = [
@@ -65,28 +74,36 @@ def download_lt(update=False):
 
     contents = ""
 
-    with closing(urlopen(BASE_URL)) as u:
-        while True:
-            data = u.read()
-            if not data:
-                break
-            contents += data.decode()
+    for n, base_url in enumerate(BASE_URLS):
+        try:
+            with closing(urlopen(base_url)) as u:
+                while True:
+                    data = u.read()
+                    if not data:
+                        break
+                    contents += data.decode()
+            break
+        except IOError as e:
+            if n == len(BASE_URLS) - 1:
+                raise
+            else:
+                print("{}: {}".format(base_url, e), file=sys.stderr)
 
     href_format = r'<a href="(LanguageTool-(\d+.*?)\.{})">'
 
     matches = [
         (m.group(1), Version(m.group(2))) for m in
-        re.finditer(href_format.format("zip"), contents)
+        re.finditer(href_format.format("zip"), contents, re.I)
     ]
 
     if not matches:
         matches = [
             (m.group(1), Version(m.group(2))) for m in
-            re.finditer(href_format.format("oxt"), contents)
+            re.finditer(href_format.format("oxt"), contents, re.I)
         ]
 
     filename, version = matches[-1]
-    url = urljoin(BASE_URL, filename)
+    url = urljoin(base_url, filename)
     dirname = os.path.splitext(filename)[0]
     extract_path = os.path.join(PACKAGE_PATH, dirname)
 
@@ -134,7 +151,13 @@ def download_lt(update=False):
             if os.path.isdir(old_path):
                 shutil.rmtree(old_path)
         with closing(ZipFile(t)) as z:
-            z.extractall(extract_path)
+            prefix = get_common_prefix(z)
+            if prefix:
+                z.extractall(PACKAGE_PATH)
+                os.rename(os.path.join(PACKAGE_PATH, prefix),
+                          os.path.join(PACKAGE_PATH, dirname))
+            else:
+                z.extractall(extract_path)
 
 
 if __name__ == "__main__":
