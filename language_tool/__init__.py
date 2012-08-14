@@ -369,7 +369,7 @@ class LanguageTool:
                                 .format(cls._port, port))
             else:
                 cls._terminate_server()
-                err_msg = cls._server.communicate("")[1].strip()
+                err_msg = cls._server.communicate()[1].strip()
                 cls._server = None
                 match = cls._PORT_RE.search(err_msg)
                 if not match:
@@ -475,7 +475,7 @@ def get_version():
             universal_newlines=True,
             startupinfo=startupinfo
         )
-        out = proc.communicate("", LanguageTool._TIMEOUT)[0]
+        out = proc.communicate(timeout=LanguageTool._TIMEOUT)[0]
         match = version_re.search(out)
 
         if not match:
