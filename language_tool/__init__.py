@@ -475,13 +475,18 @@ def get_version():
             universal_newlines=True,
             startupinfo=startupinfo
         )
-        out = proc.communicate(timeout=LanguageTool._TIMEOUT)[0]
-        match = version_re.search(out)
+        try:
+            outs = proc.communicate(timeout=LanguageTool._TIMEOUT)[0]
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            errs = proc.communicate()[1]
+            raise Error(errs)
+        match = version_re.search(outs)
 
         if not match:
             match = version_re.search(get_directory())
             if not match:
-                raise Error("unexpected version output: {!r}".format(out))
+                raise Error("unexpected version output: {!r}".format(outs))
         version = match.group(1)
         cache["version"] = version
     return version
