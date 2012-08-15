@@ -86,8 +86,6 @@ def download_lt(update=False):
         except IOError as e:
             if n == len(BASE_URLS) - 1:
                 raise
-            else:
-                print("{}: {}".format(base_url, e), file=sys.stderr)
 
     href_format = r'<a href="(LanguageTool-(\d+.*?)\.{})">'
 
