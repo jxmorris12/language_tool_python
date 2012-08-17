@@ -27,8 +27,10 @@ def parse_args():
     parser.add_argument("-m", "--mother-tongue", metavar="CODE",
                         help="language code of your first language")
     parser.add_argument("-d", "--disable", metavar="RULES", type=get_rules,
+                        action=RulesAction, default=set(),
                         help="list of rule IDs to be disabled")
     parser.add_argument("-e", "--enable", metavar="RULES", type=get_rules,
+                        action=RulesAction, default=set(),
                         help="list of rule IDs to be enabled")
     parser.add_argument("--api", action="store_true",
                         help="print results as XML")
@@ -41,6 +43,11 @@ def parse_args():
     parser.add_argument("-s", "--spell-check", action="store_true",
                         help="enable spell-checking rules")
     return parser.parse_args()
+
+
+class RulesAction(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        getattr(namespace, self.dest).update(values)
 
 
 def get_rules(rules: str) -> set:
@@ -95,10 +102,9 @@ def main():
 
     if args.spell_check:
         lang_tool.enable_spellchecking()
-    if args.disable is not None:
-        lang_tool.disabled.update(args.disable)
-    if args.enable is not None:
-        lang_tool.enabled.update(args.enable)
+
+    lang_tool.disabled.update(args.disable)
+    lang_tool.enabled.update(args.enable)
 
     if args.api:
         print(lang_tool._check_api(text).decode("utf-8"))
