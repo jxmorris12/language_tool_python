@@ -7,7 +7,7 @@ import os
 import re
 import sys
 
-import language_tool
+import language_tool.console_mode
 
 DEFAULT_ENCODING = "utf-8"
 
@@ -19,11 +19,11 @@ def parse_args():
                                "language_tool")
     )
     parser.add_argument("file",
-                        help='plain text file or "-" for stdin')
+                        help='plain text file or “-” for stdin')
     parser.add_argument("-c", "--encoding",
                         help="input encoding")
     parser.add_argument("-l", "--language", metavar="CODE",
-                        help='language code of the input or "auto"')
+                        help='language code of the input or “auto”')
     parser.add_argument("-m", "--mother-tongue", metavar="CODE",
                         help="language code of your first language")
     parser.add_argument("-d", "--disable", metavar="RULES", type=get_rules,
@@ -32,8 +32,10 @@ def parse_args():
                         help="list of rule IDs to be enabled")
     parser.add_argument("--api", action="store_true",
                         help="print results as XML")
-    parser.add_argument("--version", action="store_true",
-                        help="print LanguageTool version number")
+    parser.add_argument("--version", action="version",
+                        version="LanguageTool {}"
+                                .format(language_tool.get_version()),
+                        help="show LanguageTool version number")
     parser.add_argument("-a", "--apply", action="store_true",
                         help="automatically apply suggestions if available")
     parser.add_argument("-s", "--spell-check", action="store_true",
@@ -53,10 +55,6 @@ def get_text(file, encoding):
 
 def main():
     args = parse_args()
-
-    if args.version:
-        print("LanguageTool {}".format(language_tool.get_version()))
-        return
 
     if args.file == "-":
         file = sys.stdin.fileno()
