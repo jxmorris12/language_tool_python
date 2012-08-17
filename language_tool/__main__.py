@@ -19,11 +19,11 @@ def parse_args():
                                "language_tool")
     )
     parser.add_argument("file",
-                        help='plain text file or “-” for stdin')
+                        help="plain text file or “-” for stdin")
     parser.add_argument("-c", "--encoding",
                         help="input encoding")
     parser.add_argument("-l", "--language", metavar="CODE",
-                        help='language code of the input or “auto”')
+                        help="language code of the input or “auto”")
     parser.add_argument("-m", "--mother-tongue", metavar="CODE",
                         help="language code of your first language")
     parser.add_argument("-d", "--disable", metavar="RULES", type=get_rules,
