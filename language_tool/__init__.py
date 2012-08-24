@@ -319,6 +319,17 @@ class LanguageTool:
         return languages
 
     @classmethod
+    def _get_version(cls):
+        """Get LanguageTool version (by querying the server).
+        """
+        if not cls._server_is_alive():
+            cls._start_server_on_free_port()
+        params = {"language": FAILSAFE_LANGUAGE, "text": ""}
+        data = urllib.parse.urlencode(params).encode()
+        root = cls._get_root(cls._url, data, num_tries=1)
+        return root.get("version")
+
+    @classmethod
     def _get_root(cls, url, data=None, num_tries=2):
         for n in range(num_tries):
             try:
@@ -392,6 +403,10 @@ class LanguageTool:
             if root.tag != "matches":
                 raise ServerError("unexpected root from {}: {!r}"
                                   .format(cls._url, root.tag))
+            # LanguageTool 1.9+
+            #if root.get("software") != "LanguageTool":
+                #raise ServerError("unexpected software from {}: {!r}"
+                                  #.format(cls._url, root.get("software")))
 
     @classmethod
     def _server_is_alive(cls):
@@ -464,30 +479,12 @@ def get_version():
     try:
         return cache["version"]
     except KeyError:
-        version_re = re.compile(r"LanguageTool-?.*?(\S+)$")
-
-        # LanguageTool 1.9+
-        proc = subprocess.Popen(
-            get_version_cmd(),
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            universal_newlines=True,
-            startupinfo=startupinfo
-        )
-        try:
-            outs = proc.communicate(timeout=LanguageTool._TIMEOUT)[0]
-        except subprocess.TimeoutExpired:
-            proc.kill()
-            errs = proc.communicate()[1]
-            raise Error(errs)
-        match = version_re.search(outs)
-
-        if not match:
-            match = version_re.search(get_directory())
+        version = LanguageTool._get_version()
+        if not version:
+            match = re.search(r"LanguageTool-?.*?(\S+)$", get_directory())
             if not match:
-                raise Error("unexpected version output: {!r}".format(outs))
-        version = match.group(1)
+                raise Error("couldn’t determine LanguageTool version")
+            version = match.group(1)
         cache["version"] = version
     return version
 
