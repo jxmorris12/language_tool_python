@@ -97,7 +97,7 @@ class Match:
         ("ruleId", str), ("subId", str), ("msg", str),
         ("replacements", get_replacement_list),
         ("context", str), ("contextoffset", int), ("errorlength", int),
-        ("url", str),
+        ("url", str), ("category", str),
     ])
     _frompos_cache, _topos_cache = None, None
 
