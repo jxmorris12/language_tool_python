@@ -35,9 +35,10 @@ def parse_args():
     parser.add_argument("--api", action="store_true",
                         help="print results as XML")
     parser.add_argument("--version", action="version",
-                        version="LanguageTool {}"
-                                .format(language_tool.get_version()),
-                        help="show LanguageTool version number")
+                        version="LanguageTool {} ({})"
+                                .format(language_tool.get_version(),
+                                        language_tool.get_build_date()),
+                        help="show LanguageTool version and build date")
     parser.add_argument("-a", "--apply", action="store_true",
                         help="automatically apply suggestions if available")
     parser.add_argument("-s", "--spell-check", action="store_true",

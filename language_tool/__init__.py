@@ -319,15 +319,15 @@ class LanguageTool:
         return languages
 
     @classmethod
-    def _get_version(cls):
-        """Get LanguageTool version (by querying the server).
+    def _get_attrib(cls):
+        """Get matches element attributes.
         """
         if not cls._server_is_alive():
             cls._start_server_on_free_port()
         params = {"language": FAILSAFE_LANGUAGE, "text": ""}
         data = urllib.parse.urlencode(params).encode()
         root = cls._get_root(cls._url, data, num_tries=1)
-        return root.get("version")
+        return root.attrib
 
     @classmethod
     def _get_root(cls, url, data=None, num_tries=2):
@@ -473,20 +473,30 @@ def correct(text: str, matches: [Match]) -> str:
     return "".join(ltext)
 
 
+def _get_attrib():
+    try:
+        attrib = cache["attrib"]
+    except KeyError:
+        attrib = LanguageTool._get_attrib()
+        cache["attrib"] = attrib
+    return attrib
+
+
 def get_version():
     """Get LanguageTool version.
     """
-    try:
-        return cache["version"]
-    except KeyError:
-        version = LanguageTool._get_version()
-        if not version:
-            match = re.search(r"LanguageTool-?.*?(\S+)$", get_directory())
-            if not match:
-                raise Error("couldn’t determine LanguageTool version")
+    version = _get_attrib().get("version")
+    if not version:
+        match = re.search(r"LanguageTool-?.*?(\S+)$", get_directory())
+        if match:
             version = match.group(1)
-        cache["version"] = version
     return version
+
+
+def get_build_date():
+    """Get LanguageTool build date.
+    """
+    return _get_attrib().get("buildDate")
 
 
 def get_languages() -> set:
