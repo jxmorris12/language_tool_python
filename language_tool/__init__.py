@@ -505,28 +505,8 @@ def get_languages() -> set:
     try:
         languages = cache["languages"]
     except KeyError:
-        try:
-            languages = LanguageTool._get_languages()
-        except Error:
-            languages = get_languages_from_dir()
+        languages = LanguageTool._get_languages()
         cache["languages"] = languages
-    return languages
-
-
-def get_languages_from_dir() -> set:
-    """Get supported languages (by scanning the LanguageTool directory).
-    """
-    rules_path = os.path.join(get_directory(), "rules")
-    languages = {fn for fn in os.listdir(rules_path)
-                 if os.path.isdir(os.path.join(rules_path, fn)) and
-                 LANGUAGE_RE.match(fn)}
-    variants = []
-    for language in languages:
-        d = os.path.join(rules_path, language)
-        for fn in os.listdir(d):
-            if os.path.isdir(os.path.join(d, fn)) and LANGUAGE_RE.match(fn):
-                variants.append(fn)
-    languages.update(variants)
     return languages
 
 
