@@ -44,20 +44,26 @@ Automatically apply suggestions to the text:
 Installation
 ------------
 
-You can use the ``setup.py`` script::
+To install the package for Python 3, use::
 
   $ ./setup.py install
 
-On Windows, you can use one of the MSI binary packages provided on the
+To install the package for Python 2, use::
+
+  $ python2 setup.py install
+
+On Windows, you may use one of the MSI binary packages provided on the
 `download page <https://bitbucket.org/spirit/language_tool/downloads>`_.
 
 
 Requirements
 ------------
 
-- `Python 3.2+ <http://www.python.org>`_
-  (or 2.7, using `lib3to2 <https://bitbucket.org/amentajo/lib3to2>`_)
+- `Python 3.2+ <http://www.python.org>`_ (or 2.7)
 - `LanguageTool <http://www.languagetool.org>`_
+- `lib3to2 <https://bitbucket.org/amentajo/lib3to2>`_
+  (if installing for Python 2)
+
 
 The installation process should take care of downloading LanguageTool
 (it may take a few minutes).
