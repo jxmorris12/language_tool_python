@@ -332,6 +332,7 @@ def cfg_to_args(config):
         opts_to_args["metadata"].append(("requires-dist", "install_requires"))
         if IS_PY2K and not which("3to2"):
             kwargs["setup_requires"] = ["3to2"]
+        kwargs["zip_safe"] = False
 
     for section in opts_to_args:
         for option, argname in opts_to_args[section]:
