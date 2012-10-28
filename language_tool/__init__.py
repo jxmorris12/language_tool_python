@@ -388,13 +388,11 @@ class LanguageTool:
                     raise err
                 raise ServerError("{}: {}".format(cls._url, e))
             root = tree.getroot()
-            if root.tag != "matches":
-                raise ServerError("unexpected root from {}: {!r}"
-                                  .format(cls._url, root.tag))
+
             # LanguageTool 1.9+
-            #if root.get("software") != "LanguageTool":
-                #raise ServerError("unexpected software from {}: {!r}"
-                                  #.format(cls._url, root.get("software")))
+            if root.get("software") != "LanguageTool":
+                raise ServerError("unexpected software from {}: {!r}"
+                                  .format(cls._url, root.get("software")))
 
     @classmethod
     def _server_is_alive(cls):
