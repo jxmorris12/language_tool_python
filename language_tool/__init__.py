@@ -42,7 +42,6 @@ except ImportError:
     from xml.etree import ElementTree
 
 from .backports import subprocess
-from .country_codes import get_country_code
 from .which import which
 
 
@@ -303,19 +302,8 @@ class LanguageTool:
         url = urllib.parse.urljoin(cls._url, "Languages")
         languages = set()
         for e in cls._get_root(url, num_tries=1):
-            language = e.get("abbr")
-            if len(re.split(r"[_-]", language)) < 2:
-                match = re.search(r"\((.*?)\)", e.get("name"))
-                if match:
-                    country_name = match.group(1)
-                    try:
-                        country_code = get_country_code(country_name)
-                    except KeyError:
-                        warnings.warn(
-                            "unknown language: {!r}".format(e.get("name")))
-                    else:
-                        language += "-" + country_code
-            languages.add(language)
+            languages.add(e.get("abbr"))
+            languages.add(e.get("abbrWithVariant"))
         return languages
 
     @classmethod

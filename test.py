@@ -7,7 +7,6 @@ import warnings
 from collections import namedtuple
 
 import language_tool
-from language_tool.country_codes import get_country_code
 
 
 class TestLanguageTool(unittest.TestCase):
@@ -109,36 +108,6 @@ class TestLanguageTool(unittest.TestCase):
     def test_version(self):
         version = language_tool.get_version()
         self.assertTrue(version)
-
-
-class TestCountryCodes(unittest.TestCase):
-    tests = {
-        "Australian": "AU",
-        "Canadian": "CA",
-        "GB": "GB",
-        "New Zealand": "NZ",
-        "South African": "ZA",
-        "US": "US",
-        "Austria": "AT",
-        "Germany": "DE",
-        "Swiss": "CH",
-        "Brazil": "BR",
-        "Portugal": "PT",
-
-        "Australia": "AU",
-        "Canada": "CA",
-        "United Kingdom": "GB",
-        "South Africa": "ZA",
-        "United States": "US",
-        "Switzerland": "CH",
-
-        "Austrian": "AT",
-        "Brazilian": "BR",
-    }
-
-    def test_country_codes(self):
-        for country, code in self.tests.items():
-            self.assertEqual(get_country_code(country), code)
 
 
 if __name__ == "__main__":
