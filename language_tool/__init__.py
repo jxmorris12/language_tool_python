@@ -92,18 +92,16 @@ class Match:
     """
     _SLOTS = OrderedDict([
         ("fromy", int), ("fromx", int), ("toy", int), ("tox", int),
-        ("frompos", int), ("topos", int),
         ("ruleId", str), ("subId", str), ("msg", str),
         ("replacements", get_replacement_list),
-        ("context", str), ("contextoffset", int), ("errorlength", int),
+        ("context", str), ("contextoffset", int),
+        ("offset", int), ("errorlength", int),
         ("url", str), ("category", str),
     ])
-    _frompos_cache, _topos_cache = None, None
 
     def __init__(self, attrib, text=None):
         for k, v in attrib.items():
             setattr(self, k, v)
-        self._lines = text
 
     def __repr__(self):
         def _ordered_dict_repr():
@@ -151,39 +149,9 @@ class Match:
         super().__setattr__(name, value)
 
     def __getattr__(self, name):
-        # Fallback to calculated `frompos` and `topos` attributes
-        # if using unpatched LanguageTool server.
-        if name == "frompos":
-            return self._frompos
-        elif name == "topos":
-            return self._topos
-        elif name not in self._SLOTS:
-            raise AttributeError(
-                "{!r} object has no attribute {!r}"
-                .format(self.__class__.__name__, name)
-            )
-
-    @property
-    def _frompos(self):
-        """Position of the start of the error
-        """
-        if self._frompos_cache is None:
-            self._frompos_cache = self._get_pos(self.fromy, self.fromx)
-        return self._frompos_cache
-
-    @property
-    def _topos(self):
-        """Position of the end of the error
-        """
-        if self._topos_cache is None:
-            self._topos_cache = self._get_pos(self.toy, self.tox)
-        return self._topos_cache
-
-    def _get_pos(self, y, x):
-        if not isinstance(self._lines, list):
-            self._lines = self._lines.split("\n")
-        prev_lines = self._lines[:y]
-        return sum([len(line) for line in prev_lines]) + len(prev_lines) + x
+        if name not in self._SLOTS:
+            raise AttributeError("{!r} object has no attribute {!r}"
+                                 .format(self.__class__.__name__, name))
 
 
 class LanguageTool:
@@ -447,15 +415,17 @@ def correct(text: str, matches: [Match]) -> str:
     """
     ltext = list(text)
     matches = [match for match in matches if match.replacements]
-    errors = [ltext[match.frompos:match.topos] for match in matches]
-    offset = 0
+    errors = [ltext[match.offset:match.offset+match.errorlength]
+              for match in matches]
+    correct_offset = 0
     for n, match in enumerate(matches):
-        frompos, topos = match.frompos + offset, match.topos + offset
+        frompos, topos = (correct_offset + match.offset,
+                          correct_offset + match.offset + match.errorlength)
         if ltext[frompos:topos] != errors[n]:
             continue
         repl = match.replacements[0]
         ltext[frompos:topos] = list(repl)
-        offset += len(repl) - len(errors[n])
+        correct_offset += len(repl) - len(errors[n])
     return "".join(ltext)
 
 
