@@ -49,7 +49,6 @@ __all__ = ["LanguageTool", "Error", "get_languages", "correct", "get_version",
            "get_directory", "set_directory"]
 
 FAILSAFE_LANGUAGE = "en"
-LANGUAGE_RE = re.compile(r"^([a-z]{2,3})(?:[_-]([a-z]{2}))?$", re.I)
 
 # http://mail.python.org/pipermail/python-dev/2011-July/112551.html
 USE_URLOPEN_RESOURCE_WARNING_FIX = (3, 1) < sys.version_info < (3, 4)
@@ -378,6 +377,8 @@ class LanguageTool:
 class LanguageTag(str):
     """Language tag supported by LanguageTool
     """
+    _LANGUAGE_RE = re.compile(r"^([a-z]{2,3})(?:[_-]([a-z]{2}))?$", re.I)
+
     def __new__(cls, tag):
         # Can’t use super() here because of 3to2.
         return str.__new__(cls, cls._normalize(tag))
@@ -396,8 +397,8 @@ class LanguageTag(str):
             pass
         return str(self) < other
 
-    @staticmethod
-    def _normalize(tag):
+    @classmethod
+    def _normalize(cls, tag):
         if not tag:
             raise ValueError("empty language tag")
         languages = {l.lower().replace("-", "_"): l for l in get_languages()}
@@ -405,7 +406,7 @@ class LanguageTag(str):
             return languages[tag.lower().replace("-", "_")]
         except KeyError:
             try:
-                return languages[LANGUAGE_RE.match(tag).group(1).lower()]
+                return languages[cls._LANGUAGE_RE.match(tag).group(1).lower()]
             except (KeyError, AttributeError):
                 raise ValueError("unsupported language: {!r}".format(tag))
 
