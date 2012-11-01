@@ -153,9 +153,9 @@ class Match:
         return iter(getattr(self, attr) for attr in self._SLOTS)
 
     def __setattr__(self, name, value):
-        if name in self._SLOTS:
+        try:
             value = self._SLOTS[name](value)
-        else:
+        except KeyError:
             value = auto_type(value)
         super().__setattr__(name, value)
 
