@@ -85,6 +85,16 @@ def get_replacement_list(string, sep="#"):
     return string.split(sep) if string else []
 
 
+def auto_type(string):
+    try:
+        return int(string)
+    except ValueError:
+        try:
+            return float(string)
+        except ValueError:
+            return string
+
+
 @total_ordering
 class Match:
     """Hold information about where a rule matches text.
@@ -145,6 +155,8 @@ class Match:
     def __setattr__(self, name, value):
         if name in self._SLOTS:
             value = self._SLOTS[name](value)
+        else:
+            value = auto_type(value)
         super().__setattr__(name, value)
 
     def __getattr__(self, name):
