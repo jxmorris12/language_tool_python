@@ -176,7 +176,7 @@ class LanguageTool:
     _port = _MIN_PORT
     _server = None
     _instances = WeakValueDictionary()
-    _PORT_RE = re.compile(r"port (\d+)", re.I)
+    _PORT_RE = re.compile(r"(?:http://.*:|port\s+)(\d+)", re.I)
 
     def __init__(self, language=None, motherTongue=None):
         if not self._server_is_alive():
@@ -339,12 +339,14 @@ class LanguageTool:
                 universal_newlines=True,
                 startupinfo=startupinfo
             )
-            match = cls._PORT_RE.search(cls._server.stdout.readline())
-            if match:
-                port = int(match.group(1))
-                if port != cls._port:
-                    raise Error("requested port {}, but got {}"
-                                .format(cls._port, port))
+            for line in cls._server.stdout:
+                match = cls._PORT_RE.search(line)
+                if match:
+                    port = int(match.group(1))
+                    if port != cls._port:
+                        raise Error("requested port {}, but got {}"
+                                    .format(cls._port, port))
+                    break
             else:
                 cls._terminate_server()
                 err_msg = cls._server.communicate()[1].strip()
