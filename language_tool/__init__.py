@@ -541,16 +541,6 @@ def get_server_cmd(port=None):
     return cmd if port is None else cmd + ["-p", str(port)]
 
 
-def get_version_cmd():
-    try:
-        cmd = cache["version_cmd"]
-    except KeyError:
-        java_path, jar_path = get_jar_info()
-        cmd = [java_path, "-jar", jar_path, "--version"]
-        cache["version_cmd"] = cmd
-    return cmd
-
-
 def get_jar_info():
     try:
         java_path, jar_path = cache["jar_info"]
