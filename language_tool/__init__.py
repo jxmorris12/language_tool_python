@@ -105,7 +105,7 @@ class Match:
         ("replacements", get_replacement_list),
         ("context", str), ("contextoffset", int),
         ("offset", int), ("errorlength", int),
-        ("url", str), ("category", str),
+        ("url", str), ("category", str), ("locqualityissuetype", str),
     ])
 
     def __init__(self, attrib, text=None):
