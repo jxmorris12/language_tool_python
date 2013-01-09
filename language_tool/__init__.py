@@ -236,7 +236,7 @@ class LanguageTool:
         """Match text against enabled rules.
         """
         root = self._get_root(self._url, self._encode(text, srctext))
-        return [Match(e.attrib, text) for e in root]
+        return [Match(e.attrib, text) for e in root if e.tag == "error"]
 
     def _check_api(self, text: str, srctext=None) -> bytes:
         """Match text against enabled rules (result in XML format).
