@@ -188,7 +188,7 @@ class LanguageTool:
                 language = FAILSAFE_LANGUAGE
         self._language = LanguageTag(language)
         self.motherTongue = motherTongue
-        self.disabled = self._spell_checking_rules
+        self.disabled = set()
         self.enabled = set()
         self._instances[id(self)] = self
 
@@ -211,7 +211,6 @@ class LanguageTool:
         self._language = LanguageTag(language)
         self.disabled.clear()
         self.enabled.clear()
-        self.disable_spellchecking()
 
     @property
     def motherTongue(self):
