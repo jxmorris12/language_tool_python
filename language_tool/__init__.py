@@ -176,7 +176,7 @@ class LanguageTool:
     _port = _MIN_PORT
     _server = None
     _instances = WeakValueDictionary()
-    _PORT_RE = re.compile(r"(?:http://.*:|port\s+)(\d+)", re.I)
+    _PORT_RE = re.compile(r"(?:https?://.*:|port\s+)(\d+)", re.I)
 
     def __init__(self, language=None, motherTongue=None):
         if not self._server_is_alive():
