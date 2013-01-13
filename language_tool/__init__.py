@@ -338,7 +338,13 @@ class LanguageTool:
                 universal_newlines=True,
                 startupinfo=startupinfo
             )
-            for line in cls._server.stdout:
+            # Python 2.7 compatibility
+            #for line in cls._server.stdout:
+            match = None
+            while True:
+                line = cls._server.stdout.readline()
+                if not line:
+                    break
                 match = cls._PORT_RE.search(line)
                 if match:
                     port = int(match.group(1))
@@ -346,7 +352,7 @@ class LanguageTool:
                         raise Error("requested port {}, but got {}"
                                     .format(cls._port, port))
                     break
-            else:
+            if not match:
                 cls._terminate_server()
                 err_msg = cls._server.communicate()[1].strip()
                 cls._server = None
