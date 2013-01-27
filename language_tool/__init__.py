@@ -48,6 +48,11 @@ from .which import which
 __all__ = ["LanguageTool", "Error", "get_languages", "correct", "get_version",
            "get_directory", "set_directory"]
 
+JAR_NAMES = [
+    "languagetool-standalone-*.jar",    # 2.1
+    "LanguageTool.jar",
+    "LanguageTool.uno.jar"
+]
 FAILSAFE_LANGUAGE = "en"
 
 # http://mail.python.org/pipermail/python-dev/2011-July/112551.html
@@ -553,14 +558,19 @@ def get_jar_info():
         java_path = which("java")
         if not java_path:
             raise JavaError("can’t find Java")
-        jar_names = ["LanguageTool.jar", "LanguageTool.uno.jar"]
-        for jar_name in jar_names:
-            jar_path = os.path.join(get_directory(), jar_name)
-            if os.path.isfile(jar_path):
+        dir_name = get_directory()
+        jar_path = None
+        for jar_name in JAR_NAMES:
+            for jar_path in glob.glob(os.path.join(dir_name, jar_name)):
+                if os.path.isfile(jar_path):
+                    break
+            else:
+                jar_path = None
+            if jar_path:
                 break
         else:
-            raise PathError("can’t find {!r} in {!r}"
-                            .format(jar_names[0], get_directory()))
+            raise PathError("can’t find languagetool-standalone in {!r}"
+                            .format(dir_name))
         cache["jar_info"] = java_path, jar_path
     return java_path, jar_path
 
