@@ -49,7 +49,7 @@ __all__ = ["LanguageTool", "Error", "get_languages", "correct", "get_version",
            "get_directory", "set_directory"]
 
 JAR_NAMES = [
-    "languagetool-standalone-*.jar",    # 2.1
+    "languagetool-standalone*.jar",    # 2.1
     "LanguageTool.jar",
     "LanguageTool.uno.jar"
 ]
