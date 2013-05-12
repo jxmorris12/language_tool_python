@@ -1,5 +1,5 @@
-"""Write to stdout without causing UnicodeEncodeError
-"""
+# -*- coding: utf-8 -*-
+"""Write to stdout without causing UnicodeEncodeError."""
 
 import sys
 

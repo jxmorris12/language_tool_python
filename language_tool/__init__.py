@@ -1,5 +1,6 @@
-"""LanguageTool through server mode
-"""
+# -*- coding: utf-8 -*-
+"""LanguageTool through server mode."""
+
 #   © 2012 spirit <hiddenspirit@gmail.com>
 #   https://bitbucket.org/spirit/language_tool
 #

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Cross-platform which command
-"""
+# -*- coding: utf-8 -*-
+"""Cross-platform which command."""
 #   © 2012 spirit <hiddenspirit@gmail.com>
 #
 #   This program is free software: you can redistribute it and/or modify it
