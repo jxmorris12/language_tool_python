@@ -16,8 +16,8 @@ install:
     - python setup.py --quiet install
 
 script:
-    - python test.py
-
     # Prevent Python 2.7 from using the non-3to2 converted code.
     - cd language_tool
+
+    - python ../test.py
     - ../test.bash
