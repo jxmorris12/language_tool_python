@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-"""Test suite for language_tool
-"""
+# -*- coding: utf-8 -*-
+"""Test suite for language_tool."""
 
 import unittest
 import warnings

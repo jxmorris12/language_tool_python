@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-"""Download latest LanguageTool distribution
-"""
+# -*- coding: utf-8 -*-
+"""Download latest LanguageTool distribution."""
 
 import glob
 import os

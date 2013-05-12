@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-"""Backward-compatible setup script
-"""
+# -*- coding: utf-8 -*-
+"""Backward-compatible setup script."""
 
 import codecs
 import glob
