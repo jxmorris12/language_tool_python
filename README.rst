@@ -1,5 +1,11 @@
-language_tool – LanguageTool through server mode
-================================================
+language-tool
+=============
+
+Python wrapper for LanguageTool.
+
+.. image:: https://travis-ci.org/myint/language-tool.png?branch=master
+   :target: https://travis-ci.org/myint/language-tool
+   :alt: Build status
 
 
 Example usage
