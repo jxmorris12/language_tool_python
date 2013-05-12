@@ -6,6 +6,7 @@ python:
     - "3.3"
 
 install:
+    - if [ "$TRAVIS_PYTHON_VERSION" == "2.7" ]; then pip --quiet install 3to2; fi
     - python setup.py --quiet install
 
 script:
