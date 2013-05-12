@@ -16,8 +16,9 @@ install:
     - python setup.py --quiet install
 
 script:
+    - if [ "$TRAVIS_PYTHON_VERSION" == "2.7" ]; then python test.py; fi
+
     # Prevent Python 2.7 from using the non-3to2 converted code.
     - cd language_tool
 
-    - python ../test.py
     - ../test.bash
