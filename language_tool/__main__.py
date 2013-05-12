@@ -108,6 +108,8 @@ def main():
     lang_tool.disabled.update(args.disable)
     lang_tool.enabled.update(args.enable)
 
+    status = 0
+
     if args.api:
         print(lang_tool._check_api(text).decode("utf-8"))
     elif args.apply:
@@ -117,6 +119,9 @@ def main():
         for n, match in enumerate(lang_tool.check(text)):
             print("{}.) {}".format(n + 1, match))
             print()
+            status = 2
+
+    return status
 
 
 if __name__ == "__main__":
