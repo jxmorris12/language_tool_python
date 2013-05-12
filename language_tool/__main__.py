@@ -1,5 +1,6 @@
-"""LanguageTool command line
-"""
+#!/usr/bin/env python
+
+"""LanguageTool command line."""
 
 import argparse
 import locale

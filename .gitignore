@@ -1,2 +1,8 @@
 __pycache__/
 language_tool/LanguageTool-*/
+.*.swp
+.travis-solo/
+build/
+dist/
+*.pyc
+*.egg-info/
