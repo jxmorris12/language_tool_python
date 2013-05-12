@@ -4,8 +4,8 @@
 import sys
 
 
-if (getattr(sys.stdout, "errors", "") == "strict" and
-        not getattr(sys.stdout, "encoding", "").lower().startswith("utf")):
+if (getattr(sys.stdout, 'errors', '') == 'strict' and
+        not getattr(sys.stdout, 'encoding', '').lower().startswith('utf')):
     try:
         import translit
         sys.stdout = translit.StreamFilter(sys.stdout)
@@ -23,7 +23,7 @@ if (getattr(sys.stdout, "errors", "") == "strict" and
 
         def simplify(s):
             s = s.translate(TRANSLIT_MAP)
-            return "".join([c for c in unicodedata.normalize("NFKD", s)
+            return ''.join([c for c in unicodedata.normalize('NFKD', s)
                             if not unicodedata.combining(c)])
 
         def simple_translit_error_handler(error):
@@ -31,14 +31,14 @@ if (getattr(sys.stdout, "errors", "") == "strict" and
                 raise error
             chunk = error.object[error.start:error.end]
             repl = simplify(chunk)
-            repl = (repl.encode(error.encoding, "backslashreplace")
+            repl = (repl.encode(error.encoding, 'backslashreplace')
                     .decode(error.encoding))
             return repl, error.end
 
         class SimpleTranslitStreamFilter:
-            """Filter a stream through simple transliteration.
-            """
-            errors = "simple_translit"
+
+            """Filter a stream through simple transliteration."""
+            errors = 'simple_translit'
 
             def __init__(self, target):
                 self.target = target
@@ -60,4 +60,4 @@ if (getattr(sys.stdout, "errors", "") == "strict" and
         codecs.register_error(SimpleTranslitStreamFilter.errors,
                               simple_translit_error_handler)
         sys.stdout = SimpleTranslitStreamFilter(sys.stdout)
-        warnings.warn("translit is unavailable", ImportWarning)
+        warnings.warn('translit is unavailable', ImportWarning)

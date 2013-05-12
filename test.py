@@ -10,54 +10,54 @@ import language_tool
 
 
 class TestLanguageTool(unittest.TestCase):
-    CheckTest = namedtuple("CheckTest", ("text", "matches"))
-    Match = namedtuple("Match", ("fromy", "fromx", "ruleId"))
+    CheckTest = namedtuple('CheckTest', ('text', 'matches'))
+    Match = namedtuple('Match', ('fromy', 'fromx', 'ruleId'))
 
     check_tests = {
-        "en": [
+        'en': [
             CheckTest(
-                ("Paste your own text here... or check this text too see "
-                 "a few of the problems that that LanguageTool can detect. "
-                 "Did you notice that their is no spelcheckin included?"),
+                ('Paste your own text here... or check this text too see '
+                 'a few of the problems that that LanguageTool can detect. '
+                 'Did you notice that their is no spelcheckin included?'),
                 [
-                    Match(0, 47, "TOO_TO"),
-                    Match(0, 132, "THEIR_IS"),
+                    Match(0, 47, 'TOO_TO'),
+                    Match(0, 132, 'THEIR_IS'),
                 ]
             ),
         ],
-        "fr": [
+        'fr': [
             CheckTest(
-                ("Se texte est un exemple pour pour vous montrer "
-                 "le fonctionnement de LanguageTool. "
-                 "notez que LanguageTool ne comporte pas "
-                 "de correcteur orthographique."),
+                ('Se texte est un exemple pour pour vous montrer '
+                 'le fonctionnement de LanguageTool. '
+                 'notez que LanguageTool ne comporte pas '
+                 'de correcteur orthographique.'),
                 [
-                    Match(0, 0, "SE_CE"),
-                    Match(0, 3, "TE_NV"),
-                    Match(0, 24, "FRENCH_WORD_REPEAT_RULE"),
-                    Match(0, 82, "UPPERCASE_SENTENCE_START"),
+                    Match(0, 0, 'SE_CE'),
+                    Match(0, 3, 'TE_NV'),
+                    Match(0, 24, 'FRENCH_WORD_REPEAT_RULE'),
+                    Match(0, 82, 'UPPERCASE_SENTENCE_START'),
                 ]
             ),
             CheckTest(
-                "je me rappelle de tout sans aucun soucis!",
+                'je me rappelle de tout sans aucun soucis!',
                 [
-                    Match(0, 0, "UPPERCASE_SENTENCE_START"),
-                    Match(0, 6, "RAPPELER_DE"),
-                    Match(0, 28, "ACCORD_NOMBRE"),
-                    Match(0, 34, "FRENCH_WHITESPACE"),
+                    Match(0, 0, 'UPPERCASE_SENTENCE_START'),
+                    Match(0, 6, 'RAPPELER_DE'),
+                    Match(0, 28, 'ACCORD_NOMBRE'),
+                    Match(0, 34, 'FRENCH_WHITESPACE'),
                 ]
             ),
         ],
     }
 
     correct_tests = {
-        "en-US": {
-            "that would of been to impressive.":
-            "That would have been too impressive.",
+        'en-US': {
+            'that would of been to impressive.':
+            'That would have been too impressive.',
         },
-        "fr": {
-            "il monte en haut si il veut.":
-            "Il monte s’il veut.",
+        'fr': {
+            'il monte en haut si il veut.':
+            'Il monte s’il veut.',
         },
     }
 
@@ -71,7 +71,7 @@ class TestLanguageTool(unittest.TestCase):
             except ValueError:
                 version = language_tool.get_version()
                 warnings.warn(
-                    "LanguageTool {} doesn’t support language {!r}"
+                    'LanguageTool {} doesn’t support language {!r}'
                     .format(version, language)
                 )
             for text, expected_matches in tests:
@@ -86,7 +86,7 @@ class TestLanguageTool(unittest.TestCase):
                             break
                     else:
                         raise IndexError(
-                            "can’t find {!r}".format(expected_match))
+                            'can’t find {!r}'.format(expected_match))
 
     def test_correct(self):
         for language, tests in self.correct_tests.items():
@@ -95,7 +95,7 @@ class TestLanguageTool(unittest.TestCase):
             except ValueError:
                 version = language_tool.get_version()
                 warnings.warn(
-                    "LanguageTool {} doesn’t support language {!r}"
+                    'LanguageTool {} doesn’t support language {!r}'
                     .format(version, language)
                 )
             for text, result in tests.items():
@@ -103,12 +103,12 @@ class TestLanguageTool(unittest.TestCase):
 
     def test_languages(self):
         languages = language_tool.get_languages()
-        self.assertIn("en", languages)
+        self.assertIn('en', languages)
 
     def test_version(self):
         version = language_tool.get_version()
         self.assertTrue(version)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()

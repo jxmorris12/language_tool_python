@@ -19,14 +19,13 @@
 import os
 
 
-__all__ = ["which"]
+__all__ = ['which']
 
 WIN_ALLOW_CROSS_ARCH = True
 
 
 def which(program):
-    """Identify the location of an executable file.
-    """
+    """Identify the location of an executable file."""
     if os.path.split(program)[0]:
         program_path = find_exe(program)
         if program_path:
@@ -44,17 +43,17 @@ def is_exe(path):
 
 
 def _get_path_list():
-    return os.environ["PATH"].split(os.pathsep)
+    return os.environ['PATH'].split(os.pathsep)
 
 
-if os.name == "nt":
+if os.name == 'nt':
     def find_exe(program):
         root, ext = os.path.splitext(program)
         if ext:
             if is_exe(program):
                 return program
         else:
-            for ext in os.environ["PATHEXT"].split(os.pathsep):
+            for ext in os.environ['PATHEXT'].split(os.pathsep):
                 program_path = root + ext.lower()
                 if is_exe(program_path):
                     return program_path
@@ -86,6 +85,6 @@ def main():
             print(path)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     import sys
     sys.exit(main())

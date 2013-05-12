@@ -46,22 +46,22 @@ from .backports import subprocess
 from .which import which
 
 
-__all__ = ["LanguageTool", "Error", "get_languages", "correct", "get_version",
-           "get_directory", "set_directory"]
+__all__ = ['LanguageTool', 'Error', 'get_languages', 'correct', 'get_version',
+           'get_directory', 'set_directory']
 
 JAR_NAMES = [
-    "languagetool-standalone*.jar",    # 2.1
-    "LanguageTool.jar",
-    "LanguageTool.uno.jar"
+    'languagetool-standalone*.jar',    # 2.1
+    'LanguageTool.jar',
+    'LanguageTool.uno.jar'
 ]
-FAILSAFE_LANGUAGE = "en"
+FAILSAFE_LANGUAGE = 'en'
 
 # http://mail.python.org/pipermail/python-dev/2011-July/112551.html
 USE_URLOPEN_RESOURCE_WARNING_FIX = (3, 1) < sys.version_info < (3, 4)
 
-if os.name == "nt":
-    startupinfo = subprocess.STARTUPINFO() #@UndefinedVariable
-    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW #@UndefinedVariable
+if os.name == 'nt':
+    startupinfo = subprocess.STARTUPINFO()  # @UndefinedVariable
+    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW  # @UndefinedVariable
 else:
     startupinfo = None
 
@@ -69,8 +69,8 @@ cache = {}
 
 
 class Error(Exception):
-    """LanguageTool Error
-    """
+
+    """LanguageTool Error."""
 
 
 class ServerError(Error):
@@ -85,7 +85,7 @@ class PathError(Error):
     pass
 
 
-def get_replacement_list(string, sep="#"):
+def get_replacement_list(string, sep='#'):
     if isinstance(string, list):
         return string
     return string.split(sep) if string else []
@@ -103,15 +103,15 @@ def auto_type(string):
 
 @total_ordering
 class Match:
-    """Hold information about where a rule matches text.
-    """
+
+    """Hold information about where a rule matches text."""
     _SLOTS = OrderedDict([
-        ("fromy", int), ("fromx", int), ("toy", int), ("tox", int),
-        ("ruleId", str), ("subId", str), ("msg", str),
-        ("replacements", get_replacement_list),
-        ("context", str), ("contextoffset", int),
-        ("offset", int), ("errorlength", int),
-        ("url", str), ("category", str), ("locqualityissuetype", str),
+        ('fromy', int), ('fromx', int), ('toy', int), ('tox', int),
+        ('ruleId', str), ('subId', str), ('msg', str),
+        ('replacements', get_replacement_list),
+        ('context', str), ('contextoffset', int),
+        ('offset', int), ('errorlength', int),
+        ('url', str), ('category', str), ('locqualityissuetype', str),
     ])
 
     def __init__(self, attrib, text=None):
@@ -123,29 +123,28 @@ class Match:
             slots = list(self._SLOTS)
             slots += list(set(self.__dict__).difference(slots))
             attrs = [slot for slot in slots
-                     if slot in self.__dict__ and not slot.startswith("_")]
-            return "{{{}}}".format(
-                ", ".join([
-                    "{!r}: {!r}".format(attr, getattr(self, attr))
+                     if slot in self.__dict__ and not slot.startswith('_')]
+            return '{{{}}}'.format(
+                ', '.join([
+                    '{!r}: {!r}'.format(attr, getattr(self, attr))
                     for attr in attrs
                 ])
             )
 
-        return "{}({})".format(self.__class__.__name__, _ordered_dict_repr())
+        return '{}({})'.format(self.__class__.__name__, _ordered_dict_repr())
 
     def __str__(self):
         ruleId = self.ruleId
         if self.subId is not None:
-            ruleId += "[{}]".format(self.subId)
-        s = "Line {}, column {}, Rule ID: {}".format(
+            ruleId += '[{}]'.format(self.subId)
+        s = 'Line {}, column {}, Rule ID: {}'.format(
             self.fromy + 1, self.fromx + 1, ruleId)
         if self.msg:
-            s += "\nMessage: {}".format(self.msg)
+            s += '\nMessage: {}'.format(self.msg)
         if self.replacements:
-            s += "\nSuggestion: {}".format("; ".join(self.replacements))
-        s += "\n{}\n{}".format(
-            self.context, " " * self.contextoffset + "^" * self.errorlength
-            #+" " * (len(self.context) - self.contextoffset - self.errorlength)
+            s += '\nSuggestion: {}'.format('; '.join(self.replacements))
+        s += '\n{}\n{}'.format(
+            self.context, ' ' * self.contextoffset + '^' * self.errorlength
         )
         return s
 
@@ -167,14 +166,14 @@ class Match:
 
     def __getattr__(self, name):
         if name not in self._SLOTS:
-            raise AttributeError("{!r} object has no attribute {!r}"
+            raise AttributeError('{!r} object has no attribute {!r}'
                                  .format(self.__class__.__name__, name))
 
 
 class LanguageTool:
-    """Main class used for checking text against different rules
-    """
-    _HOST = socket.gethostbyname("localhost")
+
+    """Main class used for checking text against different rules."""
+    _HOST = socket.gethostbyname('localhost')
     _MIN_PORT = 8081
     _MAX_PORT = 8083
     _TIMEOUT = 30
@@ -203,13 +202,12 @@ class LanguageTool:
             self._terminate_server()
 
     def __repr__(self):
-        return "{}(language={!r}, motherTongue={!r})".format(
+        return '{}(language={!r}, motherTongue={!r})'.format(
             self.__class__.__name__, self.language, self.motherTongue)
 
     @property
     def language(self):
-        """The language to be used
-        """
+        """The language to be used."""
         return self._language
 
     @language.setter
@@ -220,10 +218,11 @@ class LanguageTool:
 
     @property
     def motherTongue(self):
-        """The user’s mother tongue or None
+        """The user’s mother tongue or None.
 
         The mother tongue may also be used as a source language
         for checking bilingual texts.
+
         """
         return self._motherTongue
 
@@ -234,69 +233,62 @@ class LanguageTool:
 
     @property
     def _spell_checking_rules(self):
-        return {"HUNSPELL_RULE", "HUNSPELL_NO_SUGGEST_RULE",
-                "MORFOLOGIK_RULE_" + self.language.replace("-", "_").upper()}
+        return {'HUNSPELL_RULE', 'HUNSPELL_NO_SUGGEST_RULE',
+                'MORFOLOGIK_RULE_' + self.language.replace('-', '_').upper()}
 
     def check(self, text: str, srctext=None) -> [Match]:
-        """Match text against enabled rules.
-        """
+        """Match text against enabled rules."""
         root = self._get_root(self._url, self._encode(text, srctext))
-        return [Match(e.attrib, text) for e in root if e.tag == "error"]
+        return [Match(e.attrib, text) for e in root if e.tag == 'error']
 
     def _check_api(self, text: str, srctext=None) -> bytes:
-        """Match text against enabled rules (result in XML format).
-        """
+        """Match text against enabled rules (result in XML format)."""
         root = self._get_root(self._url, self._encode(text, srctext))
         return (b'<?xml version="1.0" encoding="UTF-8"?>\n' +
                 ElementTree.tostring(root) + b"\n")
 
     def _encode(self, text, srctext=None):
-        params = {"language": self.language, "text": text.encode("utf-8")}
+        params = {'language': self.language, 'text': text.encode('utf-8')}
         if srctext is not None:
-            params["srctext"] = srctext.encode("utf-8")
+            params['srctext'] = srctext.encode('utf-8')
         if self.motherTongue is not None:
-            params["motherTongue"] = self.motherTongue
+            params['motherTongue'] = self.motherTongue
         if self.disabled:
-            params["disabled"] = ",".join(self.disabled)
+            params['disabled'] = ','.join(self.disabled)
         if self.enabled:
-            params["enabled"] = ",".join(self.enabled)
+            params['enabled'] = ','.join(self.enabled)
         return urllib.parse.urlencode(params).encode()
 
     def correct(self, text: str, srctext=None) -> str:
-        """Automatically apply suggestions to the text.
-        """
+        """Automatically apply suggestions to the text."""
         return correct(text, self.check(text, srctext))
 
     def enable_spellchecking(self):
-        """Enable spell-checking rules.
-        """
+        """Enable spell-checking rules."""
         self.disabled.difference_update(self._spell_checking_rules)
 
     def disable_spellchecking(self):
-        """Disable spell-checking rules.
-        """
+        """Disable spell-checking rules."""
         self.disabled.update(self._spell_checking_rules)
 
     @classmethod
     def _get_languages(cls) -> set:
-        """Get supported languages (by querying the server).
-        """
+        """Get supported languages (by querying the server)."""
         if not cls._server_is_alive():
             cls._start_server_on_free_port()
-        url = urllib.parse.urljoin(cls._url, "Languages")
+        url = urllib.parse.urljoin(cls._url, 'Languages')
         languages = set()
         for e in cls._get_root(url, num_tries=1):
-            languages.add(e.get("abbr"))
-            languages.add(e.get("abbrWithVariant"))
+            languages.add(e.get('abbr'))
+            languages.add(e.get('abbrWithVariant'))
         return languages
 
     @classmethod
     def _get_attrib(cls):
-        """Get matches element attributes.
-        """
+        """Get matches element attributes."""
         if not cls._server_is_alive():
             cls._start_server_on_free_port()
-        params = {"language": FAILSAFE_LANGUAGE, "text": ""}
+        params = {'language': FAILSAFE_LANGUAGE, 'text': ''}
         data = urllib.parse.urlencode(params).encode()
         root = cls._get_root(cls._url, data, num_tries=1)
         return root.attrib
@@ -311,12 +303,12 @@ class LanguageTool:
                 if n + 1 < num_tries:
                     cls._start_server()
                 else:
-                    raise Error("{}: {}".format(cls._url, e))
+                    raise Error('{}: {}'.format(cls._url, e))
 
     @classmethod
     def _start_server_on_free_port(cls):
         while True:
-            cls._url = "http://{}:{}".format(cls._HOST, cls._port)
+            cls._url = 'http://{}:{}'.format(cls._HOST, cls._port)
             try:
                 cls._start_server()
                 break
@@ -345,7 +337,7 @@ class LanguageTool:
                 startupinfo=startupinfo
             )
             # Python 2.7 compatibility
-            #for line in cls._server.stdout:
+            # for line in cls._server.stdout:
             match = None
             while True:
                 line = cls._server.stdout.readline()
@@ -355,7 +347,7 @@ class LanguageTool:
                 if match:
                     port = int(match.group(1))
                     if port != cls._port:
-                        raise Error("requested port {}, but got {}"
+                        raise Error('requested port {}, but got {}'
                                     .format(cls._port, port))
                     break
             if not match:
@@ -370,7 +362,7 @@ class LanguageTool:
                     raise Error(err_msg)
         if not cls._server:
             # Couldn’t start the server, so maybe there is already one running.
-            params = {"language": FAILSAFE_LANGUAGE, "text": ""}
+            params = {'language': FAILSAFE_LANGUAGE, 'text': ''}
             data = urllib.parse.urlencode(params).encode()
             try:
                 with urlopen(cls._url, data, cls._TIMEOUT) as f:
@@ -378,13 +370,13 @@ class LanguageTool:
             except (IOError, http.client.HTTPException) as e:
                 if err:
                     raise err
-                raise ServerError("{}: {}".format(cls._url, e))
+                raise ServerError('{}: {}'.format(cls._url, e))
             root = tree.getroot()
 
             # LanguageTool 1.9+
-            if root.get("software") != "LanguageTool":
-                raise ServerError("unexpected software from {}: {!r}"
-                                  .format(cls._url, root.get("software")))
+            if root.get('software') != 'LanguageTool':
+                raise ServerError('unexpected software from {}: {!r}'
+                                  .format(cls._url, root.get('software')))
 
     @classmethod
     def _server_is_alive(cls):
@@ -400,8 +392,8 @@ class LanguageTool:
 
 @total_ordering
 class LanguageTag(str):
-    """Language tag supported by LanguageTool
-    """
+
+    """Language tag supported by LanguageTool."""
     _LANGUAGE_RE = re.compile(r"^([a-z]{2,3})(?:[_-]([a-z]{2}))?$", re.I)
 
     def __new__(cls, tag):
@@ -425,23 +417,22 @@ class LanguageTag(str):
     @classmethod
     def _normalize(cls, tag):
         if not tag:
-            raise ValueError("empty language tag")
-        languages = {l.lower().replace("-", "_"): l for l in get_languages()}
+            raise ValueError('empty language tag')
+        languages = {l.lower().replace('-', '_'): l for l in get_languages()}
         try:
-            return languages[tag.lower().replace("-", "_")]
+            return languages[tag.lower().replace('-', '_')]
         except KeyError:
             try:
                 return languages[cls._LANGUAGE_RE.match(tag).group(1).lower()]
             except (KeyError, AttributeError):
-                raise ValueError("unsupported language: {!r}".format(tag))
+                raise ValueError('unsupported language: {!r}'.format(tag))
 
 
 def correct(text: str, matches: [Match]) -> str:
-    """Automatically apply suggestions to the text.
-    """
+    """Automatically apply suggestions to the text."""
     ltext = list(text)
     matches = [match for match in matches if match.replacements]
-    errors = [ltext[match.offset:match.offset+match.errorlength]
+    errors = [ltext[match.offset:match.offset + match.errorlength]
               for match in matches]
     correct_offset = 0
     for n, match in enumerate(matches):
@@ -452,22 +443,21 @@ def correct(text: str, matches: [Match]) -> str:
         repl = match.replacements[0]
         ltext[frompos:topos] = list(repl)
         correct_offset += len(repl) - len(errors[n])
-    return "".join(ltext)
+    return ''.join(ltext)
 
 
 def _get_attrib():
     try:
-        attrib = cache["attrib"]
+        attrib = cache['attrib']
     except KeyError:
         attrib = LanguageTool._get_attrib()
-        cache["attrib"] = attrib
+        cache['attrib'] = attrib
     return attrib
 
 
 def get_version():
-    """Get LanguageTool version.
-    """
-    version = _get_attrib().get("version")
+    """Get LanguageTool version."""
+    version = _get_attrib().get('version')
     if not version:
         match = re.search(r"LanguageTool-?.*?(\S+)$", get_directory())
         if match:
@@ -476,27 +466,24 @@ def get_version():
 
 
 def get_build_date():
-    """Get LanguageTool build date.
-    """
-    return _get_attrib().get("buildDate")
+    """Get LanguageTool build date."""
+    return _get_attrib().get('buildDate')
 
 
 def get_languages() -> set:
-    """Get supported languages.
-    """
+    """Get supported languages."""
     try:
-        languages = cache["languages"]
+        languages = cache['languages']
     except KeyError:
         languages = LanguageTool._get_languages()
-        cache["languages"] = languages
+        cache['languages'] = languages
     return languages
 
 
 def get_directory():
-    """Get LanguageTool directory.
-    """
+    """Get LanguageTool directory."""
     try:
-        language_tool_dir = cache["language_tool_dir"]
+        language_tool_dir = cache['language_tool_dir']
     except KeyError:
         def version_key(string):
             return [int(e) if e.isdigit() else e
@@ -505,7 +492,7 @@ def get_directory():
         def get_lt_dir(base_dir):
             paths = [
                 path for path in
-                glob.glob(os.path.join(base_dir, "LanguageTool*"))
+                glob.glob(os.path.join(base_dir, 'LanguageTool*'))
                 if os.path.isdir(path)
             ]
             return max(paths, key=version_key) if paths else None
@@ -520,45 +507,44 @@ def get_directory():
             else:
                 language_tool_dir = get_lt_dir(base_dir)
             if not language_tool_dir:
-                raise PathError("can’t find LanguageTool directory in {!r}"
+                raise PathError('can’t find LanguageTool directory in {!r}'
                                 .format(base_dir))
-        cache["language_tool_dir"] = language_tool_dir
+        cache['language_tool_dir'] = language_tool_dir
     return language_tool_dir
 
 
 def set_directory(path=None):
-    """Set LanguageTool directory.
-    """
+    """Set LanguageTool directory."""
     old_path = get_directory()
     terminate_server()
     cache.clear()
     if path:
-        cache["language_tool_dir"] = path
+        cache['language_tool_dir'] = path
         try:
             get_jar_info()
         except Error:
-            cache["language_tool_dir"] = old_path
+            cache['language_tool_dir'] = old_path
             raise
 
 
 def get_server_cmd(port=None):
     try:
-        cmd = cache["server_cmd"]
+        cmd = cache['server_cmd']
     except KeyError:
         java_path, jar_path = get_jar_info()
-        cmd = [java_path, "-cp", jar_path,
-               "org.languagetool.server.HTTPServer"]
-        cache["server_cmd"] = cmd
-    return cmd if port is None else cmd + ["-p", str(port)]
+        cmd = [java_path, '-cp', jar_path,
+               'org.languagetool.server.HTTPServer']
+        cache['server_cmd'] = cmd
+    return cmd if port is None else cmd + ['-p', str(port)]
 
 
 def get_jar_info():
     try:
-        java_path, jar_path = cache["jar_info"]
+        java_path, jar_path = cache['jar_info']
     except KeyError:
-        java_path = which("java")
+        java_path = which('java')
         if not java_path:
-            raise JavaError("can’t find Java")
+            raise JavaError('can’t find Java')
         dir_name = get_directory()
         jar_path = None
         for jar_name in JAR_NAMES:
@@ -570,28 +556,27 @@ def get_jar_info():
             if jar_path:
                 break
         else:
-            raise PathError("can’t find languagetool-standalone in {!r}"
+            raise PathError('can’t find languagetool-standalone in {!r}'
                             .format(dir_name))
-        cache["jar_info"] = java_path, jar_path
+        cache['jar_info'] = java_path, jar_path
     return java_path, jar_path
 
 
 def get_locale_language():
-    """Get the language code for the current locale setting.
-    """
+    """Get the language code for the current locale setting."""
     return locale.getlocale()[0] or locale.getdefaultlocale()[0]
 
 
 @atexit.register
 def terminate_server():
-    """Terminate the server.
-    """
+    """Terminate the server."""
     if LanguageTool._server_is_alive():
         LanguageTool._terminate_server()
 
 
 if USE_URLOPEN_RESOURCE_WARNING_FIX:
     class ClosingHTTPResponse(http.client.HTTPResponse):
+
         def __init__(self, sock, *args, **kwargs):
             super().__init__(sock, *args, **kwargs)
             self._socket_close = sock.close
@@ -604,6 +589,7 @@ if USE_URLOPEN_RESOURCE_WARNING_FIX:
         response_class = ClosingHTTPResponse
 
     class ClosingHTTPHandler(urllib.request.HTTPHandler):
+
         def http_open(self, req):
             return self.do_open(ClosingHTTPConnection, req)
 
