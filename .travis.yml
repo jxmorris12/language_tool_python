@@ -20,4 +20,4 @@ script:
 
     # Prevent Python 2.7 from using the non-3to2 converted code.
     - cd language_tool
-    - ./test.bash
+    - ../test.bash
