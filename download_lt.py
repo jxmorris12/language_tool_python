@@ -83,7 +83,7 @@ def download_lt(update=False):
                         break
                     contents += data.decode()
             break
-        except IOError as e:
+        except IOError:
             if n == len(BASE_URLS) - 1:
                 raise
 
