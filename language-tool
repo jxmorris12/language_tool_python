@@ -1,1 +1,6 @@
-language_tool/__main__.py
+#!/usr/bin/env python
+
+import sys
+
+from language_tool import main
+sys.exit(main.main())
