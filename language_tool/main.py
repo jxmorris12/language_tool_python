@@ -98,8 +98,6 @@ def main():
             lang_tool.language = args.language
 
     if not guess_language:
-        if not args.api:
-            print('Language: {}'.format(lang_tool.language))
         text = get_text(file, encoding)
 
     if not args.spell_check:
