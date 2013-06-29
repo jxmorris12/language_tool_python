@@ -4,8 +4,8 @@ language-tool
 Python wrapper for LanguageTool.
 
 .. image:: https://travis-ci.org/myint/language-tool.png?branch=master
-   :target: https://travis-ci.org/myint/language-tool
-   :alt: Build status
+    :target: https://travis-ci.org/myint/language-tool
+    :alt: Build status
 
 
 Example usage
@@ -52,11 +52,11 @@ Installation
 
 To install the package for Python 3, use::
 
-  $ ./setup.py install
+    $ ./setup.py install
 
 To install the package for Python 2, use::
 
-  $ python2 setup.py install
+    $ python2 setup.py install
 
 On Windows, you may use one of the MSI binary packages provided on the
 `download page <https://bitbucket.org/spirit/language_tool/downloads>`_.
