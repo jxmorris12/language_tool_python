@@ -17,7 +17,7 @@ def parse_args():
         prog='{} -m {}'.format(os.path.basename(sys.executable),
                                'language_tool')
     )
-    parser.add_argument('file',
+    parser.add_argument('files', nargs='+',
                         help='plain text file or "-" for stdin')
     parser.add_argument('-c', '--encoding',
                         help='input encoding')
@@ -65,58 +65,61 @@ def get_text(file, encoding):
 def main():
     args = parse_args()
 
-    if args.file == '-':
-        file = sys.stdin.fileno()
-        encoding = args.encoding or (
-            sys.stdin.encoding if sys.stdin.isatty()
-            else locale.getpreferredencoding()
-        )
-    else:
-        file = args.file
-        encoding = args.encoding or 'utf-8'
-
-    lang_tool = language_tool.LanguageTool(motherTongue=args.mother_tongue)
-    guess_language = None
-
-    if args.language:
-        if args.language.lower() == 'auto':
-            try:
-                from guess_language import guess_language
-            except ImportError:
-                print('guess_language is unavailable.', file=sys.stderr)
-                return 1
-            else:
-                text = get_text(file, encoding)
-                language = guess_language(text)
-                if not args.api:
-                    print('Detected language: {}'.format(language),
-                          file=sys.stderr)
-                if not language:
-                    return 1
-                lang_tool.language = language
-        else:
-            lang_tool.language = args.language
-
-    if not guess_language:
-        text = get_text(file, encoding)
-
-    if not args.spell_check:
-        lang_tool.disable_spellchecking()
-
-    lang_tool.disabled.update(args.disable)
-    lang_tool.enabled.update(args.enable)
-
     status = 0
 
-    if args.api:
-        print(lang_tool._check_api(text).decode('utf-8'))
-    elif args.apply:
-        print(lang_tool.correct(text))
-    else:
-        print()
-        for n, match in enumerate(lang_tool.check(text)):
-            print('{}.) {}'.format(n + 1, match))
+    for filename in args.files:
+        if len(args.files) > 1:
+            print(filename, file=sys.stderr)
+
+        if filename == '-':
+            filename = sys.stdin.fileno()
+            encoding = args.encoding or (
+                sys.stdin.encoding if sys.stdin.isatty()
+                else locale.getpreferredencoding()
+            )
+        else:
+            encoding = args.encoding or 'utf-8'
+
+        lang_tool = language_tool.LanguageTool(motherTongue=args.mother_tongue)
+        guess_language = None
+
+        if args.language:
+            if args.language.lower() == 'auto':
+                try:
+                    from guess_language import guess_language
+                except ImportError:
+                    print('guess_language is unavailable.', file=sys.stderr)
+                    return 1
+                else:
+                    text = get_text(filename, encoding)
+                    language = guess_language(text)
+                    if not args.api:
+                        print('Detected language: {}'.format(language),
+                              file=sys.stderr)
+                    if not language:
+                        return 1
+                    lang_tool.language = language
+            else:
+                lang_tool.language = args.language
+
+        if not guess_language:
+            text = get_text(filename, encoding)
+
+        if not args.spell_check:
+            lang_tool.disable_spellchecking()
+
+        lang_tool.disabled.update(args.disable)
+        lang_tool.enabled.update(args.enable)
+
+        if args.api:
+            print(lang_tool._check_api(text).decode('utf-8'))
+        elif args.apply:
+            print(lang_tool.correct(text))
+        else:
             print()
-            status = 2
+            for n, match in enumerate(lang_tool.check(text)):
+                print('{}.) {}'.format(n + 1, match))
+                print()
+                status = 2
 
     return status
