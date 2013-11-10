@@ -27,15 +27,9 @@ import socket
 import sys
 import urllib.parse
 import urllib.request
-import warnings
-from collections import namedtuple, OrderedDict
+from collections import OrderedDict
 from functools import total_ordering
 from weakref import WeakValueDictionary
-
-try:
-    from collections.abc import Sequence
-except ImportError:
-    from collections import Sequence
 
 try:
     from xml.etree import cElementTree as ElementTree
