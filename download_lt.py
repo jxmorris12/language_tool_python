@@ -30,7 +30,8 @@ except ImportError:
         NormalizedVersion = None
 
 
-BASE_URLS = ['http://www.languagetool.org/download/']
+BASE_URL = 'http://www.languagetool.org/download/'
+FILENAME = 'LanguageTool-2.3.zip'
 PACKAGE_PATH = 'language_tool'
 
 
@@ -72,64 +73,20 @@ def download_lt(update=False):
     if old_path_list and not update:
         return
 
-    contents = ''
-
-    for n, base_url in enumerate(BASE_URLS):
-        try:
-            with closing(urlopen(base_url)) as u:
-                while True:
-                    data = u.read()
-                    if not data:
-                        break
-                    contents += data.decode()
-            break
-        except IOError:
-            if n == len(BASE_URLS) - 1:
-                raise
-
-    href_format = r'<a href="(LanguageTool-(\d+.*?)\.{})">'
-
-    matches = [
-        (m.group(1), Version(m.group(2))) for m in
-        re.finditer(href_format.format('zip'), contents, re.I)
-    ]
-
-    if not matches:
-        matches = [
-            (m.group(1), Version(m.group(2))) for m in
-            re.finditer(href_format.format('oxt'), contents, re.I)
-        ]
-
-    filename, version = matches[-1]
-    url = urljoin(base_url, filename)
-    dirname = os.path.splitext(filename)[0]
+    url = urljoin(BASE_URL, FILENAME)
+    dirname = os.path.splitext(FILENAME)[0]
     extract_path = os.path.join(PACKAGE_PATH, dirname)
 
     if extract_path in old_path_list:
         print('No update needed: {!r}'.format(dirname))
         return
 
-    for old_path in old_path_list:
-        match = re.search('LanguageTool-(\d+.*?)$', old_path)
-        if match:
-            current_version = Version(match.group(1))
-            try:
-                version_test = current_version > version
-            except TypeError:
-                continue
-            if version_test:
-                print(
-                    'Local version: {!r}, Remote version: {!r}'
-                    .format(str(current_version), str(version))
-                )
-                return
-
     with closing(TemporaryFile()) as t:
         with closing(urlopen(url)) as u:
             content_len = int(u.headers['Content-Length'])
             sys.stdout.write(
                 'Downloading {!r} ({:.1f} MiB)...\n'
-                .format(filename, content_len / 1048576.)
+                .format(FILENAME, content_len / 1048576.)
             )
             sys.stdout.flush()
             chunk_len = content_len // 100
