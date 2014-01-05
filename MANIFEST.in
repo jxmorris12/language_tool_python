@@ -1,0 +1,6 @@
+include *.LESSER
+include *.bash
+include *.py
+include .travis.yml
+include COPYING
+recursive-include language_check *.py
