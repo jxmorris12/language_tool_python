@@ -16,7 +16,7 @@ Example usage
 
 From the command line::
 
-    $ ./language-check example.txt
+    $ language-check example.txt
     foo.txt:1:17: Use 'an' instead of 'a' if the following word starts with a
         vowel sound, e.g. 'an article', 'an hour'; suggestions: an
     foo.txt:1:51: Did you mean 'to the'?; suggestions: to the
