@@ -14,14 +14,7 @@ results from the command-line.
 Example usage
 -------------
 
-From the command line::
-
-    $ language-check example.txt
-    foo.txt:1:17: Use 'an' instead of 'a' if the following word starts with a
-        vowel sound, e.g. 'an article', 'an hour'; suggestions: an
-    foo.txt:1:51: Did you mean 'to the'?; suggestions: to the
-
-From the interpreter
+From the interpreter:
 
 >>> import language_check
 >>> lang_check = language_check.LanguageTool("en-US")
@@ -53,6 +46,13 @@ Automatically apply suggestions to the text:
 
 >>> language_check.correct(text, matches)
 'A sentence with an error in the Hitchhiker’s Guide to the Galaxy'
+
+From the command line::
+
+    $ language-check example.txt
+    foo.txt:1:17: Use 'an' instead of 'a' if the following word starts with a
+        vowel sound, e.g. 'an article', 'an hour'; suggestions: an
+    foo.txt:1:51: Did you mean 'to the'?; suggestions: to the
 
 
 Installation
