@@ -8,8 +8,6 @@ import sys
 
 import language_check.console_mode
 
-DEFAULT_ENCODING = 'utf-8'
-
 
 def parse_args():
     parser = argparse.ArgumentParser(
