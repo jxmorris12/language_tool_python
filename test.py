@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Test suite for language_tool."""
+"""Test suite for language_check."""
 
 import unittest
 import warnings
 from collections import namedtuple
 
-import language_tool
+import language_check
 
 
 class TestLanguageTool(unittest.TestCase):
@@ -62,20 +62,20 @@ class TestLanguageTool(unittest.TestCase):
     }
 
     def setUp(self):
-        self.lang_tool = language_tool.LanguageTool()
+        self.lang_check = language_check.LanguageTool()
 
     def test_check(self):
         for language, tests in self.check_tests.items():
             try:
-                self.lang_tool.language = language
+                self.lang_check.language = language
             except ValueError:
-                version = language_tool.get_version()
+                version = language_check.get_version()
                 warnings.warn(
                     'LanguageTool {} doesn’t support language {!r}'
                     .format(version, language)
                 )
             for text, expected_matches in tests:
-                matches = self.lang_tool.check(text)
+                matches = self.lang_check.check(text)
                 for expected_match in expected_matches:
                     for match in matches:
                         if (
@@ -91,22 +91,22 @@ class TestLanguageTool(unittest.TestCase):
     def test_correct(self):
         for language, tests in self.correct_tests.items():
             try:
-                self.lang_tool.language = language
+                self.lang_check.language = language
             except ValueError:
-                version = language_tool.get_version()
+                version = language_check.get_version()
                 warnings.warn(
                     'LanguageTool {} doesn’t support language {!r}'
                     .format(version, language)
                 )
             for text, result in tests.items():
-                self.assertEqual(self.lang_tool.correct(text), result)
+                self.assertEqual(self.lang_check.correct(text), result)
 
     def test_languages(self):
-        languages = language_tool.get_languages()
+        languages = language_check.get_languages()
         self.assertIn('en', languages)
 
     def test_version(self):
-        version = language_tool.get_version()
+        version = language_check.get_version()
         self.assertTrue(version)
 
 

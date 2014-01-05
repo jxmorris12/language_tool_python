@@ -1,21 +1,22 @@
 # -*- coding: utf-8 -*-
-"""LanguageTool through server mode."""
 
-#   © 2012 spirit <hiddenspirit@gmail.com>
-#   https://bitbucket.org/spirit/language_tool
+# © 2012 spirit <hiddenspirit@gmail.com>
+# © 2013-2014 Steven Myint
 #
-#   This program is free software: you can redistribute it and/or modify it
-#   under the terms of the GNU Lesser General Public License as published
-#   by the Free Software Foundation, either version 3 of the License,
-#   or (at your option) any later version.
+# This program is free software: you can redistribute it and/or modify it
+# under the terms of the GNU Lesser General Public License as published
+# by the Free Software Foundation, either version 3 of the License,
+# or (at your option) any later version.
 #
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty
-#   of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-#   See the GNU Lesser General Public License for more details.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty
+# of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the GNU Lesser General Public License for more details.
 #
-#   You should have received a copy of the GNU Lesser General Public License
-#   along with this program. If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+"""LanguageTool through server mode."""
 
 import atexit
 import glob
@@ -477,7 +478,7 @@ def get_languages() -> set:
 def get_directory():
     """Get LanguageTool directory."""
     try:
-        language_tool_dir = cache['language_tool_dir']
+        language_check_dir = cache['language_check_dir']
     except KeyError:
         def version_key(string):
             return [int(e) if e.isdigit() else e
@@ -492,19 +493,19 @@ def get_directory():
             return max(paths, key=version_key) if paths else None
 
         base_dir = os.path.dirname(sys.argv[0])
-        language_tool_dir = get_lt_dir(base_dir)
-        if not language_tool_dir:
+        language_check_dir = get_lt_dir(base_dir)
+        if not language_check_dir:
             try:
                 base_dir = os.path.dirname(os.path.abspath(__file__))
             except NameError:
                 pass
             else:
-                language_tool_dir = get_lt_dir(base_dir)
-            if not language_tool_dir:
+                language_check_dir = get_lt_dir(base_dir)
+            if not language_check_dir:
                 raise PathError('can’t find LanguageTool directory in {!r}'
                                 .format(base_dir))
-        cache['language_tool_dir'] = language_tool_dir
-    return language_tool_dir
+        cache['language_check_dir'] = language_check_dir
+    return language_check_dir
 
 
 def set_directory(path=None):
@@ -513,11 +514,11 @@ def set_directory(path=None):
     terminate_server()
     cache.clear()
     if path:
-        cache['language_tool_dir'] = path
+        cache['language_check_dir'] = path
         try:
             get_jar_info()
         except Error:
-            cache['language_tool_dir'] = old_path
+            cache['language_check_dir'] = old_path
             raise
 
 

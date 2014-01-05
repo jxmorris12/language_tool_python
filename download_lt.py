@@ -32,7 +32,7 @@ except ImportError:
 
 BASE_URL = 'http://www.languagetool.org/download/'
 FILENAME = 'LanguageTool-2.2.zip'
-PACKAGE_PATH = 'language_tool'
+PACKAGE_PATH = 'language_check'
 
 
 if NormalizedVersion:

@@ -1,20 +1,23 @@
-language-tool
-=============
+language-check
+==============
 
 Python wrapper for LanguageTool.
 
-.. image:: https://travis-ci.org/myint/language-tool.png?branch=master
-    :target: https://travis-ci.org/myint/language-tool
+.. image:: https://travis-ci.org/myint/language-check.png?branch=master
+    :target: https://travis-ci.org/myint/language-check
     :alt: Build status
 
+This is a fork of
+https://bitbucket.org/spirit/language_tool that produces more easily parsable
+results from the command-line.
 
 Example usage
 -------------
 
->>> import language_tool
->>> lang_tool = language_tool.LanguageTool("en-US")
+>>> import language_check
+>>> lang_check = language_check.LanguageTool("en-US")
 >>> text = "A sentence with a error in the Hitchhiker’s Guide tot he Galaxy"
->>> matches = lang_tool.check(text)
+>>> matches = lang_check.check(text)
 >>> len(matches)
 2
 
@@ -43,7 +46,7 @@ Suggestion: to the
 
 Automatically apply suggestions to the text:
 
->>> language_tool.correct(text, matches)
+>>> language_check.correct(text, matches)
 'A sentence with an error in the Hitchhiker’s Guide to the Galaxy'
 
 
@@ -53,13 +56,6 @@ Installation
 To install the package for Python 3, use::
 
     $ ./setup.py install
-
-To install the package for Python 2, use::
-
-    $ python2 setup.py install
-
-On Windows, you may use one of the MSI binary packages provided on the
-`download page <https://bitbucket.org/spirit/language_tool/downloads>`_.
 
 
 Prerequisites
@@ -75,6 +71,6 @@ The installation process should take care of downloading LanguageTool
 (it may take a few minutes).
 Otherwise, you can manually download `LanguageTool-stable.zip
 <http://www.languagetool.org/download/LanguageTool-stable.zip>`_
-and unzip it into where the ``language_tool`` package resides.
+and unzip it into where the ``language_check`` package resides.
 
 LanguageTool requires Java 6 or later.

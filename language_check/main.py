@@ -6,7 +6,7 @@ import os
 import re
 import sys
 
-import language_tool.console_mode
+import language_check.console_mode
 
 DEFAULT_ENCODING = 'utf-8'
 
@@ -15,7 +15,7 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description=__doc__.strip(),
         prog='{} -m {}'.format(os.path.basename(sys.executable),
-                               'language_tool')
+                               'language_check')
     )
     parser.add_argument('files', nargs='+',
                         help='plain text file or "-" for stdin')
@@ -35,8 +35,8 @@ def parse_args():
                         help='print results as XML')
     parser.add_argument('--version', action='version',
                         version='LanguageTool {} ({})'
-                                .format(language_tool.get_version(),
-                                        language_tool.get_build_date()),
+                                .format(language_check.get_version(),
+                                        language_check.get_build_date()),
                         help='show LanguageTool version and build date')
     parser.add_argument('-a', '--apply', action='store_true',
                         help='automatically apply suggestions if available')
@@ -80,7 +80,7 @@ def main():
         else:
             encoding = args.encoding or 'utf-8'
 
-        lang_tool = language_tool.LanguageTool(motherTongue=args.mother_tongue)
+        lang_tool = language_check.LanguageTool(motherTongue=args.mother_tongue)
         guess_language = None
 
         if args.language:
