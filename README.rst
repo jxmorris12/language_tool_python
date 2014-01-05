@@ -14,6 +14,17 @@ results from the command-line.
 Example usage
 -------------
 
+From the command line::
+
+    $ echo 'A sentence with a error in the Hitchhiker’s Guide tot he Galaxy' \
+        > foo.txt
+    $ ./language-check foo.txt
+    foo.txt:1:17: Use 'an' instead of 'a' if the following word starts with a
+        vowel sound, e.g. 'an article', 'an hour'; suggestions: an
+    foo.txt:1:51: Did you mean 'to the'?; suggestions: to the
+
+From Python:
+
 >>> import language_check
 >>> lang_check = language_check.LanguageTool("en-US")
 >>> text = "A sentence with a error in the Hitchhiker’s Guide tot he Galaxy"
