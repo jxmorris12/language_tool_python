@@ -116,10 +116,15 @@ def main():
         elif args.apply:
             print(lang_tool.correct(text))
         else:
-            print()
-            for n, match in enumerate(lang_tool.check(text)):
-                print('{}.) {}'.format(n + 1, match))
-                print()
+            for match in lang_tool.check(text):
+                replacement_text = ', '.join(match.replacements).strip()
+                print('{}:{}:{}: {}{}'.format(
+                    filename,
+                    match.fromy + 1,
+                    match.fromx + 1,
+                    match.msg,
+                    ('; suggestions: ' + replacement_text)
+                    if replacement_text else ''))
                 status = 2
 
     return status
