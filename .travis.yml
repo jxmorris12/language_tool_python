@@ -20,3 +20,7 @@ script:
 
     # Prevent Python 2.7 from using the non-3to2 converted code.
     - cd language_check; ../test.bash
+
+    # Smoke test.
+    - echo 'This is a sentence.' > foo.txt
+    - language-check foo.txt
