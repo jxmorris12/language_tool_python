@@ -1,6 +1,7 @@
 __pycache__/
-language_tool/LanguageTool-*/
+language_check/LanguageTool-*/
 .*.swp
+.tox/
 .travis-solo/
 build/
 dist/
