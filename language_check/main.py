@@ -6,7 +6,9 @@ import os
 import re
 import sys
 
-import language_check.console_mode
+from . import get_build_date
+from . import get_version
+from . import LanguageTool
 
 
 def parse_args():
@@ -33,8 +35,8 @@ def parse_args():
                         help='print results as XML')
     parser.add_argument('--version', action='version',
                         version='LanguageTool {} ({})'
-                                .format(language_check.get_version(),
-                                        language_check.get_build_date()),
+                                .format(get_version(),
+                                        get_build_date()),
                         help='show LanguageTool version and build date')
     parser.add_argument('-a', '--apply', action='store_true',
                         help='automatically apply suggestions if available')
@@ -78,7 +80,7 @@ def main():
         else:
             encoding = args.encoding or 'utf-8'
 
-        lang_tool = language_check.LanguageTool(
+        lang_tool = LanguageTool(
             motherTongue=args.mother_tongue)
         guess_language = None
 
