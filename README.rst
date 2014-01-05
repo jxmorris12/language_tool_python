@@ -21,7 +21,6 @@ Example usage
 >>> len(matches)
 2
 
-
 Check out some ``Match`` object attributes:
 
 >>> matches[0].fromy, matches[0].fromx
@@ -33,7 +32,6 @@ Check out some ``Match`` object attributes:
 >>> matches[1].ruleId, matches[1].replacements
 ('TOT_HE', ['to the'])
 
-
 Print a ``Match`` object:
 
 >>> print(matches[1])
@@ -41,8 +39,6 @@ Line 1, column 51, Rule ID: TOT_HE[1]
 Message: Did you mean 'to the'?
 Suggestion: to the
 ... with a error in the Hitchhiker’s Guide tot he Galaxy
-                                           ^^^^^^
-
 
 Automatically apply suggestions to the text:
 
@@ -53,9 +49,9 @@ Automatically apply suggestions to the text:
 Installation
 ------------
 
-To install the package for Python 3, use::
+To install via pip::
 
-    $ ./setup.py install
+    $ pip install --user --upgrade language-check
 
 
 Prerequisites
