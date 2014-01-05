@@ -55,8 +55,8 @@ FAILSAFE_LANGUAGE = 'en'
 USE_URLOPEN_RESOURCE_WARNING_FIX = (3, 1) < sys.version_info < (3, 4)
 
 if os.name == 'nt':
-    startupinfo = subprocess.STARTUPINFO()  # @UndefinedVariable
-    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW  # @UndefinedVariable
+    startupinfo = subprocess.STARTUPINFO()
+    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 else:
     startupinfo = None
 
@@ -215,8 +215,8 @@ class LanguageTool:
     def motherTongue(self):
         """The user’s mother tongue or None.
 
-        The mother tongue may also be used as a source language
-        for checking bilingual texts.
+        The mother tongue may also be used as a source language for
+        checking bilingual texts.
 
         """
         return self._motherTongue

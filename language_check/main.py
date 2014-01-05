@@ -80,7 +80,8 @@ def main():
         else:
             encoding = args.encoding or 'utf-8'
 
-        lang_tool = language_check.LanguageTool(motherTongue=args.mother_tongue)
+        lang_tool = language_check.LanguageTool(
+            motherTongue=args.mother_tongue)
         guess_language = None
 
         if args.language:

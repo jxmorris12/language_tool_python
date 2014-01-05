@@ -1,20 +1,19 @@
-"""Some backported features for subprocess
-"""
+"""Some backported features for subprocess."""
 
 from __future__ import absolute_import
 import sys
-import subprocess  # @UnusedImport
-from subprocess import (Popen, PIPE, STDOUT, CalledProcessError,  # @UnusedImport
-                        call, check_call, check_output)  # @UnusedImport
+import subprocess
+from subprocess import (Popen, PIPE, STDOUT, CalledProcessError,
+                        call, check_call, check_output)
 if sys.platform == 'win32':
-    from subprocess import STARTUPINFO  # @UnusedImport
-from subprocess import *  # @UnusedWildImport
+    from subprocess import STARTUPINFO
+from subprocess import *
 
 
 try:
-    TimeoutExpired  # @UndefinedVariable
+    TimeoutExpired
 except NameError:
-    import time  # @Reimport
+    import time
 
     class SubprocessError(Exception):
 
@@ -27,6 +26,7 @@ except NameError:
         Returns a non-zero exit status.
 
         """
+
         def __init__(self, returncode, cmd, output=None):
             self.returncode = returncode
             self.cmd = cmd
@@ -40,6 +40,7 @@ except NameError:
 
         """Raised when the timeout expires while waiting for a child
         process."""
+
         def __init__(self, cmd, timeout, output=None):
             self.cmd = cmd
             self.timeout = timeout
@@ -65,7 +66,7 @@ except NameError:
             time.sleep(0.01)
         return self.returncode
 
-    def Popen_communicate(self, input=None, timeout=None):  # @ReservedAssignment
+    def Popen_communicate(self, input=None, timeout=None):
         """Interact with process."""
         if timeout is not None:
             self.wait(timeout)
