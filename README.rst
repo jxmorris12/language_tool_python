@@ -49,10 +49,10 @@ Automatically apply suggestions to the text:
 
 From the command line::
 
+    $ echo 'This are bad.' > example.txt
+
     $ language-check example.txt
-    foo.txt:1:17: Use 'an' instead of 'a' if the following word starts with a
-        vowel sound, e.g. 'an article', 'an hour'; suggestions: an
-    foo.txt:1:51: Did you mean 'to the'?; suggestions: to the
+    example.txt:1:1: THIS_NNS[3]: Did you mean 'these'?; suggestions: These
 
 
 Installation
