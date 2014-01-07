@@ -17,9 +17,9 @@ Example usage
 From the interpreter:
 
 >>> import language_check
->>> lang_check = language_check.LanguageTool("en-US")
+>>> tool = language_check.LanguageTool("en-US")
 >>> text = "A sentence with a error in the Hitchhiker’s Guide tot he Galaxy"
->>> matches = lang_check.check(text)
+>>> matches = tool.check(text)
 >>> len(matches)
 2
 
