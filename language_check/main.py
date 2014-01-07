@@ -122,7 +122,9 @@ def main():
                 if match.subId is not None:
                     rule_id += '[{}]'.format(match.subId)
 
-                replacement_text = ', '.join(match.replacements).strip()
+                replacement_text = ', '.join(
+                    "'{}'".format(word)
+                    for word in match.replacements).strip()
 
                 message = match.msg
 
