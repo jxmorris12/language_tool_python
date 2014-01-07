@@ -79,3 +79,16 @@ Otherwise, you can manually download `LanguageTool-stable.zip
 and unzip it into where the ``language_check`` package resides.
 
 LanguageTool requires Java 6 or later.
+
+Vim plugin
+----------
+
+To use language-check in Vim, install Syntastic_ and use the following
+settings::
+
+    let g:syntastic_text_checkers = ['language_check']
+    let g:syntastic_text_language_check_args = '--language=en-US'
+
+Customize your language as appropriate.
+
+.. _Syntastic: https://github.com/scrooloose/syntastic
