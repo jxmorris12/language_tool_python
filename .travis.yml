@@ -24,3 +24,5 @@ script:
     # Smoke test.
     - echo 'This is a sentence.' > foo.txt
     - language-check foo.txt
+
+    - if [ "$TRAVIS_PYTHON_VERSION" == "3.3" ]; then ./run_doctest.py -v README.rst; fi

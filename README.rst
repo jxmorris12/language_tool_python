@@ -40,7 +40,7 @@ Print a ``Match`` object:
 Line 1, column 51, Rule ID: TOT_HE[1]
 Message: Did you mean 'to the'?
 Suggestion: to the
-... with a error in the Hitchhiker’s Guide tot he Galaxy
+...
 
 Automatically apply suggestions to the text:
 
