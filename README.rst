@@ -84,7 +84,9 @@ Vim plugin
 ----------
 
 To use language-check in Vim, install Syntastic_ and use the following
-settings::
+settings:
+
+.. code-block:: vim
 
     let g:syntastic_text_checkers = ['language_check']
     let g:syntastic_text_language_check_args = '--language=en-US'
