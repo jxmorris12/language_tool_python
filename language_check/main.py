@@ -118,11 +118,16 @@ def main():
             print(lang_tool.correct(text))
         else:
             for match in lang_tool.check(text):
+                rule_id = match.ruleId
+                if match.subId is not None:
+                    rule_id += '[{}]'.format(match.subId)
+
                 replacement_text = ', '.join(match.replacements).strip()
-                print('{}:{}:{}: {}{}'.format(
+                print('{}:{}:{}: {}: {}{}'.format(
                     filename,
                     match.fromy + 1,
                     match.fromx + 1,
+                    rule_id,
                     match.msg,
                     ('; suggestions: ' + replacement_text)
                     if replacement_text else ''))
