@@ -52,7 +52,7 @@ From the command line::
     $ echo 'This are bad.' > example.txt
 
     $ language-check example.txt
-    example.txt:1:1: THIS_NNS[3]: Did you mean 'these'?; suggestions: These
+    example.txt:1:1: THIS_NNS[3]: Did you mean 'these'?
 
 
 Installation

@@ -123,14 +123,20 @@ def main():
                     rule_id += '[{}]'.format(match.subId)
 
                 replacement_text = ', '.join(match.replacements).strip()
-                print('{}:{}:{}: {}: {}{}'.format(
+
+                message = match.msg
+
+                # Messages that end with punctuation already include the
+                # suggestion.
+                if replacement_text and not message.endswith(('.', '?')):
+                    message += '; suggestions: ' + replacement_text
+
+                print('{}:{}:{}: {}: {}'.format(
                     filename,
                     match.fromy + 1,
                     match.fromx + 1,
                     rule_id,
-                    match.msg,
-                    ('; suggestions: ' + replacement_text)
-                    if replacement_text else ''))
+                    message))
                 status = 2
 
     return status
