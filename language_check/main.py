@@ -43,6 +43,8 @@ def parse_args():
     parser.add_argument('-s', '--spell-check-off', dest='spell_check',
                         action='store_false',
                         help='disable spell-checking rules')
+    parser.add_argument('--ignore-comments', action='store_true',
+                        help='ignore lines that start with a hash')
     return parser.parse_args()
 
 
@@ -58,7 +60,8 @@ def get_rules(rules: str) -> set:
 
 def get_text(file, encoding):
     with open(file, encoding=encoding) as f:
-        text = ''.join(f.readlines())
+        text = ''.join(line for line in f.readlines()
+                       if not line.lstrip().startswith('#'))
     return text
 
 
