@@ -58,8 +58,8 @@ def get_rules(rules: str) -> set:
     return {rule.upper() for rule in re.findall(r"[\w\-]+", rules)}
 
 
-def get_text(file, encoding):
-    with open(file, encoding=encoding) as f:
+def get_text(filename, encoding):
+    with open(filename, encoding=encoding) as f:
         text = ''.join(line for line in f.readlines()
                        if not line.lstrip().startswith('#'))
     return text
