@@ -88,6 +88,8 @@ def main():
             motherTongue=args.mother_tongue)
         guess_language = None
 
+        text = get_text(filename, encoding, ignore=args.ignore_lines)
+
         if args.language:
             if args.language.lower() == 'auto':
                 try:
@@ -96,8 +98,6 @@ def main():
                     print('guess_language is unavailable.', file=sys.stderr)
                     return 1
                 else:
-                    text = get_text(filename, encoding,
-                                    ignore=args.ignore_lines)
                     language = guess_language(text)
                     if not args.api:
                         print('Detected language: {}'.format(language),
@@ -107,10 +107,6 @@ def main():
                     lang_tool.language = language
             else:
                 lang_tool.language = args.language
-
-        if not guess_language:
-            text = get_text(filename, encoding,
-                            ignore=args.ignore_lines)
 
         if not args.spell_check:
             lang_tool.disable_spellchecking()
