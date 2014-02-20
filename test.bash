@@ -11,4 +11,4 @@ echo 'This is okay.' | python -m language_check -
 echo 'These are “smart” quotes.' | python -m language_check -
 ! echo 'These are "dumb" quotes.' | python -m language_check -
 
-echo '# These are "dumb".' | python -m language_check --ignore-comments -
+echo '# These are "dumb".' | python -m language_check --ignore-lines='^#' -

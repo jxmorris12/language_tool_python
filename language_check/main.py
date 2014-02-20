@@ -43,8 +43,8 @@ def parse_args():
     parser.add_argument('-s', '--spell-check-off', dest='spell_check',
                         action='store_false',
                         help='disable spell-checking rules')
-    parser.add_argument('--ignore-comments', action='store_true',
-                        help='ignore lines that start with a hash')
+    parser.add_argument('--ignore-lines',
+                        help='ignore lines that match this regular expression')
     return parser.parse_args()
 
 
@@ -58,11 +58,11 @@ def get_rules(rules: str) -> set:
     return {rule.upper() for rule in re.findall(r"[\w\-]+", rules)}
 
 
-def get_text(filename, encoding, ignore_comments):
+def get_text(filename, encoding, ignore):
     with open(filename, encoding=encoding) as f:
         text = ''.join(line for line in f.readlines()
-                       if not ignore_comments or
-                       not line.lstrip().startswith('#'))
+                       if not ignore or
+                       not re.match(ignore, line))
     return text
 
 
@@ -97,7 +97,7 @@ def main():
                     return 1
                 else:
                     text = get_text(filename, encoding,
-                                    ignore_comments=args.ignore_comments)
+                                    ignore=args.ignore_lines)
                     language = guess_language(text)
                     if not args.api:
                         print('Detected language: {}'.format(language),
@@ -110,7 +110,7 @@ def main():
 
         if not guess_language:
             text = get_text(filename, encoding,
-                            ignore_comments=args.ignore_comments)
+                            ignore=args.ignore_lines)
 
         if not args.spell_check:
             lang_tool.disable_spellchecking()
