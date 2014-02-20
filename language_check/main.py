@@ -60,9 +60,8 @@ def get_rules(rules: str) -> set:
 
 def get_text(filename, encoding, ignore):
     with open(filename, encoding=encoding) as f:
-        text = ''.join(line for line in f.readlines()
-                       if not ignore or
-                       not re.match(ignore, line))
+        text = ''.join('\n' if (ignore and re.match(ignore, line)) else line
+                       for line in f.readlines())
     return text
 
 
