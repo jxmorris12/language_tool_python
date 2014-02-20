@@ -58,10 +58,11 @@ def get_rules(rules: str) -> set:
     return {rule.upper() for rule in re.findall(r"[\w\-]+", rules)}
 
 
-def get_text(filename, encoding):
+def get_text(filename, encoding, ignore_comments):
     with open(filename, encoding=encoding) as f:
         text = ''.join(line for line in f.readlines()
-                       if not line.lstrip().startswith('#'))
+                       if not ignore_comments or
+                       not line.lstrip().startswith('#'))
     return text
 
 
@@ -95,7 +96,8 @@ def main():
                     print('guess_language is unavailable.', file=sys.stderr)
                     return 1
                 else:
-                    text = get_text(filename, encoding)
+                    text = get_text(filename, encoding,
+                                    ignore_comments=args.ignore_comments)
                     language = guess_language(text)
                     if not args.api:
                         print('Detected language: {}'.format(language),
@@ -107,7 +109,8 @@ def main():
                 lang_tool.language = args.language
 
         if not guess_language:
-            text = get_text(filename, encoding)
+            text = get_text(filename, encoding,
+                            ignore_comments=args.ignore_comments)
 
         if not args.spell_check:
             lang_tool.disable_spellchecking()
