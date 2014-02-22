@@ -4,7 +4,6 @@
 
 import glob
 import os
-import re
 import shutil
 import sys
 
@@ -30,7 +29,7 @@ except ImportError:
         NormalizedVersion = None
 
 
-BASE_URL = 'http://www.languagetool.org/download/'
+BASE_URL = 'https://www.languagetool.org/download/'
 FILENAME = 'LanguageTool-2.2.zip'
 PACKAGE_PATH = 'language_check'
 
