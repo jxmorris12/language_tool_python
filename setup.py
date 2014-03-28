@@ -35,6 +35,7 @@ except ImportError:
         class Section(MutableMapping):
 
             """A single section from a parser."""
+
             def __init__(self, config, section):
                 self.config = config
                 self.section = section

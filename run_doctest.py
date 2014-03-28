@@ -13,13 +13,13 @@ def main():
         name = os.path.basename(sys.argv[0])
         if '__loader__' in globals():          # python -m
             name, _ = os.path.splitext(name)
-        print("usage: {0} [-v] file ...".format(name))
+        print('usage: {0} [-v] file ...'.format(name))
         return 2
 
     optionflags = doctest.ELLIPSIS | doctest.NORMALIZE_WHITESPACE
 
     for filename in testfiles:
-        if filename.endswith(".py"):
+        if filename.endswith('.py'):
             # It is a module -- insert its dir into sys.path and try to
             # import it. If it is part of a package, that possibly
             # won't work because of package imports.
@@ -36,5 +36,5 @@ def main():
     return 0
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     sys.exit(main())
