@@ -124,7 +124,8 @@ ENVIRON_OPTIONS = set([
 ])
 
 # For environment markers
-import platform  # @UnusedImport
+import platform
+assert platform
 
 python_version = '%s.%s' % sys.version_info[:2]
 python_full_version = sys.version.split()[0]
@@ -361,7 +362,7 @@ def run_3to2(args=None):
         proc = subprocess.Popen(['3to2'] + args, stderr=subprocess.PIPE)
     except OSError:
         for path in glob.glob('*.egg'):
-            if os.path.isdir(path) and not path in sys.path:
+            if os.path.isdir(path) and path not in sys.path:
                 sys.path.append(path)
         try:
             from lib3to2.main import main as lib3to2_main
