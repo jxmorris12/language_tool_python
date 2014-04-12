@@ -3,7 +3,7 @@ language-check
 
 Python wrapper for LanguageTool.
 
-.. image:: https://travis-ci.org/myint/language-check.png?branch=master
+.. image:: https://travis-ci.org/myint/language-check.svg?branch=master
     :target: https://travis-ci.org/myint/language-check
     :alt: Build status
 
