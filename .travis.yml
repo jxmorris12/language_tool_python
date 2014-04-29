@@ -4,6 +4,7 @@ python:
     - "2.7"
     - "3.2"
     - "3.3"
+    - "3.4"
 
 before_install:
     # This is needed for Python multiprocessing (due to 3to2 dependency).
