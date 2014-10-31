@@ -36,6 +36,8 @@ except ImportError:
 BASE_URL = 'https://www.languagetool.org/download/'
 FILENAME = 'LanguageTool-{version}.zip'
 PACKAGE_PATH = 'language_check'
+JAVA_6_COMPATIBLE_VERSION = '2.2'
+LATEST_VERSION = '2.7'
 
 
 if NormalizedVersion:
@@ -57,14 +59,20 @@ else:
         pass
 
 
-class InstallationError(Exception):
-    pass
-
-
 def get_newest_possible_languagetool_version():
+    """Return newest compatible version.
+
+    >>> version = get_newest_possible_languagetool_version()
+    >>> version in [JAVA_6_COMPATIBLE_VERSION, LATEST_VERSION]
+    True
+
+    """
     java_path = find_executable('java')
     if not java_path:
-        raise InstallationError('Could not find Java.')
+        # Just ignore this and assume an old version of Java. It might not be
+        # found because of a PATHEXT-related issue
+        # (https://bugs.python.org/issue2200).
+        return JAVA_6_COMPATIBLE_VERSION
 
     output = subprocess.check_output([java_path, '-version'],
                                      stderr=subprocess.STDOUT,
@@ -75,18 +83,18 @@ def get_newest_possible_languagetool_version():
         output,
         re.MULTILINE)
     if not match:
-        raise InstallationError(
+        raise SystemExit(
             'Could not parse Java version from """{}""".'.format(output))
 
     java_version = (int(match.group('major1')), int(match.group('major2')))
     if java_version >= (1, 7):
-        return '2.7'
+        return LATEST_VERSION
     elif java_version >= (1, 6):
         warn('language-check would be able to use a newer version of '
              'LanguageTool if you had Java 7 or newer installed')
-        return '2.2'
+        return JAVA_6_COMPATIBLE_VERSION
     else:
-        raise InstallationError(
+        raise SystemExit(
             'You need at least Java 6 to use language-check')
 
 

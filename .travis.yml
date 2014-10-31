@@ -19,7 +19,7 @@ install:
 script:
     - if [ "$TRAVIS_PYTHON_VERSION" != "2.7" ]; then python test.py; fi
 
-    - if [ "$TRAVIS_PYTHON_VERSION" != "2.7" ]; then ./run_doctest.py -v README.rst; fi
+    - if [ "$TRAVIS_PYTHON_VERSION" != "2.7" ]; then ./run_doctest.py -v README.rst download_lt.py; fi
 
     # Prevent Python 2.7 from using the non-3to2 converted code.
     - cd language_check; ../test.bash
