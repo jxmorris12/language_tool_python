@@ -67,9 +67,9 @@ Prerequisites
 -------------
 
 - `Python 3.2+ <http://www.python.org>`_ (or 2.7)
-- `LanguageTool <http://www.languagetool.org>`_
 - `lib3to2 <https://bitbucket.org/amentajo/lib3to2>`_
   (if installing for Python 2)
+- `LanguageTool <http://www.languagetool.org>`_ (Java 6.0+)
 
 
 The installation process should take care of downloading LanguageTool
