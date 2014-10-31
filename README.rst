@@ -78,8 +78,6 @@ Otherwise, you can manually download `LanguageTool-stable.zip
 <http://www.languagetool.org/download/LanguageTool-stable.zip>`_
 and unzip it into where the ``language_check`` package resides.
 
-LanguageTool requires Java 6 or later.
-
 Vim plugin
 ----------
 
