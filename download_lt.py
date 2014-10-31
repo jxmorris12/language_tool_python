@@ -4,11 +4,15 @@
 
 import glob
 import os
+import re
 import shutil
+import subprocess
 import sys
 
 from contextlib import closing
+from distutils.spawn import find_executable
 from tempfile import TemporaryFile
+from warnings import warn
 from zipfile import ZipFile
 
 try:
@@ -30,7 +34,7 @@ except ImportError:
 
 
 BASE_URL = 'https://www.languagetool.org/download/'
-FILENAME = 'LanguageTool-2.2.zip'
+FILENAME = 'LanguageTool-{version}.zip'
 PACKAGE_PATH = 'language_check'
 
 
@@ -53,6 +57,35 @@ else:
         pass
 
 
+class InstallationError(Exception):
+    pass
+
+
+def get_newest_possible_languagetool_version():
+    java_path = find_executable('java')
+    if not java_path:
+        raise InstallationError('Could not find Java.')
+
+    output = subprocess.check_output([java_path, '-version'],
+                                     stderr=subprocess.STDOUT,
+                                     universal_newlines=True)
+    # http://www.oracle.com/technetwork/java/javase/versioning-naming-139433.html
+    regex = r'^java version "(?P<major1>\d+)\.(?P<major2>\d+)\.[^"]+"$'
+    match = re.search(regex, output, re.MULTILINE)
+    if not match:
+        raise InstallationError('Could not parse Java version from """{}""".'.format(output))
+
+    java_version = int(match.group('major1')) * 1000 + int(match.group('major2'))
+    if java_version >= 1007:
+        return '2.7'
+    elif java_version >= 1006:
+        warn('language-check would be able to use a newer version of LanguageTool '
+             'if you had Java 7 or newer installed.')
+        return '2.2'
+    else:
+        raise InstallationError('You need at least Java 6 to use language-check.')
+
+
 def get_common_prefix(z):
     """Get common directory in a zip file if any."""
     l = z.namelist()
@@ -72,8 +105,10 @@ def download_lt(update=False):
     if old_path_list and not update:
         return
 
-    url = urljoin(BASE_URL, FILENAME)
-    dirname = os.path.splitext(FILENAME)[0]
+    version = get_newest_possible_languagetool_version()
+    filename = FILENAME.format(version=version)
+    url = urljoin(BASE_URL, filename)
+    dirname = os.path.splitext(filename)[0]
     extract_path = os.path.join(PACKAGE_PATH, dirname)
 
     if extract_path in old_path_list:
@@ -85,7 +120,7 @@ def download_lt(update=False):
             content_len = int(u.headers['Content-Length'])
             sys.stdout.write(
                 'Downloading {!r} ({:.1f} MiB)...\n'
-                .format(FILENAME, content_len / 1048576.)
+                .format(filename, content_len / 1048576.)
             )
             sys.stdout.flush()
             chunk_len = content_len // 100
