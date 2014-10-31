@@ -27,3 +27,4 @@ script:
     # Smoke test.
     - echo 'This is a sentence.' > foo.txt
     - language-check foo.txt
+    - language-check --version
