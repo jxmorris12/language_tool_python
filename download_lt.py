@@ -73,17 +73,20 @@ def get_newest_possible_languagetool_version():
     regex = r'^java version "(?P<major1>\d+)\.(?P<major2>\d+)\.[^"]+"$'
     match = re.search(regex, output, re.MULTILINE)
     if not match:
-        raise InstallationError('Could not parse Java version from """{}""".'.format(output))
+        raise InstallationError(
+            'Could not parse Java version from """{}""".'.format(output))
 
-    java_version = int(match.group('major1')) * 1000 + int(match.group('major2'))
+    java_version = int(match.group('major1')) * 1000 + \
+        int(match.group('major2'))
     if java_version >= 1007:
         return '2.7'
     elif java_version >= 1006:
-        warn('language-check would be able to use a newer version of LanguageTool '
-             'if you had Java 7 or newer installed.')
+        warn('language-check would be able to use a newer version of '
+             'LanguageTool if you had Java 7 or newer installed')
         return '2.2'
     else:
-        raise InstallationError('You need at least Java 6 to use language-check.')
+        raise InstallationError(
+            'You need at least Java 6 to use language-check')
 
 
 def get_common_prefix(z):
