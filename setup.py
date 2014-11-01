@@ -13,12 +13,7 @@ import sys
 
 from distutils.version import LooseVersion
 
-try:
-    from setuptools import setup
-    USING_SETUPTOOLS = True
-except ImportError:
-    from distutils.core import setup
-    USING_SETUPTOOLS = False
+from setuptools import setup
 
 try:
     from configparser import RawConfigParser
@@ -330,11 +325,10 @@ def cfg_to_args(config):
         ],
     }
 
-    if USING_SETUPTOOLS:
-        opts_to_args['metadata'].append(('requires-dist', 'install_requires'))
-        if IS_PY2K and not which('3to2'):
-            kwargs['setup_requires'] = ['3to2']
-        kwargs['zip_safe'] = False
+    opts_to_args['metadata'].append(('requires-dist', 'install_requires'))
+    if IS_PY2K and not which('3to2'):
+        kwargs['setup_requires'] = ['3to2']
+    kwargs['zip_safe'] = False
 
     for section in opts_to_args:
         for option, argname in opts_to_args[section]:

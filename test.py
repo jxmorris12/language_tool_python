@@ -10,6 +10,7 @@ import language_check
 
 
 class TestLanguageTool(unittest.TestCase):
+
     CheckTest = namedtuple('CheckTest', ('text', 'matches'))
     Match = namedtuple('Match', ('fromy', 'fromx', 'ruleId'))
 
