@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 """Backward-compatible setup script."""
 
+import ast
 import codecs
 import glob
 import os
@@ -129,6 +130,14 @@ assert platform
 
 python_version = '%s.%s' % sys.version_info[:2]
 python_full_version = sys.version.split()[0]
+
+
+def get_version():
+    """Return version string."""
+    with open('language_check/__init__.py') as input_file:
+        for line in input_file:
+            if line.startswith('__version__'):
+                return ast.parse(line).body[0].value.s
 
 
 def which(program, win_allow_cross_arch=True):
@@ -301,7 +310,6 @@ def cfg_to_args(config):
     opts_to_args = {
         'metadata': [
             ('name', 'name'),
-            ('version', 'version'),
             ('author', 'author'),
             ('author-email', 'author_email'),
             ('maintainer', 'maintainer'),
@@ -351,6 +359,8 @@ def cfg_to_args(config):
 
     if 'data_files' in kwargs:
         kwargs['data_files'] = get_data_files(kwargs['data_files'])
+
+    kwargs['version'] = get_version()
 
     return kwargs
 

@@ -41,6 +41,9 @@ from .backports import subprocess
 from .which import which
 
 
+__version__ = '0.6.1'
+
+
 __all__ = ['LanguageTool', 'Error', 'get_languages', 'correct', 'get_version',
            'get_directory', 'set_directory']
 

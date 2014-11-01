@@ -6,6 +6,7 @@ import os
 import re
 import sys
 
+from . import __version__
 from . import get_build_date
 from . import get_version
 from . import LanguageTool
@@ -32,11 +33,13 @@ def parse_args():
                         help='list of rule IDs to be enabled')
     parser.add_argument('--api', action='store_true',
                         help='print results as XML')
-    parser.add_argument('--version', action='version',
-                        version='LanguageTool {} ({})'
-                                .format(get_version(),
-                                        get_build_date()),
-                        help='show LanguageTool version and build date')
+    parser.add_argument(
+        '--version', action='version',
+        version='%(prog)s {} (LanguageTool {} ({}))'.format(
+            __version__,
+            get_version(),
+            get_build_date()),
+        help='show version')
     parser.add_argument('-a', '--apply', action='store_true',
                         help='automatically apply suggestions if available')
     parser.add_argument('-s', '--spell-check-off', dest='spell_check',
