@@ -128,9 +128,6 @@ ENVIRON_OPTIONS = set([
 import platform
 assert platform
 
-python_version = '%s.%s' % sys.version_info[:2]
-python_full_version = sys.version.split()[0]
-
 
 def get_version():
     """Return version string."""
