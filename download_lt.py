@@ -71,9 +71,9 @@ def get_newest_possible_languagetool_version():
 
 def get_common_prefix(z):
     """Get common directory in a zip file if any."""
-    l = z.namelist()
-    if l and all(n.startswith(l[0]) for n in l[1:]):
-        return l[0]
+    name_list = z.namelist()
+    if name_list and all(n.startswith(name_list[0]) for n in name_list[1:]):
+        return name_list[0]
     return None
 
 
@@ -101,11 +101,13 @@ def download_lt(update=False):
     with closing(TemporaryFile()) as t:
         with closing(urlopen(url)) as u:
             content_len = int(u.headers['Content-Length'])
+
             sys.stdout.write(
-                'Downloading {!r} ({:.1f} MiB)...\n'
-                .format(filename, content_len / 1048576.)
-            )
+                'Downloading {!r} ({:.1f} MiB)...\n'.format(
+                    filename,
+                    content_len / 1048576.))
             sys.stdout.flush()
+
             chunk_len = content_len // 100
             data_len = 0
             while True:

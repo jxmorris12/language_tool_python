@@ -417,7 +417,8 @@ class LanguageTag(str):
     def _normalize(cls, tag):
         if not tag:
             raise ValueError('empty language tag')
-        languages = {l.lower().replace('-', '_'): l for l in get_languages()}
+        languages = {language.lower().replace('-', '_'): language
+                     for language in get_languages()}
         try:
             return languages[tag.lower().replace('-', '_')]
         except KeyError:
