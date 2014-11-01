@@ -1,9 +1,10 @@
-__pycache__/
-language_check/LanguageTool-*/
+*.egg-info/
+*.egg/
+*.pyc
 .*.swp
 .tox/
 .travis-solo/
+__pycache__/
 build/
 dist/
-*.pyc
-*.egg-info/
+language_check/LanguageTool-*/
