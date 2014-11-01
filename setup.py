@@ -10,10 +10,11 @@ import re
 import shutil
 import subprocess
 import sys
-
 from distutils.version import LooseVersion
 
 from setuptools import setup
+
+from download_lt import download_lt
 
 try:
     from configparser import RawConfigParser
@@ -557,14 +558,8 @@ def load_config(file='setup.cfg'):
 
 
 def run_setup_hooks(config):
-    for hook_name in get_cfg_value(config, 'global', 'setup_hooks'):
-        module, obj = hook_name.split('.', 1)
-        if module == 'setup':
-            func = globals()[obj]
-        else:
-            module = __import__(module, globals(), locals(), [], 0)
-            func = getattr(module, obj)
-        func(config)
+    language_tool_hook(config)
+    default_hook(config)
 
 
 def default_hook(config):
@@ -580,6 +575,15 @@ def default_hook(config):
         packages_root = get_cfg_value(config, 'files', 'packages_root')
         packages_root = os.path.join(PY2K_DIR, packages_root)
         set_cfg_value(config, 'files', 'packages_root', packages_root)
+
+
+def language_tool_hook(config):
+    if 'sdist' in sys.argv:
+        del config['files']['package_data']
+    elif any(arg.startswith('install') or
+             arg.startswith('build') or
+             arg.startswith('bdist') for arg in sys.argv):
+        download_lt()
 
 
 def main():

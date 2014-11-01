@@ -66,16 +66,16 @@ To install via pip::
 Prerequisites
 -------------
 
-- `Python 3.2+ <http://www.python.org>`_ (or 2.7)
+- `Python 3.2+ <https://www.python.org>`_ (or 2.7)
 - `lib3to2 <https://bitbucket.org/amentajo/lib3to2>`_
   (if installing for Python 2)
-- `LanguageTool <http://www.languagetool.org>`_ (Java 6.0+)
+- `LanguageTool <https://www.languagetool.org>`_ (Java 6.0+)
 
 
 The installation process should take care of downloading LanguageTool
 (it may take a few minutes).
 Otherwise, you can manually download `LanguageTool-stable.zip
-<http://www.languagetool.org/download/LanguageTool-stable.zip>`_
+<https://www.languagetool.org/download/LanguageTool-stable.zip>`_
 and unzip it into where the ``language_check`` package resides.
 
 Vim plugin
