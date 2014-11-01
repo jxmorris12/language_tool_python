@@ -353,6 +353,9 @@ def cfg_to_args(config):
 
     kwargs['version'] = get_version()
 
+    if not IS_PY2K:
+        kwargs['test_suite'] = 'test'
+
     return kwargs
 
 
