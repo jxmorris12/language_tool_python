@@ -41,7 +41,7 @@ from .backports import subprocess
 from .which import which
 
 
-__version__ = '0.6.1'
+__version__ = '0.7'
 
 
 __all__ = ['LanguageTool', 'Error', 'get_languages', 'correct', 'get_version',
@@ -49,7 +49,7 @@ __all__ = ['LanguageTool', 'Error', 'get_languages', 'correct', 'get_version',
 
 JAR_NAMES = [
     'languagetool-server.jar',
-    'languagetool-standalone*.jar',    # 2.1
+    'languagetool-standalone*.jar',  # 2.1
     'LanguageTool.jar',
     'LanguageTool.uno.jar'
 ]
