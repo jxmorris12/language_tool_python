@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Modified version of "python -m doctest"."""
+"""Modified version of "python -m doctest" with relaxed options."""
 
 import doctest
 import os
