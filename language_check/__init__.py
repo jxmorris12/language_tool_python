@@ -14,7 +14,7 @@
 # See the GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 """LanguageTool through server mode."""
 
@@ -55,7 +55,7 @@ JAR_NAMES = [
 ]
 FAILSAFE_LANGUAGE = 'en'
 
-# http://mail.python.org/pipermail/python-dev/2011-July/112551.html
+# https://mail.python.org/pipermail/python-dev/2011-July/112551.html
 USE_URLOPEN_RESOURCE_WARNING_FIX = (3, 1) < sys.version_info < (3, 4)
 
 if os.name == 'nt':
