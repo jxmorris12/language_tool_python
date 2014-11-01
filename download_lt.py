@@ -22,41 +22,12 @@ except ImportError:
     from urllib import urlopen
     from urlparse import urljoin
 
-try:
-    from packaging.version import NormalizedVersion, suggest_normalized_version
-except ImportError:
-    try:
-        from distutils2.version import (
-            NormalizedVersion, suggest_normalized_version)
-    except ImportError:
-        from distutils.version import LooseVersion
-        NormalizedVersion = None
-
 
 BASE_URL = 'https://www.languagetool.org/download/'
 FILENAME = 'LanguageTool-{version}.zip'
 PACKAGE_PATH = 'language_check'
 JAVA_6_COMPATIBLE_VERSION = '2.2'
 LATEST_VERSION = '2.7'
-
-
-if NormalizedVersion:
-    class Version(NormalizedVersion):
-
-        def __init__(self, version):
-            self.unnormalized_version = version
-            NormalizedVersion.__init__(
-                self, suggest_normalized_version(version))
-
-        def __repr__(self):
-            return '{}({!r})'.format(
-                self.__class__.__name__, self.unnormalized_version)
-
-        def __str__(self):
-            return self.unnormalized_version
-else:
-    class Version(LooseVersion):
-        pass
 
 
 def get_newest_possible_languagetool_version():
