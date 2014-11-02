@@ -1,6 +1,8 @@
-include *.LESSER
-include *.bash
-include *.py
-include .travis.yml
+exclude .travis.yml
 include COPYING
-recursive-include language_check *.py
+include COPYING.LESSER
+include README.rst
+include download_lt.py
+include run_doctest.py
+include test.bash
+include test.py
