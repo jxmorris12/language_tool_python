@@ -2,7 +2,6 @@
 
 import argparse
 import locale
-import os
 import re
 import sys
 
@@ -13,10 +12,8 @@ from . import LanguageTool
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(
-        description=__doc__.strip(),
-        prog='language-check'.format(os.path.basename(sys.executable),
-                                     'language_check'))
+    parser = argparse.ArgumentParser(description=__doc__.strip(),
+                                     prog='language-check')
     parser.add_argument('files', nargs='+',
                         help='plain text file or "-" for stdin')
     parser.add_argument('-c', '--encoding',
