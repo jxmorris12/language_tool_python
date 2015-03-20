@@ -72,11 +72,11 @@ Prerequisites
 - `LanguageTool <https://www.languagetool.org>`_ (Java 6.0+)
 
 
-The installation process should take care of downloading LanguageTool
-(it may take a few minutes).
-Otherwise, you can manually download `LanguageTool-stable.zip
-<https://www.languagetool.org/download/LanguageTool-stable.zip>`_
-and unzip it into where the ``language_check`` package resides.
+The installation process should take care of downloading LanguageTool (it may
+take a few minutes). Otherwise, you can manually download
+`LanguageTool-stable.zip
+<https://www.languagetool.org/download/LanguageTool-stable.zip>`_ and unzip it
+into where the ``language_check`` package resides.
 
 Vim plugin
 ----------
