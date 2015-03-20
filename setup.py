@@ -208,7 +208,7 @@ def eval_environ(value):
         if not re.match("^((\\w+(\\.\\w+)?|'.*?'|\".*?\")\\s+"
                         '(in|==|!=|not in)\\s+'
                         "(\\w+(\\.\\w+)?|'.*?'|\".*?\")"
-                        '(\s+(or|and)\s+)?)+$', expr):
+                        '(\\s+(or|and)\\s+)?)+$', expr):
             raise ValueError('bad environment marker: %r' % expr)
         expr = re.sub(r"(platform\.\w+)", r"\1()", expr)
         return parts[0] if eval(expr) else ''
