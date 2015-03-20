@@ -113,7 +113,7 @@ class Match:
         ('url', str), ('category', str), ('locqualityissuetype', str),
     ])
 
-    def __init__(self, attrib, text=None):
+    def __init__(self, attrib):
         for k, v in attrib.items():
             setattr(self, k, v)
 
@@ -238,7 +238,7 @@ class LanguageTool:
     def check(self, text: str, srctext=None) -> [Match]:
         """Match text against enabled rules."""
         root = self._get_root(self._url, self._encode(text, srctext))
-        return [Match(e.attrib, text) for e in root if e.tag == 'error']
+        return [Match(e.attrib) for e in root if e.tag == 'error']
 
     def _check_api(self, text: str, srctext=None) -> bytes:
         """Match text against enabled rules (result in XML format)."""
