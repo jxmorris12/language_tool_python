@@ -175,7 +175,7 @@ class LanguageTool:
     _HOST = socket.gethostbyname('localhost')
     _MIN_PORT = 8081
     _MAX_PORT = 8083
-    _TIMEOUT = 30
+    _TIMEOUT = 5 * 60
 
     _port = _MIN_PORT
     _server = None
