@@ -86,7 +86,11 @@ def main():
             motherTongue=args.mother_tongue)
         guess_language = None
 
-        text = get_text(filename, encoding, ignore=args.ignore_lines)
+        try:
+            text = get_text(filename, encoding, ignore=args.ignore_lines)
+        except UnicodeError as exception:
+            print('{}: {}'.format(filename, exception), file=sys.stderr)
+            continue
 
         if args.language:
             if args.language.lower() == 'auto':
