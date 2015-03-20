@@ -8,6 +8,7 @@ import sys
 from . import __version__
 from . import get_build_date
 from . import get_version
+from . import Error
 from . import LanguageTool
 
 
@@ -116,33 +117,37 @@ def main():
         lang_tool.disabled.update(args.disable)
         lang_tool.enabled.update(args.enable)
 
-        if args.api:
-            print(lang_tool._check_api(text).decode())
-        elif args.apply:
-            print(lang_tool.correct(text))
-        else:
-            for match in lang_tool.check(text):
-                rule_id = match.ruleId
-                if match.subId is not None:
-                    rule_id += '[{}]'.format(match.subId)
+        try:
+            if args.api:
+                print(lang_tool._check_api(text).decode())
+            elif args.apply:
+                print(lang_tool.correct(text))
+            else:
+                for match in lang_tool.check(text):
+                    rule_id = match.ruleId
+                    if match.subId is not None:
+                        rule_id += '[{}]'.format(match.subId)
 
-                replacement_text = ', '.join(
-                    "'{}'".format(word)
-                    for word in match.replacements).strip()
+                    replacement_text = ', '.join(
+                        "'{}'".format(word)
+                        for word in match.replacements).strip()
 
-                message = match.msg
+                    message = match.msg
 
-                # Messages that end with punctuation already include the
-                # suggestion.
-                if replacement_text and not message.endswith(('.', '?')):
-                    message += '; suggestions: ' + replacement_text
+                    # Messages that end with punctuation already include the
+                    # suggestion.
+                    if replacement_text and not message.endswith(('.', '?')):
+                        message += '; suggestions: ' + replacement_text
 
-                print('{}:{}:{}: {}: {}'.format(
-                    filename,
-                    match.fromy + 1,
-                    match.fromx + 1,
-                    rule_id,
-                    message))
-                status = 2
+                    print('{}:{}:{}: {}: {}'.format(
+                        filename,
+                        match.fromy + 1,
+                        match.fromx + 1,
+                        rule_id,
+                        message))
+                    status = 2
+        except Error as exception:
+            print('{}: {}'.format(filename, exception), file=sys.stderr)
+            continue
 
     return status
