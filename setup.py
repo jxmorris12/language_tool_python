@@ -3,8 +3,8 @@
 """Backward-compatible setup script."""
 
 import ast
-import codecs
 import glob
+import io
 import os
 import re
 import shutil
@@ -289,7 +289,7 @@ def read_description_file(config):
         return ''
     value = []
     for filename in filenames.split():
-        f = codecs.open(filename, encoding='utf-8')
+        f = io.open(filename, encoding='utf-8')
         try:
             value.append(f.read())
         finally:
