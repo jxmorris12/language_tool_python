@@ -1,28 +1,19 @@
+sudo: false
+
 language: python
 
 python:
-    - "2.7"
     - "3.2"
     - "3.3"
     - "3.4"
 
-before_install:
-    # This is needed for Python multiprocessing (due to 3to2 dependency).
-    # https://github.com/travis-ci/travis-cookbooks/issues/155
-    - sudo rm -rf /dev/shm
-    - sudo ln -s /run/shm /dev/shm
-
 install:
-    - if [ "$TRAVIS_PYTHON_VERSION" == "2.7" ]; then pip --quiet install 3to2; fi
     - python setup.py --quiet install
 
 script:
-    - if [ "$TRAVIS_PYTHON_VERSION" != "2.7" ]; then python test.py; fi
-
-    - if [ "$TRAVIS_PYTHON_VERSION" != "2.7" ]; then ./run_doctest.py -v README.rst download_lt.py; fi
-
-    # Prevent Python 2.7 from using the non-3to2 converted code.
-    - cd language_check; ../test.bash
+    - python test.py
+    - ./run_doctest.py -v README.rst download_lt.py
+    - ./test.bash
 
     # Smoke test.
     - echo 'This is a sentence.' > foo.txt
