@@ -65,12 +65,12 @@ def get_text(filename, encoding, ignore):
     return text
 
 
-def encode(text):
-    """Return UTF-8 encoded byte string."""
-    if sys.version_info[0] >= 3:
-        return text
-    else:
-        return text.encode('utf-8')
+def print_unicode(text):
+    """Print in a portable manner."""
+    if sys.version_info[0] < 3:
+        text = text.encode('utf-8')
+
+    print(text)
 
 
 def main():
@@ -127,9 +127,9 @@ def main():
 
         try:
             if args.api:
-                print(lang_tool._check_api(text).decode())
+                print_unicode(lang_tool._check_api(text).decode())
             elif args.apply:
-                print(lang_tool.correct(text))
+                print_unicode(lang_tool.correct(text))
             else:
                 for match in lang_tool.check(text):
                     rule_id = match.ruleId
@@ -147,13 +147,13 @@ def main():
                     if replacement_text and not message.endswith(('.', '?')):
                         message += '; suggestions: ' + replacement_text
 
-                    print(encode(
-                        '{}:{}:{}: {}: {}'.format(
-                            filename,
-                            match.fromy + 1,
-                            match.fromx + 1,
-                            rule_id,
-                            message)))
+                    print_unicode('{}:{}:{}: {}: {}'.format(
+                        filename,
+                        match.fromy + 1,
+                        match.fromx + 1,
+                        rule_id,
+                        message))
+
                     status = 2
         except Error as exception:
             print('{}: {}'.format(filename, exception), file=sys.stderr)
