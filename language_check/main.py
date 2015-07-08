@@ -65,6 +65,14 @@ def get_text(filename, encoding, ignore):
     return text
 
 
+def encode(text):
+    """Return UTF-8 encoded byte string."""
+    if sys.version_info[0] >= 3:
+        return text
+    else:
+        return text.encode('utf-8')
+
+
 def main():
     args = parse_args()
 
@@ -139,12 +147,13 @@ def main():
                     if replacement_text and not message.endswith(('.', '?')):
                         message += '; suggestions: ' + replacement_text
 
-                    print('{}:{}:{}: {}: {}'.format(
-                        filename,
-                        match.fromy + 1,
-                        match.fromx + 1,
-                        rule_id,
-                        message))
+                    print(encode(
+                        '{}:{}:{}: {}: {}'.format(
+                            filename,
+                            match.fromy + 1,
+                            match.fromx + 1,
+                            rule_id,
+                            message)))
                     status = 2
         except Error as exception:
             print('{}: {}'.format(filename, exception), file=sys.stderr)
