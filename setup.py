@@ -127,7 +127,7 @@ assert platform
 
 def get_version():
     """Return version string."""
-    with open('language_check/__init__.py') as input_file:
+    with io.open('language_check/__init__.py', encoding='utf-8') as input_file:
         for line in input_file:
             if line.startswith('__version__'):
                 return ast.parse(line).body[0].value.s
