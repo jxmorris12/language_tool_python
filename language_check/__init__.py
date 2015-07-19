@@ -217,7 +217,7 @@ class LanguageTool:
 
     @property
     def motherTongue(self):
-        """The user’s mother tongue or None.
+        """The user's mother tongue or None.
 
         The mother tongue may also be used as a source language for
         checking bilingual texts.
@@ -323,7 +323,7 @@ class LanguageTool:
         try:
             server_cmd = get_server_cmd(cls._port)
         except PathError as e:
-            # Can’t find path to LanguageTool.
+            # Can't find path to LanguageTool.
             err = e
         else:
             # Need to PIPE all handles: http://bugs.python.org/issue3905
@@ -360,7 +360,7 @@ class LanguageTool:
                 if port != cls._port:
                     raise Error(err_msg)
         if not cls._server:
-            # Couldn’t start the server, so maybe there is already one running.
+            # Couldn't start the server, so maybe there is already one running.
             params = {'language': FAILSAFE_LANGUAGE, 'text': ''}
             data = urllib.parse.urlencode(params).encode()
             try:
@@ -396,7 +396,7 @@ class LanguageTag(str):
     _LANGUAGE_RE = re.compile(r"^([a-z]{2,3})(?:[_-]([a-z]{2}))?$", re.I)
 
     def __new__(cls, tag):
-        # Can’t use super() here because of 3to2.
+        # Can't use super() here because of 3to2.
         return str.__new__(cls, cls._normalize(tag))
 
     def __eq__(self, other):
@@ -507,7 +507,7 @@ def get_directory():
             else:
                 language_check_dir = get_lt_dir(base_dir)
             if not language_check_dir:
-                raise PathError('can’t find LanguageTool directory in {!r}'
+                raise PathError("can't find LanguageTool directory in {!r}"
                                 .format(base_dir))
         cache['language_check_dir'] = language_check_dir
     return language_check_dir
@@ -544,7 +544,7 @@ def get_jar_info():
     except KeyError:
         java_path = which('java')
         if not java_path:
-            raise JavaError('can’t find Java')
+            raise JavaError("can't find Java")
         dir_name = get_directory()
         jar_path = None
         for jar_name in JAR_NAMES:
@@ -556,7 +556,7 @@ def get_jar_info():
             if jar_path:
                 break
         else:
-            raise PathError('can’t find languagetool-standalone in {!r}'
+            raise PathError("can't find languagetool-standalone in {!r}"
                             .format(dir_name))
         cache['jar_info'] = java_path, jar_path
     return java_path, jar_path
