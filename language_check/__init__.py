@@ -41,7 +41,7 @@ from .backports import subprocess
 from .which import which
 
 
-__version__ = '0.7.1'
+__version__ = '0.7.2'
 
 
 __all__ = ['LanguageTool', 'Error', 'get_languages', 'correct', 'get_version',
