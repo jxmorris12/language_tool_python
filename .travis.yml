@@ -1,3 +1,5 @@
+sudo: false
+
 language: python
 
 python:
@@ -7,12 +9,6 @@ python:
     - "3.3"
     - "3.4"
     - "nightly"
-
-before_install:
-    # This is needed for Python multiprocessing (due to 3to2 dependency).
-    # https://github.com/travis-ci/travis-cookbooks/issues/155
-    - sudo rm -rf /dev/shm
-    - sudo ln -s /run/shm /dev/shm
 
 install:
     - if [ "$TRAVIS_PYTHON_VERSION" == "2.7" ]; then pip --quiet install 3to2; fi
