@@ -7,14 +7,17 @@ import time
 
 from subprocess import Popen, PIPE, STDOUT, check_call, check_output
 
+# For pyflakes.
+check_call
+check_output
+PIPE
+STDOUT
+
 if sys.platform == 'win32':
     from subprocess import STARTUPINFO
-    assert STARTUPINFO
+    # For pyflakes.
+    STARTUPINFO
 
-assert check_call
-assert check_output
-assert PIPE
-assert STDOUT
 
 if sys.version_info[0] == 2:
     class SubprocessError(Exception):
