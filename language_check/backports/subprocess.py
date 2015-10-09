@@ -1,40 +1,25 @@
 """Some backported features for subprocess."""
 
 from __future__ import absolute_import
+
 import sys
-import subprocess
-from subprocess import (Popen, PIPE, STDOUT, CalledProcessError,
-                        call, check_call, check_output)
+import time
+
+from subprocess import Popen, PIPE, STDOUT, check_call, check_output
+
 if sys.platform == 'win32':
     from subprocess import STARTUPINFO
-from subprocess import *
+    assert STARTUPINFO
 
+assert check_call
+assert check_output
+assert PIPE
+assert STDOUT
 
-try:
-    TimeoutExpired
-except NameError:
-    import time
-
+if sys.version_info[0] == 2:
     class SubprocessError(Exception):
 
         """Exception classes used by this module."""
-
-    class CalledProcessError(SubprocessError):
-
-        """Raised when a process run by check_call() or check_output().
-
-        Returns a non-zero exit status.
-
-        """
-
-        def __init__(self, returncode, cmd, output=None):
-            self.returncode = returncode
-            self.cmd = cmd
-            self.output = output
-
-        def __str__(self):
-            return ("Command '%s' returned non-zero exit status %d" %
-                    (self.cmd, self.returncode))
 
     class TimeoutExpired(SubprocessError):
 
@@ -72,7 +57,6 @@ except NameError:
             self.wait(timeout)
         return _Popen_communicate(self, input)
 
-    subprocess.CalledProcessError = CalledProcessError
     _Popen_init = Popen.__init__
     _Popen_wait = Popen.wait
     _Popen_communicate = Popen.communicate
