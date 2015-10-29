@@ -70,7 +70,7 @@ If you are using Python 2, you'll need to install 3to2 beforehand::
 Prerequisites
 -------------
 
-- `Python 3.2+ <https://www.python.org>`_ (or 2.7)
+- `Python 3.3+ <https://www.python.org>`_ (or 2.7)
 - `lib3to2 <https://bitbucket.org/amentajo/lib3to2>`_
   (if installing for Python 2)
 - `LanguageTool <https://www.languagetool.org>`_ (Java 6.0+)
