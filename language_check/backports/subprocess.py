@@ -14,8 +14,9 @@ PIPE
 STDOUT
 
 if sys.platform == 'win32':
-    from subprocess import STARTUPINFO
+    from subprocess import STARTF_USESHOWWINDOW, STARTUPINFO
     # For pyflakes.
+    STARTF_USESHOWWINDOW
     STARTUPINFO
 
 
