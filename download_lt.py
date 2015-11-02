@@ -48,9 +48,9 @@ def get_newest_possible_languagetool_version():
     output = subprocess.check_output([java_path, '-version'],
                                      stderr=subprocess.STDOUT,
                                      universal_newlines=True)
-    # https://www.oracle.com/technetwork/java/javase/versioning-naming-139433.html
+
     match = re.search(
-        r'^java version "(?P<major1>\d+)\.(?P<major2>\d+)\.[^"]+"$',
+        r'^(?:java|openjdk) version "(?P<major1>\d+)\.(?P<major2>\d+)\.[^"]+"$',
         output,
         re.MULTILINE)
     if not match:
