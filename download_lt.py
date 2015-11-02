@@ -30,6 +30,34 @@ JAVA_6_COMPATIBLE_VERSION = '2.2'
 LATEST_VERSION = '2.7'
 
 
+def parse_java_version(version_text):
+    """Return Java version (major1, major2).
+
+    >>> parse_java_version('''java version "1.6.0_65"
+    ... Java(TM) SE Runtime Environment (build 1.6.0_65-b14-462-11M4609)
+    ... Java HotSpot(TM) 64-Bit Server VM (build 20.65-b04-462, mixed mode))
+    ... ''')
+    (1, 6)
+
+    >>> parse_java_version('''
+    ... openjdk version "1.8.0_60"
+    ... OpenJDK Runtime Environment (build 1.8.0_60-b27)
+    ... OpenJDK 64-Bit Server VM (build 25.60-b23, mixed mode))
+    ... ''')
+    (1, 8)
+
+    """
+    match = re.search(
+        r'^(?:java|openjdk) version "(?P<major1>\d+)\.(?P<major2>\d+)\.[^"]+"$',
+        version_text,
+        re.MULTILINE)
+    if not match:
+        raise SystemExit(
+            'Could not parse Java version from """{}""".'.format(version_text))
+
+    return (int(match.group('major1')), int(match.group('major2')))
+
+
 def get_newest_possible_languagetool_version():
     """Return newest compatible version.
 
@@ -49,15 +77,8 @@ def get_newest_possible_languagetool_version():
                                      stderr=subprocess.STDOUT,
                                      universal_newlines=True)
 
-    match = re.search(
-        r'^(?:java|openjdk) version "(?P<major1>\d+)\.(?P<major2>\d+)\.[^"]+"$',
-        output,
-        re.MULTILINE)
-    if not match:
-        raise SystemExit(
-            'Could not parse Java version from """{}""".'.format(output))
+    java_version = parse_java_version(output)
 
-    java_version = (int(match.group('major1')), int(match.group('major2')))
     if java_version >= (1, 7):
         return LATEST_VERSION
     elif java_version >= (1, 6):
