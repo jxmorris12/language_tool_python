@@ -3,6 +3,7 @@
 """Cross-platform which command."""
 
 import os
+import sys
 
 
 __all__ = ['which']
@@ -72,5 +73,4 @@ def main():
 
 
 if __name__ == '__main__':
-    import sys
     sys.exit(main())

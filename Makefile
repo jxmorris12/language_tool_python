@@ -14,11 +14,14 @@ check:
 		--disable=no-name-in-module \
 		--disable=protected-access \
 		--disable=raising-bad-type \
+		--disable=redefined-variable-type \
 		--disable=similarities \
 		--disable=too-few-public-methods \
 		--disable=too-many-branches \
 		--disable=too-many-locals \
 		--disable=too-many-statements \
+		--disable=wrong-import-order \
+		--disable=wrong-import-position \
 		./language-check \
 		$(wildcard ./language_check/*.py) \
 		$(wildcard *.py)

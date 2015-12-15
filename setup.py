@@ -6,6 +6,7 @@ import ast
 import glob
 import io
 import os
+import platform
 import re
 import shutil
 import subprocess
@@ -120,8 +121,7 @@ ENVIRON_OPTIONS = set([
     ('metadata', 'requires-external'),
 ])
 
-# For environment markers
-import platform
+# For environment markers.
 assert platform
 
 
@@ -479,7 +479,7 @@ def generate_py2k(config, py2k_dir=PY2K_DIR, run_tests=False):
             path = os.path.join(py3k_path, fn)
             if not os.path.isfile(path):
                 continue
-            if not os.path.splitext(path)[1].lower() == '.py':
+            if os.path.splitext(path)[1].lower() != '.py':
                 continue
             new_path = os.path.join(py2k_path, fn)
             if copy(path, new_path):
