@@ -27,7 +27,8 @@ BASE_URL = 'https://www.languagetool.org/download/'
 FILENAME = 'LanguageTool-{version}.zip'
 PACKAGE_PATH = 'language_check'
 JAVA_6_COMPATIBLE_VERSION = '2.2'
-LATEST_VERSION = '2.7'
+JAVA_7_COMPATIBLE_VERSION = '3.1'
+LATEST_VERSION = '3.2'
 JAVA_VERSION_REGEX = re.compile(
     r'^(?:java|openjdk) version "(?P<major1>\d+)\.(?P<major2>\d+)\.[^"]+"$',
     re.MULTILINE)
@@ -62,7 +63,9 @@ def get_newest_possible_languagetool_version():
     """Return newest compatible version.
 
     >>> version = get_newest_possible_languagetool_version()
-    >>> version in [JAVA_6_COMPATIBLE_VERSION, LATEST_VERSION]
+    >>> version in [JAVA_6_COMPATIBLE_VERSION,
+    ...             JAVA_7_COMPATIBLE_VERSION,
+    ...             LATEST_VERSION]
     True
 
     """
@@ -79,8 +82,10 @@ def get_newest_possible_languagetool_version():
 
     java_version = parse_java_version(output)
 
-    if java_version >= (1, 7):
+    if java_version >= (1, 8):
         return LATEST_VERSION
+    elif java_version >= (1, 7):
+        return JAVA_7_COMPATIBLE_VERSION
     elif java_version >= (1, 6):
         warn('language-check would be able to use a newer version of '
              'LanguageTool if you had Java 7 or newer installed')
