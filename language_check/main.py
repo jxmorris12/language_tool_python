@@ -6,8 +6,6 @@ import re
 import sys
 
 from . import __version__
-from . import get_build_date
-from . import get_version
 from . import Error
 from . import LanguageTool
 
@@ -34,10 +32,7 @@ def parse_args():
                         help='print results as XML')
     parser.add_argument(
         '--version', action='version',
-        version='%(prog)s {} (LanguageTool {} ({}))'.format(
-            __version__,
-            get_version(),
-            get_build_date()),
+        version='%(prog)s {}'.format(__version__),
         help='show version')
     parser.add_argument('-a', '--apply', action='store_true',
                         help='automatically apply suggestions if available')
