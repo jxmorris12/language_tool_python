@@ -180,6 +180,7 @@ class LanguageTool:
 
     _port = _MIN_PORT
     _server = None
+    _consumer_thread = None
     _instances = WeakValueDictionary()
     _PORT_RE = re.compile(r"(?:https?://.*:|port\s+)(\d+)", re.I)
 
@@ -361,19 +362,18 @@ class LanguageTool:
                 if port != cls._port:
                     raise Error(err_msg)
 
-            def consume():
-                """Consume/ignore the rest of the server output.
-
-                Without this, the server will end up hanging due to the buffer
-                filling up.
-
-                """
-                while cls._server and cls._server.stdout.readline():
-                    pass
-            cls._thread = threading.Thread(target=consume)
-            cls._thread.daemon = True
-            cls._thread.start()
-        if not cls._server:
+        if cls._server:
+            if cls._consumer_thread:
+                # This means there was a previous server/thread pair. Since the
+                # old server is gone, the thread must be finished consuming
+                # too.
+                cls._consumer_thread.join()
+                cls._consumer_thread = None
+            cls._consumer_thread = threading.Thread(
+                target=lambda: _consume(cls._server.stdout))
+            cls._consumer_thread.daemon = True
+            cls._consumer_thread.start()
+        else:
             # Couldn't start the server, so maybe there is already one running.
             params = {'language': FAILSAFE_LANGUAGE, 'text': ''}
             data = urllib.parse.urlencode(params).encode()
@@ -401,6 +401,17 @@ class LanguageTool:
             cls._server.terminate()
         except OSError:
             pass
+
+
+def _consume(stdout):
+    """Consume/ignore the rest of the server output.
+
+    Without this, the server will end up hanging due to the buffer
+    filling up.
+
+    """
+    while stdout.readline():
+        pass
 
 
 @total_ordering
