@@ -26,6 +26,7 @@ import os
 import re
 import socket
 import sys
+import threading
 import urllib.parse
 import urllib.request
 from collections import OrderedDict
@@ -346,8 +347,8 @@ class LanguageTool:
                 if match:
                     port = int(match.group(1))
                     if port != cls._port:
-                        raise Error('requested port {}, but got {}'
-                                    .format(cls._port, port))
+                        raise Error('requested port {}, but got {}'.format(
+                            cls._port, port))
                     break
             if not match:
                 cls._terminate_server()
@@ -359,6 +360,19 @@ class LanguageTool:
                 port = int(match.group(1))
                 if port != cls._port:
                     raise Error(err_msg)
+
+            def consume():
+                """Consume/ignore the rest of the server output.
+
+                Without this, the server will end up hanging due to the buffer
+                filling up.
+
+                """
+                while cls._server and cls._server.stdout.readline():
+                    pass
+            cls._thread = threading.Thread(target=consume)
+            cls._thread.daemon = True
+            cls._thread.start()
         if not cls._server:
             # Couldn't start the server, so maybe there is already one running.
             params = {'language': FAILSAFE_LANGUAGE, 'text': ''}
