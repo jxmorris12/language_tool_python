@@ -116,14 +116,16 @@ class TestLanguageTool(unittest.TestCase):
         self.assertEqual(path, language_check.get_directory())
 
     def test_disable_spellcheck(self):
+        sentence_with_misspelling = 'This is baad.'
+
         lang_check = language_check.LanguageTool()
-        self.assertTrue(lang_check.check('helo'))
+        self.assertTrue(lang_check.check(sentence_with_misspelling))
 
         lang_check.disable_spellchecking()
-        self.assertFalse(lang_check.check('helo'))
+        self.assertFalse(lang_check.check(sentence_with_misspelling))
 
         lang_check.enable_spellchecking()
-        self.assertTrue(lang_check.check('helo'))
+        self.assertTrue(lang_check.check(sentence_with_misspelling))
 
 
 if __name__ == '__main__':
