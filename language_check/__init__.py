@@ -361,12 +361,6 @@ class LanguageTool:
                     raise Error(err_msg)
 
         if cls._server:
-            if cls._consumer_thread:
-                # This means there was a previous server/thread pair. Since the
-                # old server is gone, the thread must be finished consuming
-                # too.
-                cls._consumer_thread.join()
-                cls._consumer_thread = None
             cls._consumer_thread = threading.Thread(
                 target=lambda: _consume(cls._server.stdout))
             cls._consumer_thread.daemon = True
@@ -399,11 +393,16 @@ class LanguageTool:
 
         try:
             cls._server.terminate()
-            error_message = cls._server.communicate()[1].strip()
+
+            try:
+                error_message = cls._server.communicate()[1].strip()
+            except ValueError:
+                pass
 
             cls._server.stdin.close()
-            cls._server.stdout.close()
             cls._server.stderr.close()
+            cls._server.stdout.close()
+
             cls._server = None
         except OSError:
             pass
