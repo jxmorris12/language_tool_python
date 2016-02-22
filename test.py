@@ -103,12 +103,18 @@ class TestLanguageTool(unittest.TestCase):
                 self.assertEqual(self.lang_check.correct(text), result)
 
     def test_languages(self):
-        languages = language_check.get_languages()
-        self.assertIn('en', languages)
+        self.assertIn('en', language_check.get_languages())
 
     def test_version(self):
-        version = language_check.get_version()
-        self.assertTrue(version)
+        self.assertTrue(language_check.get_version())
+
+    def test_get_build_date(self):
+        self.assertTrue(language_check.get_build_date())
+
+    def test_get_directory(self):
+        path = language_check.get_directory()
+        language_check.set_directory(path)
+        self.assertEqual(path, language_check.get_directory())
 
 
 if __name__ == '__main__':

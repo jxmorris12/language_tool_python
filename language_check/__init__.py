@@ -352,9 +352,7 @@ class LanguageTool:
                             cls._port, port))
                     break
             if not match:
-                cls._terminate_server()
-                err_msg = cls._server.communicate()[1].strip()
-                cls._server = None
+                err_msg = cls._terminate_server()
                 match = cls._PORT_RE.search(err_msg)
                 if not match:
                     raise Error(err_msg)
@@ -397,10 +395,20 @@ class LanguageTool:
 
     @classmethod
     def _terminate_server(cls):
+        error_message = ''
+
         try:
             cls._server.terminate()
+            error_message = cls._server.communicate()[1].strip()
+
+            cls._server.stdin.close()
+            cls._server.stdout.close()
+            cls._server.stderr.close()
+            cls._server = None
         except OSError:
             pass
+
+        return error_message
 
 
 def _consume(stdout):
