@@ -62,13 +62,11 @@ class TestLanguageTool(unittest.TestCase):
         },
     }
 
-    def setUp(self):
-        self.lang_check = language_check.LanguageTool()
-
     def test_check(self):
+        lang_check = language_check.LanguageTool()
         for language, tests in self.check_tests.items():
             try:
-                self.lang_check.language = language
+                lang_check.language = language
             except ValueError:
                 version = language_check.get_version()
                 warnings.warn(
@@ -76,7 +74,7 @@ class TestLanguageTool(unittest.TestCase):
                     .format(version, language)
                 )
             for text, expected_matches in tests:
-                matches = self.lang_check.check(text)
+                matches = lang_check.check(text)
                 for expected_match in expected_matches:
                     for match in matches:
                         if (
@@ -90,9 +88,10 @@ class TestLanguageTool(unittest.TestCase):
                             'can’t find {!r}'.format(expected_match))
 
     def test_correct(self):
+        lang_check = language_check.LanguageTool()
         for language, tests in self.correct_tests.items():
             try:
-                self.lang_check.language = language
+                lang_check.language = language
             except ValueError:
                 version = language_check.get_version()
                 warnings.warn(
@@ -100,7 +99,7 @@ class TestLanguageTool(unittest.TestCase):
                     .format(version, language)
                 )
             for text, result in tests.items():
-                self.assertEqual(self.lang_check.correct(text), result)
+                self.assertEqual(lang_check.correct(text), result)
 
     def test_languages(self):
         self.assertIn('en', language_check.get_languages())
@@ -115,6 +114,16 @@ class TestLanguageTool(unittest.TestCase):
         path = language_check.get_directory()
         language_check.set_directory(path)
         self.assertEqual(path, language_check.get_directory())
+
+    def test_disable_spellcheck(self):
+        lang_check = language_check.LanguageTool()
+        self.assertTrue(lang_check.check('helo'))
+
+        lang_check.disable_spellchecking()
+        self.assertFalse(lang_check.check('helo'))
+
+        lang_check.enable_spellchecking()
+        self.assertTrue(lang_check.check('helo'))
 
 
 if __name__ == '__main__':
