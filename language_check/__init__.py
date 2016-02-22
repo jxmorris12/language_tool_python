@@ -393,19 +393,30 @@ class LanguageTool:
 
         try:
             cls._server.terminate()
-
-            try:
-                error_message = cls._server.communicate()[1].strip()
-            except ValueError:
-                pass
-
-            cls._server.stdin.close()
-            cls._server.stderr.close()
-            cls._server.stdout.close()
-
-            cls._server = None
         except OSError:
             pass
+
+        try:
+            error_message = cls._server.communicate()[1].strip()
+        except (IOError, ValueError):
+            pass
+
+        try:
+            cls._server.stdout.close()
+        except IOError:
+            pass
+
+        try:
+            cls._server.stdin.close()
+        except IOError:
+            pass
+
+        try:
+            cls._server.stderr.close()
+        except IOError:
+            pass
+
+        cls._server = None
 
         return error_message
 
