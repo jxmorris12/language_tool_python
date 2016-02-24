@@ -12,6 +12,10 @@ echo 'This is okay.' | python -m language_check -
 
 echo 'These are “smart” quotes.' | python -m language_check -
 ! echo 'These are "dumb" quotes.' | python -m language_check -
+! echo 'These are "dumb" quotes.' | python -m language_check --enabled-only \
+    --enable=EN_QUOTES -
+echo 'These are "dumb" quotes.' | python -m language_check --enabled-only \
+    --enable=EN_UNPAIRED_BRACKETS -
 
 echo '# These are "dumb".' | python -m language_check --ignore-lines='^#' -
 

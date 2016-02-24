@@ -196,6 +196,7 @@ class LanguageTool:
         self.motherTongue = motherTongue
         self.disabled = set()
         self.enabled = set()
+        self.enabled_only = False
         self._instances[id(self)] = self
 
     def __del__(self):
@@ -258,6 +259,8 @@ class LanguageTool:
             params['disabled'] = ','.join(self.disabled)
         if self.enabled:
             params['enabled'] = ','.join(self.enabled)
+        if self.enabled_only:
+            params['enabledOnly'] = 'yes'
         return urllib.parse.urlencode(params).encode()
 
     def correct(self, text: str, srctext=None) -> str:

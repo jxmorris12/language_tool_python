@@ -28,6 +28,9 @@ def parse_args():
     parser.add_argument('-e', '--enable', metavar='RULES', type=get_rules,
                         action=RulesAction, default=set(),
                         help='list of rule IDs to be enabled')
+    parser.add_argument('--enabled-only', action='store_true',
+                        help='disable all rules except those specified in '
+                             '--enable')
     parser.add_argument('--api', action='store_true',
                         help='print results as XML')
     parser.add_argument(
@@ -41,7 +44,17 @@ def parse_args():
                         help='disable spell-checking rules')
     parser.add_argument('--ignore-lines',
                         help='ignore lines that match this regular expression')
-    return parser.parse_args()
+
+    args = parser.parse_args()
+
+    if args.enabled_only:
+        if args.disable:
+            parser.error('--enabled-only cannot be used with --disable')
+
+        if not args.enable:
+            parser.error('--enabled-only requires --enable')
+
+    return args
 
 
 class RulesAction(argparse.Action):
@@ -120,6 +133,7 @@ def main():
 
         lang_tool.disabled.update(args.disable)
         lang_tool.enabled.update(args.enable)
+        lang_tool.enabled_only = args.enabled_only
 
         try:
             if args.api:
