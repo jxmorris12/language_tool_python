@@ -568,9 +568,8 @@ def default_hook(config):
             os.path.isdir(PY2K_DIR) != IS_PY2K and os.path.isdir(LIB_DIR)):
         shutil.rmtree(LIB_DIR)
 
-    if IS_PY2K and any(arg.startswith('install') or
-                       arg.startswith('build') or
-                       arg.startswith('bdist') for arg in sys.argv):
+    if IS_PY2K and any(arg.startswith(('install', 'build', 'bdist'))
+                       for arg in sys.argv):
         generate_py2k(config)
         packages_root = get_cfg_value(config, 'files', 'packages_root')
         packages_root = os.path.join(PY2K_DIR, packages_root)
@@ -580,9 +579,8 @@ def default_hook(config):
 def language_tool_hook(config):
     if 'sdist' in sys.argv:
         del config['files']['package_data']
-    elif any(arg.startswith('install') or
-             arg.startswith('build') or
-             arg.startswith('bdist') for arg in sys.argv):
+    elif any(arg.startswith(('install', 'build', 'bdist'))
+             for arg in sys.argv):
         download_lt()
 
 
