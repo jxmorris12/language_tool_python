@@ -1,6 +1,9 @@
 check:
-	pep8 --ignore=E402 \
-		./language-check ./language_check/ $(wildcard *.py)
+	pycodestyle \
+		--ignore=E402 \
+		./language-check \
+		./language_check/ \
+		$(wildcard *.py)
 	pylint \
 		--reports=no \
 		--rcfile=/dev/null \
