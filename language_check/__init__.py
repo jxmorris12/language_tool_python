@@ -173,6 +173,7 @@ class Match:
 class LanguageTool:
 
     """Main class used for checking text against different rules."""
+    _REMOTE = False
     _HOST = socket.gethostbyname('localhost')
     _MIN_PORT = 8081
     _MAX_PORT = 8083
@@ -184,8 +185,13 @@ class LanguageTool:
     _instances = WeakValueDictionary()
     _PORT_RE = re.compile(r"(?:https?://.*:|port\s+)(\d+)", re.I)
 
-    def __init__(self, language=None, motherTongue=None):
-        if not self._server_is_alive():
+    def __init__(self, language=None, motherTongue=None, remote_server=None):
+        if remote_server is not None:
+            self._REMOTE = True
+            self._HOST = remote_server["host"]
+            self._port = remote_server["port"]
+            self._url = 'http://{}:{}/v2/check'.format(self._HOST, self._port)
+        elif not self._server_is_alive():
             self._start_server_on_free_port()
         if language is None:
             try:
@@ -290,7 +296,7 @@ class LanguageTool:
     @classmethod
     def _get_attrib(cls):
         """Get matches element attributes."""
-        if not cls._server_is_alive():
+        if not cls._server_is_alive() and cls._REMOTE is False:
             cls._start_server_on_free_port()
         params = {'language': FAILSAFE_LANGUAGE, 'text': ''}
         data = urllib.parse.urlencode(params).encode()
@@ -304,8 +310,9 @@ class LanguageTool:
                 with urlopen(url, data, cls._TIMEOUT) as f:
                     return ElementTree.parse(f).getroot()
             except (IOError, http.client.HTTPException) as e:
-                cls._terminate_server()
-                cls._start_server()
+                if cls._REMOTE is False:
+                    cls._terminate_server()
+                    cls._start_server()
                 if n + 1 >= num_tries:
                     raise Error('{}: {}'.format(cls._url, e))
 
