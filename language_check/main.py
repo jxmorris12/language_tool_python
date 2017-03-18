@@ -44,6 +44,10 @@ def parse_args():
                         help='disable spell-checking rules')
     parser.add_argument('--ignore-lines',
                         help='ignore lines that match this regular expression')
+    parser.add_argument('--remote-host',
+                        help='hostname of the remote LanguageTool server')
+    parser.add_argument('--remote-port',
+                        help='port of the remote LanguageTool server')
 
     args = parser.parse_args()
 
@@ -100,8 +104,13 @@ def main():
         else:
             encoding = args.encoding or 'utf-8'
 
+        remote_server = None
+        if args.remote_host is not None and args.remote_port is not None:
+            remote_server = {'host': args.remote_host, 'port': args.remote_port}
         lang_tool = LanguageTool(
-            motherTongue=args.mother_tongue)
+            motherTongue=args.mother_tongue,
+            remote_server=remote_server,
+        )
         guess_language = None
 
         try:
