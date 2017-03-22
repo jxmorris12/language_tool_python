@@ -258,7 +258,7 @@ def get_package_data(value):
         if '=' in line:
             # package name -- file globs or specs
             key, value = line.split('=')
-            prev = package_data[key.strip()] = value.split()
+            prev = package_data[str(key.strip())] = value.split()
         elif firstline:
             # invalid continuation on the first line
             raise ValueError(
