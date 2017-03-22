@@ -14,13 +14,16 @@ install:
     - if [ "$TRAVIS_PYTHON_VERSION" == "2.7" ]; then pip --quiet install 3to2; fi
     - python setup.py --quiet install
 
-script:
-    - if [ "$TRAVIS_PYTHON_VERSION" != "2.7" ]; then python test.py; fi
-
-    - if [ "$TRAVIS_PYTHON_VERSION" != "2.7" ]; then ./run_doctest.py -v README.rst download_lt.py; fi
-
     # Prevent Python 2.7 from using the non-3to2 converted code.
-    - cd language_check; ../test.bash
+    - mv language_check .language_check
+
+script:
+    - ./test.py
+
+    - ./run_doctest.py -v download_lt.py
+    - if [ "$TRAVIS_PYTHON_VERSION" != "2.7" ]; then ./run_doctest.py -v README.rst; fi
+
+    - bash test.bash
 
     # Smoke test.
     - echo 'This is a sentence.' > foo.txt

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Test suite for language_check."""
+from __future__ import unicode_literals
 
 import unittest
 import warnings
@@ -126,6 +127,24 @@ class TestLanguageTool(unittest.TestCase):
 
         lang_check.enable_spellchecking()
         self.assertTrue(lang_check.check(sentence_with_misspelling))
+
+    def test_README_with_unicode(self):
+        tool = language_check.LanguageTool('en-US')
+        text = ('A sentence with a error in the '
+                'Hitchhiker’s Guide tot he Galaxy')
+        matches = tool.check(text)
+        self.assertEqual(len(matches), 2)
+        self.assertEqual((matches[0].fromy, matches[0].fromx),
+                         (0, 16))
+        self.assertEqual((matches[0].ruleId, matches[0].replacements),
+                         ('EN_A_VS_AN', ['an']))
+        self.assertEqual((matches[1].fromy, matches[1].fromx),
+                         (0, 50))
+        self.assertEqual((matches[1].ruleId, matches[1].replacements),
+                         ('TOT_HE', ['to the']))
+        corrected = language_check.correct(text, matches)
+        self.assertEqual(corrected, 'A sentence with an error in the '
+                                    'Hitchhiker’s Guide to the Galaxy')
 
 
 if __name__ == '__main__':
