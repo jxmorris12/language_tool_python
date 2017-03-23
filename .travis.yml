@@ -17,6 +17,8 @@ install:
     # Prevent Python 2.7 from using the non-3to2 converted code.
     - mv language_check .language_check
 
+    - pip install pycodestyle pylint rstcheck
+
 script:
     - ./test.py
 
@@ -29,3 +31,6 @@ script:
     - echo 'This is a sentence.' > foo.txt
     - language-check foo.txt
     - language-check --version
+
+    - mv .language_check language_check
+    - if [[ "$TRAVIS_PYTHON_VERSION" == "3.5" ]]; then make check; fi

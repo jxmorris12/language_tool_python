@@ -106,7 +106,8 @@ def main():
 
         remote_server = None
         if args.remote_host is not None and args.remote_port is not None:
-            remote_server = {'host': args.remote_host, 'port': args.remote_port}
+            remote_server = {'host': args.remote_host,
+                             'port': args.remote_port}
         lang_tool = LanguageTool(
             motherTongue=args.mother_tongue,
             remote_server=remote_server,

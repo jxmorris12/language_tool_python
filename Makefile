@@ -1,5 +1,6 @@
 check:
 	pycodestyle \
+		--exclude ./language_check/LanguageTool-* \
 		--ignore=E402 \
 		./language-check \
 		./language_check/ \
@@ -21,6 +22,7 @@ check:
 		--disable=similarities \
 		--disable=too-few-public-methods \
 		--disable=too-many-branches \
+		--disable=too-many-instance-attributes \
 		--disable=too-many-locals \
 		--disable=too-many-statements \
 		--disable=wrong-import-order \

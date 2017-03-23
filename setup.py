@@ -192,10 +192,10 @@ def split_multiline(value):
 
 def split_elements(value):
     """Split a string with comma or space-separated elements into a list."""
-    l = [v.strip() for v in value.split(',')]
-    if len(l) == 1:
-        l = value.split()
-    return l
+    items = [v.strip() for v in value.split(',')]
+    if len(items) == 1:
+        items = value.split()
+    return items
 
 
 def eval_environ(value):
@@ -541,7 +541,7 @@ def generate_py2k(config, py2k_dir=PY2K_DIR, run_tests=False):
         try:
             run_3to2(copied_py_files)
             write_py2k_header(copied_py_files)
-        except:
+        except Exception:
             shutil.rmtree(py2k_dir)
             raise
 
