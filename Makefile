@@ -8,6 +8,7 @@ check:
 	pylint \
 		--rcfile=/dev/null \
 		--errors-only \
+		--disable=import-error \
 		--disable=no-member \
 		--disable=no-name-in-module \
 		--disable=raising-bad-type \
