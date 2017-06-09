@@ -173,12 +173,12 @@ class Match:
 class LanguageTool:
 
     """Main class used for checking text against different rules."""
-    _REMOTE = False
     _HOST = socket.gethostbyname('localhost')
     _MIN_PORT = 8081
     _MAX_PORT = 8083
     _TIMEOUT = 5 * 60
 
+    _remote = False
     _port = _MIN_PORT
     _server = None
     _consumer_thread = None
@@ -187,7 +187,7 @@ class LanguageTool:
 
     def __init__(self, language=None, motherTongue=None, remote_server=None):
         if remote_server is not None:
-            self._REMOTE = True
+            self._remote = True
             self._HOST = remote_server["host"]
             self._port = remote_server["port"]
             self._url = 'http://{}:{}/v2/check'.format(self._HOST, self._port)
@@ -284,8 +284,7 @@ class LanguageTool:
     @classmethod
     def _get_languages(cls) -> set:
         """Get supported languages (by querying the server)."""
-        if not cls._server_is_alive():
-            cls._start_server_on_free_port()
+        cls._start_server_if_needed()
         url = urllib.parse.urljoin(cls._url, 'Languages')
         languages = set()
         for e in cls._get_root(url, num_tries=1):
@@ -296,12 +295,16 @@ class LanguageTool:
     @classmethod
     def _get_attrib(cls):
         """Get matches element attributes."""
-        if not cls._server_is_alive() and cls._REMOTE is False:
-            cls._start_server_on_free_port()
+        cls._start_server_if_needed()
         params = {'language': FAILSAFE_LANGUAGE, 'text': ''}
         data = urllib.parse.urlencode(params).encode()
         root = cls._get_root(cls._url, data, num_tries=1)
         return root.attrib
+
+    @classmethod
+    def _start_server_if_needed(cls):
+        if not cls._server_is_alive() and cls._remote is False:
+            cls._start_server_on_free_port()
 
     @classmethod
     def _get_root(cls, url, data=None, num_tries=2):
@@ -310,7 +313,7 @@ class LanguageTool:
                 with urlopen(url, data, cls._TIMEOUT) as f:
                     return ElementTree.parse(f).getroot()
             except (IOError, http.client.HTTPException) as e:
-                if cls._REMOTE is False:
+                if cls._remote is False:
                     cls._terminate_server()
                     cls._start_server()
                 if n + 1 >= num_tries:
