@@ -312,7 +312,6 @@ class LanguageTool:
         cls._url = url
         cls._remote = True
 
-
     @classmethod
     def _get_root(cls, url, data=None, num_tries=2):
         for n in range(num_tries):
