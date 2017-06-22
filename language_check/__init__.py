@@ -321,7 +321,7 @@ class LanguageTool:
             except (IOError, http.client.HTTPException) as e:
                 if cls._remote is False:
                     cls._terminate_server()
-                    cls._start_server()
+                    cls._start_local_server()
                 if n + 1 >= num_tries:
                     raise Error('{}: {}'.format(cls._url, e))
 
@@ -330,7 +330,7 @@ class LanguageTool:
         while True:
             cls._url = 'http://{}:{}'.format(cls._HOST, cls._port)
             try:
-                cls._start_server()
+                cls._start_local_server()
                 break
             except ServerError:
                 if cls._MIN_PORT <= cls._port < cls._MAX_PORT:
@@ -339,9 +339,7 @@ class LanguageTool:
                     raise
 
     @classmethod
-    def _start_server(cls):
-        if cls._remote:
-            Exception('Remote server can\'t be started.')
+    def _start_local_server(cls):
         err = None
         try:
             server_cmd = get_server_cmd(cls._port)
