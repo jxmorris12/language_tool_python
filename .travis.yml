@@ -21,12 +21,16 @@ install:
     - pip install pycodestyle pylint rstcheck
 
 script:
+    # Only run on one machine since the script currently assumes a hard coded
+    # port number.
+    - if [[ "$TRAVIS_PYTHON_VERSION" == "3.6" ]]; then ./test_remote.bash; fi
+
     - ./test.py
 
     - ./run_doctest.py -v download_lt.py
     - if [ "$TRAVIS_PYTHON_VERSION" != "2.7" ]; then ./run_doctest.py -v README.rst; fi
 
-    - bash test.bash
+    - ./test.bash
 
     # Smoke test.
     - echo 'This is a sentence.' > foo.txt
