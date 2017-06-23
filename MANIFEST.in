@@ -1,4 +1,6 @@
 exclude .travis.yml
+exclude Dockerfile
+exclude Makefile
 include COPYING
 include COPYING.LESSER
 include README.rst
@@ -6,3 +8,4 @@ include download_lt.py
 include run_doctest.py
 include test.bash
 include test.py
+include test_remote.bash
