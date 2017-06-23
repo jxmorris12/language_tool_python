@@ -190,7 +190,8 @@ class LanguageTool:
             self._remote = True
             self._HOST = remote_server["host"]
             self._port = remote_server["port"]
-            self._url = 'http://{}:{}/v2/check'.format(self._HOST, self._port)
+            self._url = 'http://{}:{}'.format(self._HOST, self._port)
+            self._update_remote_server_config(self._url)
         elif not self._server_is_alive():
             self._start_server_on_free_port()
         if language is None:
@@ -307,6 +308,11 @@ class LanguageTool:
             cls._start_server_on_free_port()
 
     @classmethod
+    def _update_remote_server_config(cls, url):
+        cls._url = url
+        cls._remote = True
+
+    @classmethod
     def _get_root(cls, url, data=None, num_tries=2):
         for n in range(num_tries):
             try:
@@ -315,7 +321,7 @@ class LanguageTool:
             except (IOError, http.client.HTTPException) as e:
                 if cls._remote is False:
                     cls._terminate_server()
-                    cls._start_server()
+                    cls._start_local_server()
                 if n + 1 >= num_tries:
                     raise Error('{}: {}'.format(cls._url, e))
 
@@ -324,7 +330,7 @@ class LanguageTool:
         while True:
             cls._url = 'http://{}:{}'.format(cls._HOST, cls._port)
             try:
-                cls._start_server()
+                cls._start_local_server()
                 break
             except ServerError:
                 if cls._MIN_PORT <= cls._port < cls._MAX_PORT:
@@ -333,7 +339,7 @@ class LanguageTool:
                     raise
 
     @classmethod
-    def _start_server(cls):
+    def _start_local_server(cls):
         err = None
         try:
             server_cmd = get_server_cmd(cls._port)
