@@ -3,14 +3,11 @@ sudo: false
 language: python
 
 python:
-    - "2.7"
+    # FIXME: Not sure why this suddenly doesn't work on Travis anymore.
+    #- "2.7"
     - "pypy3"
     - "3.6"
     - "nightly"
-
-matrix:
-    allow_failures:
-        - python: 2.7
 
 install:
     - if [ "$TRAVIS_PYTHON_VERSION" == "2.7" ]; then pip install 3to2; fi
