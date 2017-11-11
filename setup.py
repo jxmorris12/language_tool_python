@@ -19,7 +19,7 @@ from download_lt import download_lt
 
 try:
     from configparser import RawConfigParser
-except ImportError:
+except (AttributeError, ImportError):
     from ConfigParser import RawConfigParser
     from collections import MutableMapping  # 2.6
 
