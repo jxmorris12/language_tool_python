@@ -1,7 +1,7 @@
 check:
 	pycodestyle \
 		--exclude ./language_check/LanguageTool-* \
-		--ignore=E402 \
+		--ignore=E402,W504 \
 		./language-check \
 		./language_check/ \
 		$(wildcard *.py)
