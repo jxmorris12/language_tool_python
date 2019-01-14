@@ -30,7 +30,7 @@ JAVA_6_COMPATIBLE_VERSION = '2.2'
 JAVA_7_COMPATIBLE_VERSION = '3.1'
 LATEST_VERSION = '3.2'
 JAVA_VERSION_REGEX = re.compile(
-    r'^(?:java|openjdk) version "(?P<major1>\d+)\.(?P<major2>\d+)\.[^"]+"$',
+    r'^(?:java|openjdk) version "(?P<major1>\d+)\.(?P<major2>\d+)\.[^"]+"',
     re.MULTILINE)
 
 
