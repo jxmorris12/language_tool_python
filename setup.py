@@ -568,7 +568,7 @@ def default_hook(config):
             os.path.isdir(PY2K_DIR) != IS_PY2K and os.path.isdir(LIB_DIR)):
         shutil.rmtree(LIB_DIR)
 
-    if IS_PY2K and any(arg.startswith(('install', 'build', 'bdist'))
+    if IS_PY2K and any(arg.startswith(('install', 'build', 'bdist', 'test'))
                        for arg in sys.argv):
         generate_py2k(config)
         packages_root = get_cfg_value(config, 'files', 'packages_root')
