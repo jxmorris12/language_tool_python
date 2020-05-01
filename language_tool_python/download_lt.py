@@ -28,7 +28,7 @@ ALT_BASE_URL = os.environ['language_tool_python_DOWNLOAD_HOST'] \
     else None
 BASE_URL = ALT_BASE_URL or 'https://www.languagetool.org/download/'
 FILENAME = 'LanguageTool-{version}.zip'
-PACKAGE_PATH = 'language_tool_python'
+PACKAGE_PATH = os.path.dirname(os.path.realpath(__file__))
 JAVA_6_COMPATIBLE_VERSION = '2.2'
 JAVA_7_COMPATIBLE_VERSION = '3.1'
 LATEST_VERSION = '4.9'
