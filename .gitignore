@@ -7,4 +7,4 @@
 __pycache__/
 build/
 dist/
-language_check/LanguageTool-*/
+language_tool_python/LanguageTool-*/

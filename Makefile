@@ -1,9 +1,9 @@
 check:
 	pycodestyle \
-		--exclude ./language_check/LanguageTool-* \
+		--exclude ./language_tool_python/LanguageTool-* \
 		--ignore=E402,W504 \
-		./language-check \
-		./language_check/ \
+		./language_tool_python \
+		./language_tool_python/ \
 		$(wildcard *.py)
 	pylint \
 		--rcfile=/dev/null \
@@ -12,7 +12,7 @@ check:
 		--disable=no-member \
 		--disable=no-name-in-module \
 		--disable=raising-bad-type \
-		./language-check \
-		$(wildcard ./language_check/*.py) \
+		./language_tool_python \
+		$(wildcard ./language_tool_python/*.py) \
 		$(wildcard *.py)
 	python setup.py --long-description | rstcheck -

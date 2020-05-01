@@ -23,15 +23,15 @@ except ImportError:
     from urllib import urlopen
     from urlparse import urljoin
 
-ALT_BASE_URL = os.environ['LANGUAGE_CHECK_DOWNLOAD_HOST'] \
-    if os.environ.get('LANGUAGE_CHECK_DOWNLOAD_HOST') \
+ALT_BASE_URL = os.environ['language_tool_python_DOWNLOAD_HOST'] \
+    if os.environ.get('language_tool_python_DOWNLOAD_HOST') \
     else None
 BASE_URL = ALT_BASE_URL or 'https://www.languagetool.org/download/'
 FILENAME = 'LanguageTool-{version}.zip'
-PACKAGE_PATH = 'language_check'
+PACKAGE_PATH = 'language_tool_python'
 JAVA_6_COMPATIBLE_VERSION = '2.2'
 JAVA_7_COMPATIBLE_VERSION = '3.1'
-LATEST_VERSION = '3.2'
+LATEST_VERSION = '4.9'
 
 JAVA_VERSION_REGEX = re.compile(
     r'^(?:java|openjdk) version "(?P<major1>\d+)\.(?P<major2>\d+)\.[^"]+"',
@@ -96,12 +96,12 @@ def get_newest_possible_languagetool_version():
     elif java_version >= (1, 7):
         return JAVA_7_COMPATIBLE_VERSION
     elif java_version >= (1, 6):
-        warn('language-check would be able to use a newer version of '
+        warn('language_tool_python would be able to use a newer version of '
              'LanguageTool if you had Java 7 or newer installed')
         return JAVA_6_COMPATIBLE_VERSION
     else:
         raise SystemExit(
-            'You need at least Java 6 to use language-check')
+            'You need at least Java 6 to use language_tool_python')
 
 
 def get_common_prefix(z):

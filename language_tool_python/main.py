@@ -13,7 +13,7 @@ from . import LanguageTool
 def parse_args():
     parser = argparse.ArgumentParser(
         description=__doc__.strip() if __doc__ else None,
-        prog='language-check')
+        prog='language_tool_python')
     parser.add_argument('files', nargs='+',
                         help='plain text file or "-" for stdin')
     parser.add_argument('-c', '--encoding',

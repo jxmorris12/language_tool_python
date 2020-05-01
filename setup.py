@@ -15,8 +15,6 @@ from distutils.version import LooseVersion
 
 from setuptools import setup
 
-from download_lt import download_lt
-
 try:
     from configparser import RawConfigParser
 except (AttributeError, ImportError):
@@ -127,7 +125,7 @@ assert platform
 
 def get_version():
     """Return version string."""
-    with io.open('language_check/__init__.py', encoding='utf-8') as input_file:
+    with io.open('language_tool_python/__init__.py', encoding='utf-8') as input_file:
         for line in input_file:
             if line.startswith('__version__'):
                 return ast.parse(line).body[0].value.s
@@ -579,9 +577,6 @@ def default_hook(config):
 def language_tool_hook(config):
     if 'sdist' in sys.argv:
         del config['files']['package_data']
-    elif any(arg.startswith(('install', 'build', 'bdist'))
-             for arg in sys.argv):
-        download_lt()
 
 
 def main():

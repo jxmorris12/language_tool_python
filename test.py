@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Test suite for language_check."""
+"""Test suite for language_tool_python."""
 from __future__ import unicode_literals
 
 import unittest
 import warnings
 from collections import namedtuple
 
-import language_check
+import language_tool_python
 
 
 class TestLanguageTool(unittest.TestCase):
@@ -64,12 +64,12 @@ class TestLanguageTool(unittest.TestCase):
     }
 
     def test_check(self):
-        lang_check = language_check.LanguageTool()
+        lang_check = language_tool_python.LanguageTool()
         for language, tests in self.check_tests.items():
             try:
                 lang_check.language = language
             except ValueError:
-                version = language_check.get_version()
+                version = language_tool_python.get_version()
                 warnings.warn(
                     'LanguageTool {} doesn’t support language {!r}'
                     .format(version, language)
@@ -89,12 +89,12 @@ class TestLanguageTool(unittest.TestCase):
                             'can’t find {!r}'.format(expected_match))
 
     def test_correct(self):
-        lang_check = language_check.LanguageTool()
+        lang_check = language_tool_python.LanguageTool()
         for language, tests in self.correct_tests.items():
             try:
                 lang_check.language = language
             except ValueError:
-                version = language_check.get_version()
+                version = language_tool_python.get_version()
                 warnings.warn(
                     'LanguageTool {} doesn’t support language {!r}'
                     .format(version, language)
@@ -103,23 +103,23 @@ class TestLanguageTool(unittest.TestCase):
                 self.assertEqual(lang_check.correct(text), result)
 
     def test_languages(self):
-        self.assertIn('en', language_check.get_languages())
+        self.assertIn('en', language_tool_python.get_languages())
 
     def test_version(self):
-        self.assertTrue(language_check.get_version())
+        self.assertTrue(language_tool_python.get_version())
 
     def test_get_build_date(self):
-        self.assertTrue(language_check.get_build_date())
+        self.assertTrue(language_tool_python.get_build_date())
 
     def test_get_directory(self):
-        path = language_check.get_directory()
-        language_check.set_directory(path)
-        self.assertEqual(path, language_check.get_directory())
+        path = language_tool_python.get_directory()
+        language_tool_python.set_directory(path)
+        self.assertEqual(path, language_tool_python.get_directory())
 
     def test_disable_spellcheck(self):
         sentence_with_misspelling = 'This is baad.'
 
-        lang_check = language_check.LanguageTool()
+        lang_check = language_tool_python.LanguageTool()
         self.assertTrue(lang_check.check(sentence_with_misspelling))
 
         lang_check.disable_spellchecking()
@@ -129,7 +129,7 @@ class TestLanguageTool(unittest.TestCase):
         self.assertTrue(lang_check.check(sentence_with_misspelling))
 
     def test_README_with_unicode(self):
-        tool = language_check.LanguageTool('en-US')
+        tool = language_tool_python.LanguageTool('en-US')
         text = ('A sentence with a error in the '
                 'Hitchhiker’s Guide tot he Galaxy')
         matches = tool.check(text)
@@ -142,7 +142,7 @@ class TestLanguageTool(unittest.TestCase):
                          (0, 50))
         self.assertEqual((matches[1].ruleId, matches[1].replacements),
                          ('TOT_HE', ['to the']))
-        corrected = language_check.correct(text, matches)
+        corrected = language_tool_python.correct(text, matches)
         self.assertEqual(corrected, 'A sentence with an error in the '
                                     'Hitchhiker’s Guide to the Galaxy')
 

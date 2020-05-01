@@ -16,10 +16,17 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-"""LanguageTool through server mode."""
+"""LanguageTool through server mode.
+
+    migration URL: https://languagetool.org/http-api/migration.php
+"""
+
+from .download_lt import download_lt
+download_lt()
 
 import atexit
 import glob
+import json
 import http.client
 import locale
 import os
@@ -116,7 +123,11 @@ class Match:
 
     def __init__(self, attrib):
         for k, v in attrib.items():
-            setattr(self, k, v)
+            try:
+                setattr(self, k, v)
+            except TypeError:
+                # Some types (like dicts) cannot be passed as values to setattr.
+                continue
 
     def __repr__(self):
         def _ordered_dict_repr():
@@ -190,7 +201,7 @@ class LanguageTool:
             self._remote = True
             self._HOST = remote_server["host"]
             self._port = remote_server["port"]
-            self._url = 'http://{}:{}'.format(self._HOST, self._port)
+            self._url = 'http://{}:{}/v2/'.format(self._HOST, self._port)
             self._update_remote_server_config(self._url)
         elif not self._server_is_alive():
             self._start_server_on_free_port()
@@ -247,11 +258,13 @@ class LanguageTool:
 
     def check(self, text: str, srctext=None) -> [Match]:
         """Match text against enabled rules."""
-        root = self._get_root(self._url, self._encode(text, srctext))
-        return [Match(e.attrib) for e in root if e.tag == 'error']
+        url = urllib.parse.urljoin(self._url, 'check')
+        response = self._get_root(url, self._encode(text, srctext))
+        matches = response['matches']
+        return [Match(match) for match in matches]
 
     def _check_api(self, text: str, srctext=None) -> bytes:
-        """Match text against enabled rules (result in XML format)."""
+        """ Match text against enabled rules (result in XML format)."""
         root = self._get_root(self._url, self._encode(text, srctext))
         return (b'<?xml version="1.0" encoding="UTF-8"?>\n' +
                 ElementTree.tostring(root) + b"\n")
@@ -286,11 +299,11 @@ class LanguageTool:
     def _get_languages(cls) -> set:
         """Get supported languages (by querying the server)."""
         cls._start_server_if_needed()
-        url = urllib.parse.urljoin(cls._url, 'Languages')
+        url = urllib.parse.urljoin(cls._url, 'languages')
         languages = set()
         for e in cls._get_root(url, num_tries=1):
-            languages.add(e.get('abbr'))
-            languages.add(e.get('abbrWithVariant'))
+            languages.add(e.get('code'))
+            languages.add(e.get('longCode'))
         return languages
 
     @classmethod
@@ -317,7 +330,13 @@ class LanguageTool:
         for n in range(num_tries):
             try:
                 with urlopen(url, data, cls._TIMEOUT) as f:
-                    return ElementTree.parse(f).getroot()
+                    raw_data = f.read().decode('utf-8')
+                    try:
+                        return json.loads(raw_data)
+                    except json.decoder.JSONDecodeError as e:
+                        print('URL {url} and data {data} returned invalid JSON response:')
+                        print(raw_data)
+                        raise e
             except (IOError, http.client.HTTPException) as e:
                 if cls._remote is False:
                     cls._terminate_server()
@@ -328,7 +347,7 @@ class LanguageTool:
     @classmethod
     def _start_server_on_free_port(cls):
         while True:
-            cls._url = 'http://{}:{}'.format(cls._HOST, cls._port)
+            cls._url = 'http://{}:{}/v2/'.format(cls._HOST, cls._port)
             try:
                 cls._start_local_server()
                 break
@@ -546,7 +565,7 @@ def get_languages() -> set:
 def get_directory():
     """Get LanguageTool directory."""
     try:
-        language_check_dir = cache['language_check_dir']
+        language_tool_python_dir = cache['language_tool_python_dir']
     except KeyError:
         def version_key(string):
             return [int(e) if e.isdigit() else e
@@ -561,19 +580,19 @@ def get_directory():
             return max(paths, key=version_key) if paths else None
 
         base_dir = os.path.dirname(sys.argv[0])
-        language_check_dir = get_lt_dir(base_dir)
-        if not language_check_dir:
+        language_tool_python_dir = get_lt_dir(base_dir)
+        if not language_tool_python_dir:
             try:
                 base_dir = os.path.dirname(os.path.abspath(__file__))
             except NameError:
                 pass
             else:
-                language_check_dir = get_lt_dir(base_dir)
-            if not language_check_dir:
+                language_tool_python_dir = get_lt_dir(base_dir)
+            if not language_tool_python_dir:
                 raise PathError("can't find LanguageTool directory in {!r}"
                                 .format(base_dir))
-        cache['language_check_dir'] = language_check_dir
-    return language_check_dir
+        cache['language_tool_python_dir'] = language_tool_python_dir
+    return language_tool_python_dir
 
 
 def set_directory(path=None):
@@ -582,11 +601,11 @@ def set_directory(path=None):
     terminate_server()
     cache.clear()
     if path:
-        cache['language_check_dir'] = path
+        cache['language_tool_python_dir'] = path
         try:
             get_jar_info()
         except Error:
-            cache['language_check_dir'] = old_path
+            cache['language_tool_python_dir'] = old_path
             raise
 
 
