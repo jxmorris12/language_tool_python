@@ -40,16 +40,11 @@ from collections import OrderedDict
 from functools import total_ordering
 from weakref import WeakValueDictionary
 
-try:
-    from xml.etree import cElementTree as ElementTree
-except ImportError:
-    from xml.etree import ElementTree
-
 from .backports import subprocess
 from .which import which
 
 
-__version__ = '2.0'
+__version__ = '2.0.1'
 
 
 __all__ = ['LanguageTool', 'Error', 'get_languages', 'correct', 'get_version',
@@ -263,12 +258,6 @@ class LanguageTool:
         matches = response['matches']
         return [Match(match) for match in matches]
 
-    def _check_api(self, text: str, srctext=None) -> bytes:
-        """ Match text against enabled rules (result in XML format)."""
-        root = self._get_root(self._url, self._encode(text, srctext))
-        return (b'<?xml version="1.0" encoding="UTF-8"?>\n' +
-                ElementTree.tostring(root) + b"\n")
-
     def _encode(self, text, srctext=None):
         params = {'language': self.language, 'text': text.encode('utf-8')}
         if srctext is not None:
@@ -409,12 +398,12 @@ class LanguageTool:
             data = urllib.parse.urlencode(params).encode()
             try:
                 with urlopen(cls._url, data, cls._TIMEOUT) as f:
-                    tree = ElementTree.parse(f)
+                    data = json.loads(f)
             except (IOError, http.client.HTTPException) as e:
                 if err:
                     raise err
                 raise ServerError('{}: {}'.format(cls._url, e))
-            root = tree.getroot()
+            root = data
 
             # LanguageTool 1.9+
             if root.get('software') != 'LanguageTool':

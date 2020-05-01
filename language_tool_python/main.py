@@ -31,8 +31,6 @@ def parse_args():
     parser.add_argument('--enabled-only', action='store_true',
                         help='disable all rules except those specified in '
                              '--enable')
-    parser.add_argument('--api', action='store_true',
-                        help='print results as XML')
     parser.add_argument(
         '--version', action='version',
         version='%(prog)s {}'.format(__version__),
@@ -129,9 +127,8 @@ def main():
                     return 1
                 else:
                     language = guess_language(text)
-                    if not args.api:
-                        print('Detected language: {}'.format(language),
-                              file=sys.stderr)
+                    print('Detected language: {}'.format(language),
+                          file=sys.stderr)
                     if not language:
                         return 1
                     lang_tool.language = language
@@ -146,9 +143,7 @@ def main():
         lang_tool.enabled_only = args.enabled_only
 
         try:
-            if args.api:
-                print_unicode(lang_tool._check_api(text).decode())
-            elif args.apply:
+            if args.apply:
                 print_unicode(lang_tool.correct(text))
             else:
                 for match in lang_tool.check(text):
