@@ -175,7 +175,7 @@ class LanguageTool:
     """Main class used for checking text against different rules."""
     _HOST = socket.gethostbyname('localhost')
     _MIN_PORT = 8081
-    _MAX_PORT = 8083
+    _MAX_PORT = 8999
     _TIMEOUT = 5 * 60
 
     _remote = False
@@ -401,6 +401,7 @@ class LanguageTool:
             if root.get('software') != 'LanguageTool':
                 raise ServerError('unexpected software from {}: {!r}'
                                   .format(cls._url, root.get('software')))
+            raise ServerError('Server running; don\'t start a server here.')
 
     @classmethod
     def _server_is_alive(cls):

@@ -32,8 +32,14 @@ PACKAGE_PATH = 'language_check'
 JAVA_6_COMPATIBLE_VERSION = '2.2'
 JAVA_7_COMPATIBLE_VERSION = '3.1'
 LATEST_VERSION = '3.2'
+
 JAVA_VERSION_REGEX = re.compile(
     r'^(?:java|openjdk) version "(?P<major1>\d+)\.(?P<major2>\d+)\.[^"]+"',
+    re.MULTILINE)
+
+# Updated for later versions of java
+JAVA_VERSION_REGEX_UPDATED = re.compile(
+    r'^(?:java|openjdk) [version ]?(?P<major1>\d+)\.(?P<major2>\d+)',
     re.MULTILINE)
 
 
@@ -54,7 +60,7 @@ def parse_java_version(version_text):
     (1, 8)
 
     """
-    match = re.search(JAVA_VERSION_REGEX, version_text)
+    match = re.search(JAVA_VERSION_REGEX, version_text) or re.search(JAVA_VERSION_REGEX_UPDATED, version_text) 
     if not match:
         raise SystemExit(
             'Could not parse Java version from """{}""".'.format(version_text))

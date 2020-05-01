@@ -7,8 +7,8 @@ Python wrapper for LanguageTool.
     :target: https://travis-ci.org/myint/language-check
     :alt: Build status
 
-This is a fork of
-https://bitbucket.org/spirit/language_tool that produces more easily parsable
+This is a fork of https://github.com/myint/language-check/ (which is a fork of
+https://bitbucket.org/spirit/language_tool) that produces more easily parsable
 results from the command-line.
 
 Example usage
