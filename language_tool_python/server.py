@@ -13,8 +13,6 @@ from .language_tag import LanguageTag
 from .match import Match
 from .utils import *
 
-download_lt()
-
 class LanguageTool:
 
     """Main class used for checking text against different rules."""
@@ -33,9 +31,8 @@ class LanguageTool:
     def __init__(self, language=None, motherTongue=None, remote_server=None):
         if remote_server is not None:
             self._remote = True
-            self._HOST = remote_server["host"]
-            self._port = remote_server["port"]
-            self._url = 'http://{}:{}/v2/'.format(self._HOST, self._port)
+            if remote_server[-1] == '/': remote_server = remote_server[:-1]
+            self._url = '{}/v2/'.format(remote_server)
             self._update_remote_server_config(self._url)
         elif not self._server_is_alive():
             self._start_server_on_free_port()
@@ -151,6 +148,9 @@ class LanguageTool:
 
     @classmethod
     def _start_server_if_needed(cls):
+        # Download language tool if needed.
+        download_lt()
+        # Start server.
         if not cls._server_is_alive() and cls._remote is False:
             cls._start_server_on_free_port()
 
@@ -293,6 +293,11 @@ class LanguageTool:
 
         return LanguageToolError_message
 
+
+class LanguageToolPublicAPI(LanguageTool):
+    """  Language tool client of the official API. """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, remote_server='https://api.languagetool.org', **kwargs)
 
 @atexit.register
 def terminate_server():

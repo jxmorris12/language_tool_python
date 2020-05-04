@@ -2,6 +2,33 @@
 
 This is a Python wrapper for [LanguageTool](languagetool.org). LanguageTool is open-source grammar tool, also known as the spellchecker for OpenOffice. This library allows you to make to detect grammar errors and spelling mistakes through a Python script or through a command-line interface.
 
+## Local and Remote Servers
+
+By default, `language_tool_python` will download a LanguageTool server `.jar` and run that in the background to detect grammar errors locally. However, LanguageTool also offers a [Public HTTP Proofreading API](http://wiki.languagetool.org/public-http-api) that is supported as well. Follow the link for rate limiting details. (Running locally won't have the same restrictions.)
+
+### Using `language_tool_python` locally
+
+Local server is the default setting. To use this, just initialize a LanguageTool object:
+
+    > import language_tool_python
+    > tool = language_tool_python.LanguageTool('en-US')  # use a local server (automatically set up), language English
+
+### Using `language_tool_python` with the public LanguageTool remote server
+
+There is also a built-in class for querying LanguageTool's public servers. Initialize it like this:
+
+    > import language_tool_python
+    > tool = language_tool_python.LanguageToolPublicAPI('es') # use the public API, language Spanish
+
+### Using `language_tool_python` with the another remote server
+
+Finally, you're able to pass in your own remote server as an argument to the `LanguageTool` class:
+
+    > import language_tool_python
+    > tool = language_tool_python.LanguageTool('ca-ES', remote_server='https://language-tool-api.mywebsite.net')  # use a remote server API, language Catalan
+
+
+
 ## Example usage
 
 From the interpreter:

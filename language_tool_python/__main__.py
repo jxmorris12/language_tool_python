@@ -60,7 +60,6 @@ def parse_args():
 
 
 class RulesAction(argparse.Action):
-
     def __call__(self, parser, namespace, values, option_string=None):
         getattr(namespace, self.dest).update(values)
 
@@ -103,9 +102,10 @@ def main():
             encoding = args.encoding or 'utf-8'
 
         remote_server = None
-        if args.remote_host is not None and args.remote_port is not None:
-            remote_server = {'host': args.remote_host,
-                             'port': args.remote_port}
+        if args.remote_host is not None:
+            remote_server = args.remote_host
+            if args.remote_port is not None:
+                remote_server += ':{}'.format(args.remote_port)
         lang_tool = LanguageTool(
             motherTongue=args.mother_tongue,
             remote_server=remote_server,

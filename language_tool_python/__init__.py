@@ -7,5 +7,5 @@ __version__ = '2.0.1'
 
 from .language_tag import LanguageTag
 from .match import Match
-from .server import LanguageTool
+from .server import LanguageTool, LanguageToolPublicAPI
 from . import utils
