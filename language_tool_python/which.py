@@ -10,7 +10,6 @@ __all__ = ['which']
 
 WIN_ALLOW_CROSS_ARCH = True
 
-
 def which(program):
     """Identify the location of an executable file."""
     if os.path.split(program)[0]:

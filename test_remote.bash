@@ -3,12 +3,11 @@
 set -eux
 
 readonly port=8081
-
-# TODO: Find this more portably.
 readonly jar='./language_tool_python/LanguageTool-*/languagetool-server.jar'
 
-java -cp "$jar" org.languagetool.server.HTTPServer --port "$port" &
+java -cp $jar org.languagetool.server.HTTPServer --port "$port" &
 java_pid=$!
+sleep 5
 
 clean ()
 {

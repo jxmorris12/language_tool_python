@@ -15,12 +15,8 @@ From the interpreter:
 
 Check out some ``Match`` object attributes:
 
-    > matches[0].fromy, matches[0].fromx
-    (0, 16)
     > matches[0].ruleId, matches[0].replacements
     ('EN_A_VS_AN', ['an'])
-    > matches[1].fromy, matches[1].fromx
-    (0, 50)
     > matches[1].ruleId, matches[1].replacements
     ('TOT_HE', ['to the'])
 
