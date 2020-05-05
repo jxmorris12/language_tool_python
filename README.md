@@ -57,7 +57,7 @@ Print a ``Match`` object:
 
 Automatically apply suggestions to the text:
 
-    language_tool_python.correct(text, matches)
+    tool.correct(text)
     'A sentence with an error in the Hitchhiker’s Guide to the Galaxy'
 
 From the command line::

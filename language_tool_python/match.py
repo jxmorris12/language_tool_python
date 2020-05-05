@@ -3,11 +3,14 @@ from functools import total_ordering
 
 def get_match_ordered_dict():
     slots = OrderedDict([
-        ('ruleId', str), ('message', str),
+        ('ruleId', str), 
+        ('message', str),
         ('replacements', list),
-        ('context', str), ('contextOffset', int), ('contextLength', int),
-        ('offset', int), ('errorlength', int),
-        ('category', str), ('ruleIssueType', str),
+        ('context', str), 
+        ('offset', int), 
+        ('errorLength', int),
+        ('category', str), 
+        ('ruleIssueType', str),
     ])
     return slots
 
@@ -45,9 +48,12 @@ class Match:
         attrib['ruleIssueType'] = attrib['rule']['issueType']
         del attrib['rule']
         # Process context.
-        attrib['contextOffset'] = attrib['context']['offset']
-        attrib['contextLength'] = attrib['context']['length']
         attrib['context'] = attrib['context']['text']
+        # Process replacements.
+        attrib['replacements'] = [r['value'] for r in attrib['replacements']]
+        # Rename error length.
+        attrib['errorLength'] = attrib['length']
+        # Store objects on self.
         for k, v in attrib.items():
             setattr(self, k, v)
 
@@ -75,7 +81,7 @@ class Match:
         if self.replacements:
             s += '\nSuggestion: {}'.format('; '.join(self.replacements))
         s += '\n{}\n{}'.format(
-            self.context, ' ' * self.contextoffset + '^' * self.errorlength
+            self.context, ' ' * self.offset + '^' * self.errorLength
         )
         return s
 
