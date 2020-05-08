@@ -10,22 +10,22 @@ By default, `language_tool_python` will download a LanguageTool server `.jar` an
 
 Local server is the default setting. To use this, just initialize a LanguageTool object:
 
-    > import language_tool_python
-    > tool = language_tool_python.LanguageTool('en-US')  # use a local server (automatically set up), language English
+    import language_tool_python
+    tool = language_tool_python.LanguageTool('en-US')  # use a local server (automatically set up), language English
 
 ### Using `language_tool_python` with the public LanguageTool remote server
 
 There is also a built-in class for querying LanguageTool's public servers. Initialize it like this:
 
-    > import language_tool_python
-    > tool = language_tool_python.LanguageToolPublicAPI('es') # use the public API, language Spanish
+    import language_tool_python
+    tool = language_tool_python.LanguageToolPublicAPI('es') # use the public API, language Spanish
 
 ### Using `language_tool_python` with the another remote server
 
 Finally, you're able to pass in your own remote server as an argument to the `LanguageTool` class:
 
-    > import language_tool_python
-    > tool = language_tool_python.LanguageTool('ca-ES', remote_server='https://language-tool-api.mywebsite.net')  # use a remote server API, language Catalan
+    import language_tool_python
+    tool = language_tool_python.LanguageTool('ca-ES', remote_server='https://language-tool-api.mywebsite.net')  # use a remote server API, language Catalan
 
 
 
@@ -33,18 +33,18 @@ Finally, you're able to pass in your own remote server as an argument to the `La
 
 From the interpreter:
 
-    > import language_tool_python
-    > tool = language_tool_python.LanguageTool('en-US')
-    > text = u'A sentence with a error in the Hitchhiker’s Guide tot he Galaxy'
-    > matches = tool.check(text)
-    > len(matches)
+    import language_tool_python
+    tool = language_tool_python.LanguageTool('en-US')
+    text = u'A sentence with a error in the Hitchhiker’s Guide tot he Galaxy'
+    matches = tool.check(text)
+    len(matches)
     2
 
 Check out some ``Match`` object attributes:
 
-    > matches[0].ruleId, matches[0].replacements
+    matches[0].ruleId, matches[0].replacements
     ('EN_A_VS_AN', ['an'])
-    > matches[1].ruleId, matches[1].replacements
+    matches[1].ruleId, matches[1].replacements
     ('TOT_HE', ['to the'])
 
 Print a ``Match`` object:

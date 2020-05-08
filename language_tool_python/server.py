@@ -14,8 +14,7 @@ from .match import Match
 from .utils import *
 
 class LanguageTool:
-
-    """Main class used for checking text against different rules."""
+    """ Main class used for checking text against different rules. """
     _HOST = socket.gethostbyname('localhost')
     _MIN_PORT = 8081
     _MAX_PORT = 8999
@@ -148,8 +147,6 @@ class LanguageTool:
 
     @classmethod
     def _start_server_if_needed(cls):
-        # Download language tool if needed.
-        download_lt()
         # Start server.
         if not cls._server_is_alive() and cls._remote is False:
             cls._start_server_on_free_port()
@@ -180,6 +177,9 @@ class LanguageTool:
 
     @classmethod
     def _start_server_on_free_port(cls):
+        # Download language tool if needed.
+        download_lt()
+        
         while True:
             cls._url = 'http://{}:{}/v2/'.format(cls._HOST, cls._port)
             try:
