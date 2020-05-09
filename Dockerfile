@@ -15,7 +15,7 @@ MAINTAINER Samuel Berthe <samuel.berthe@iadvize.com>
 ENV DEBIAN_FRONTEND="noninteractive" \
     INITRD="No" \
     PACKAGES="curl unzip" \
-    LANGUAGE_TOOL_VERSION="3.2"
+    LANGUAGE_TOOL_VERSION="4.9"
 
 WORKDIR /app
 EXPOSE 8080

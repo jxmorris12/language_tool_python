@@ -3,8 +3,6 @@
     migration URL: https://languagetool.org/http-api/migration.php
 """
 
-__version__ = '2.0.5'
-
 from .language_tag import LanguageTag
 from .match import Match
 from .server import LanguageTool, LanguageToolPublicAPI
