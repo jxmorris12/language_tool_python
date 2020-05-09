@@ -29,8 +29,6 @@ ALT_BASE_URL = os.environ['language_tool_python_DOWNLOAD_HOST'] \
 BASE_URL = ALT_BASE_URL or 'https://www.languagetool.org/download/'
 FILENAME = 'LanguageTool-{version}.zip'
 PACKAGE_PATH = os.path.dirname(os.path.realpath(__file__))
-JAVA_6_COMPATIBLE_VERSION = '2.2'
-JAVA_7_COMPATIBLE_VERSION = '3.1'
 LATEST_VERSION = '4.9'
 
 JAVA_VERSION_REGEX = re.compile(
@@ -64,45 +62,26 @@ def parse_java_version(version_text):
     if not match:
         raise SystemExit(
             'Could not parse Java version from """{}""".'.format(version_text))
-
     return (int(match.group('major1')), int(match.group('major2')))
 
-
-def get_newest_possible_languagetool_version():
-    """Return newest compatible version.
-
-    >>> version = get_newest_possible_languagetool_version()
-    >>> version in [JAVA_6_COMPATIBLE_VERSION,
-    ...             JAVA_7_COMPATIBLE_VERSION,
-    ...             LATEST_VERSION]
-    True
-
-    """
+def confirm_java_compatibility():
+    """ Confirms Java major version >= 8. """
     java_path = find_executable('java')
     if not java_path:
         # Just ignore this and assume an old version of Java. It might not be
         # found because of a PATHEXT-related issue
         # (https://bugs.python.org/issue2200).
-        return JAVA_6_COMPATIBLE_VERSION
+        raise ModuleNotFoundError('No java install detected. Please install java to use language-tool-python.')
 
     output = subprocess.check_output([java_path, '-version'],
                                      stderr=subprocess.STDOUT,
                                      universal_newlines=True)
 
-    java_version = parse_java_version(output)
-
-    if java_version >= (1, 8):
-        return LATEST_VERSION
-    elif java_version >= (1, 7):
-        return JAVA_7_COMPATIBLE_VERSION
-    elif java_version >= (1, 6):
-        warn('language_tool_python would be able to use a newer version of '
-             'LanguageTool if you had Java 7 or newer installed')
-        return JAVA_6_COMPATIBLE_VERSION
-    else:
-        raise SystemExit(
-            'You need at least Java 6 to use language_tool_python')
-
+    major_version, minor_version = parse_java_version(output)
+    if major_version < 8:
+        raise SystemError(f'Detected java {major_version}.{minor_version}. LanguageTool requires Java >= 8.')
+    
+    return True
 
 def get_common_prefix(z):
     """Get common directory in a zip file if any."""
@@ -123,7 +102,8 @@ def download_lt(update=False):
     if old_path_list and not update:
         return
 
-    version = get_newest_possible_languagetool_version()
+    confirm_java_compatibility()
+    version = LATEST_VERSION
     filename = FILENAME.format(version=version)
     url = urljoin(BASE_URL, filename)
     dirname = os.path.splitext(filename)[0]

@@ -177,9 +177,6 @@ class LanguageTool:
 
     @classmethod
     def _start_server_on_free_port(cls):
-        # Download language tool if needed.
-        download_lt()
-        
         while True:
             cls._url = 'http://{}:{}/v2/'.format(cls._HOST, cls._port)
             try:
@@ -193,6 +190,9 @@ class LanguageTool:
 
     @classmethod
     def _start_local_server(cls):
+        # Before starting local server, download language tool if needed.
+        download_lt()
+
         err = None
         try:
             server_cmd = get_server_cmd(cls._port)
