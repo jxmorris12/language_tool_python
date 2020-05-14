@@ -82,10 +82,9 @@ To overwrite the host part of URL that is used to download LanguageTool-{version
 
 ## Prerequisites
 
-- `Python 3.3+ <https://www.python.org>`_ (or 2.7)
-- `lib3to2 <https://bitbucket.org/amentajo/lib3to2>`_
-  (if installing for Python 2)
-- `LanguageTool <https://www.languagetool.org>`_ (Java 6.0+)
+- `Python 3.3+ <https://www.python.org>`
+- `lib3to2 <https://bitbucket.org/amentajo/lib3to2>`
+- `LanguageTool <https://www.languagetool.org>` (Java 8.0 or higher)
 
 
 The installation process should take care of downloading LanguageTool (it may
