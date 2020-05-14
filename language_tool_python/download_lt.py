@@ -79,7 +79,7 @@ def confirm_java_compatibility():
 
     major_version, minor_version = parse_java_version(output)
     if major_version < 8:
-        raise SystemError(f'Detected java {major_version}.{minor_version}. LanguageTool requires Java >= 8.')
+        raise SystemError('Detected java {}.{}. LanguageTool requires Java >= 8.'.format(major_version, minor_version))
     
     return True
 
