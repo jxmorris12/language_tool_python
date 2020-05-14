@@ -75,7 +75,7 @@ class Match:
     def __str__(self):
         ruleId = self.ruleId
         s = 'Offset {}, length {}, Rule ID: {}'.format(
-            self.offset, self.length, ruleId)
+            self.offset, self.errorLength, ruleId)
         if self.message:
             s += '\nMessage: {}'.format(self.message)
         if self.replacements:
