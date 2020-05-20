@@ -73,11 +73,10 @@ def get_version():
     """Get LanguageTool version."""
     version = _get_attrib().get('version')
     if not version:
-        match = re.search(r"LanguageTool-?.*?(\S+)$", get_directory())
+        match = re.search(r"LanguageTool-?.*?(\S+)$", get_language_tool_directory())
         if match:
             version = match.group(1)
     return version
-
 
 def get_build_date():
     """Get LanguageTool build date."""
@@ -94,52 +93,28 @@ def get_languages() -> set:
         cache['languages'] = languages
     return languages
 
+def get_download_directory():
+    # Get download path from environment or use default.
+    download_path = os.environ.get('LTP_PATH', '~/.cache/language_tool_python/')
+    download_path = os.path.expanduser(download_path)
+    # Make download path, if it doesn't exist.
+    os.makedirs(download_path, exist_ok=True)
+    return download_path
 
-def get_directory():
+def get_language_tool_directory():
     """Get LanguageTool directory."""
-    try:
-        language_tool_python_dir = cache['language_tool_python_dir']
-    except KeyError:
-        def version_key(string):
-            return [int(e) if e.isdigit() else e
-                    for e in re.split(r"(\d+)", string)]
+    download_folder = get_download_directory()
+    assert os.path.isdir(download_folder)
+    language_tool_path_list = [
+        path for path in
+        glob.glob(os.path.join(download_folder, 'LanguageTool*'))
+        if os.path.isdir(path)
+    ]
 
-        def get_lt_dir(base_dir):
-            paths = [
-                path for path in
-                glob.glob(os.path.join(base_dir, 'LanguageTool*'))
-                if os.path.isdir(path)
-            ]
-            return max(paths, key=version_key) if paths else None
+    if not len(language_tool_path_list):
+        raise FileNotFoundError('LanguageTool not found in {}.'.format(download_folder))
 
-        base_dir = os.path.dirname(sys.argv[0])
-        language_tool_python_dir = get_lt_dir(base_dir)
-        if not language_tool_python_dir:
-            try:
-                base_dir = os.path.dirname(os.path.abspath(__file__))
-            except NameError:
-                pass
-            else:
-                language_tool_python_dir = get_lt_dir(base_dir)
-            if not language_tool_python_dir:
-                raise PathError("can't find LanguageTool directory in {!r}"
-                                .format(base_dir))
-        cache['language_tool_python_dir'] = language_tool_python_dir
-    return language_tool_python_dir
-
-
-def set_directory(path=None):
-    """Set LanguageTool directory."""
-    old_path = get_directory()
-    terminate_server()
-    cache.clear()
-    if path:
-        cache['language_tool_python_dir'] = path
-        try:
-            get_jar_info()
-        except Error:
-            cache['language_tool_python_dir'] = old_path
-            raise
+    return max(language_tool_path_list)
 
 
 def get_server_cmd(port=None):
@@ -160,7 +135,7 @@ def get_jar_info():
         java_path = which('java')
         if not java_path:
             raise JavaError("can't find Java")
-        dir_name = get_directory()
+        dir_name = get_language_tool_directory()
         jar_path = None
         for jar_name in JAR_NAMES:
             for jar_path in glob.glob(os.path.join(dir_name, jar_name)):

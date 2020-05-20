@@ -60,7 +60,7 @@ Automatically apply suggestions to the text:
     tool.correct(text)
     'A sentence with an error in the Hitchhiker’s Guide to the Galaxy'
 
-From the command line::
+From the command line:
 
     $ echo 'This are bad.' > example.txt
 
@@ -70,15 +70,23 @@ From the command line::
 
 ## Installation
 
-To install via pip::
+To install via pip:
 
     $ pip install --upgrade language_tool_python
 
+### Customizing Download URL or Path
 
-To overwrite the host part of URL that is used to download LanguageTool-{version}.zip::
+To overwrite the host part of URL that is used to download LanguageTool-{version}.zip:
 
-    - SET language_tool_python_DOWNLOAD_HOST = [alternate URL]
+    $ export LTP_DOWNLOAD_HOST = [alternate URL]
 
+This can be used to downgrade to an older version, for example, or to download from a mirror. 
+
+And to choose the specific folder to download the server to:
+
+    $ export LTP_PATH = /path/to/save/language/tool
+
+The default download path is `~/.cache/language_tool_python/`. The LanguageTool server is about 200 MB, so take that into account when choosing your download folder. (Or, if you you can't spare the disk space, use a remote URL!)
 
 ## Prerequisites
 

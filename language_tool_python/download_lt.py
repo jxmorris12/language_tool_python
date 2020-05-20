@@ -5,30 +5,22 @@
 import glob
 import os
 import re
-import shutil
+import requests
 import subprocess
 import sys
 import os
+import tempfile
+import tqdm
+import zipfile 
 
-from contextlib import closing
 from distutils.spawn import find_executable
-from tempfile import TemporaryFile
-from warnings import warn
-from zipfile import ZipFile
+from urllib.parse import urljoin
+from .utils import get_download_directory
 
-try:
-    from urllib.request import urlopen
-    from urllib.parse import urljoin
-except ImportError:
-    from urllib import urlopen
-    from urlparse import urljoin
-
-ALT_BASE_URL = os.environ['language_tool_python_DOWNLOAD_HOST'] \
-    if os.environ.get('language_tool_python_DOWNLOAD_HOST') \
-    else None
-BASE_URL = ALT_BASE_URL or 'https://www.languagetool.org/download/'
+# Get download host from environment or default.
+BASE_URL = os.environ.get('LTP_DOWNLOAD_HOST', 'https://www.languagetool.org/download/')
 FILENAME = 'LanguageTool-{version}.zip'
-PACKAGE_PATH = os.path.dirname(os.path.realpath(__file__))
+
 LATEST_VERSION = '4.9'
 
 JAVA_VERSION_REGEX = re.compile(
@@ -90,12 +82,48 @@ def get_common_prefix(z):
         return name_list[0]
     return None
 
+def http_get(url, out_file, proxies=None):
+    """ Get contents of a URL and save to a file.
+    """
+    req = requests.get(url, stream=True, proxies=proxies)
+    content_length = req.headers.get('Content-Length')
+    total = int(content_length) if content_length is not None else None
+    if req.status_code == 403: # Not found on AWS
+        raise Exception('Could not find at URL {}.'.format(url))
+    progress = tqdm.tqdm(unit="B", unit_scale=True, total=total)
+    for chunk in req.iter_content(chunk_size=1024):
+        if chunk: # filter out keep-alive new chunks
+            progress.update(len(chunk))
+            out_file.write(chunk)
+    progress.close()
+
+def unzip_file(temp_file, directory_to_extract_to):
+    """ Unzips a .zip file to folder path. """
+    print('Unzipping {} to {}.'.format(temp_file.name, directory_to_extract_to))
+    with zipfile.ZipFile(temp_file.name, 'r') as zip_ref:
+        zip_ref.extractall(directory_to_extract_to)
+
+
+def download_zip(url, directory):
+    """ Downloads and unzips zip file from `url` to `directory`. """
+    # Download file.
+    downloaded_file = tempfile.NamedTemporaryFile(suffix='.zip', delete=False)
+    http_get(url, downloaded_file)
+    # Close the file so we can extract it.
+    downloaded_file.close() 
+    # Extract zip file to path.
+    unzip_file(downloaded_file, directory)
+    # Remove the temporary file.
+    os.remove(downloaded_file.name)
+    # Tell the user the download path.
+    print('Downloaded {} to {}.'.format(url, directory))
 
 def download_lt(update=False):
-    assert os.path.isdir(PACKAGE_PATH)
+    download_folder = get_download_directory()
+    assert os.path.isdir(download_folder)
     old_path_list = [
         path for path in
-        glob.glob(os.path.join(PACKAGE_PATH, 'LanguageTool*'))
+        glob.glob(os.path.join(download_folder, 'LanguageTool*'))
         if os.path.isdir(path)
     ]
 
@@ -105,49 +133,15 @@ def download_lt(update=False):
     confirm_java_compatibility()
     version = LATEST_VERSION
     filename = FILENAME.format(version=version)
-    url = urljoin(BASE_URL, filename)
+    language_tool_download_url = urljoin(BASE_URL, filename)
     dirname = os.path.splitext(filename)[0]
-    extract_path = os.path.join(PACKAGE_PATH, dirname)
+    extract_path = os.path.join(download_folder, dirname)
 
     if extract_path in old_path_list:
         print('No update needed: {!r}'.format(dirname))
         return
 
-    with closing(TemporaryFile()) as t:
-        with closing(urlopen(url)) as u:
-            content_len = int(u.headers['Content-Length'])
-
-            sys.stdout.write(
-                'Downloading {!r} ({:.1f} MiB)...\n'.format(
-                    filename,
-                    content_len / 1048576.))
-            sys.stdout.flush()
-
-            chunk_len = content_len // 100
-            data_len = 0
-            while True:
-                data = u.read(chunk_len)
-                if not data:
-                    break
-                data_len += len(data)
-                t.write(data)
-                sys.stdout.write(
-                    '\r{:.0%}'.format(float(data_len) / content_len))
-                sys.stdout.flush()
-            sys.stdout.write('\n')
-        t.seek(0)
-        for old_path in old_path_list:
-            if os.path.isdir(old_path):
-                shutil.rmtree(old_path)
-        with closing(ZipFile(t)) as z:
-            prefix = get_common_prefix(z)
-            if prefix:
-                z.extractall(PACKAGE_PATH)
-                os.rename(os.path.join(PACKAGE_PATH, prefix),
-                          os.path.join(PACKAGE_PATH, dirname))
-            else:
-                z.extractall(extract_path)
-
+    download_zip(language_tool_download_url, download_folder)
 
 if __name__ == '__main__':
     sys.exit(download_lt(update=True))

@@ -7,7 +7,7 @@ with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='language_tool_python',
-    version='2.1.2',
+    version='2.2.0',
     description='Checks grammar using LanguageTool.',
     long_description_content_type='text/markdown',
     long_description=long_description,
@@ -15,5 +15,6 @@ setup(
     author_email='jxmorris12@gmail.com',
     url='https://github.com/jxmorris12/side-by-side',
     license='MIT',
-    packages=find_packages()
+    packages=find_packages(),
+    install_requires=open('requirements.txt').readlines(),
 )
