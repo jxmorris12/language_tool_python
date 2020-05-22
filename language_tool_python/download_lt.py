@@ -70,10 +70,15 @@ def confirm_java_compatibility():
                                      universal_newlines=True)
 
     major_version, minor_version = parse_java_version(output)
-    if major_version < 8:
+    # Some installs of java show the version number like `14.0.1` and others show `1.14.0.1`
+    # (with a leading 1). We want to support both, as long as the major version is >= 8.
+    # (See softwareengineering.stackexchange.com/questions/175075/why-is-java-version-1-x-referred-to-as-java-x)
+    if major_version == 1 and minor_version >= 8:
+        return True
+    elif major_version >= 8:
+        return True
+    else:
         raise SystemError('Detected java {}.{}. LanguageTool requires Java >= 8.'.format(major_version, minor_version))
-    
-    return True
 
 def get_common_prefix(z):
     """Get common directory in a zip file if any."""
