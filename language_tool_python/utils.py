@@ -58,41 +58,6 @@ def correct(text: str, matches: [Match]) -> str:
         correct_offset += len(repl) - len(errors[n])
     return ''.join(ltext)
 
-
-def _get_attrib():
-    from .server import LanguageTool
-    try:
-        attrib = cache['attrib']
-    except KeyError:
-        attrib = LanguageTool._get_attrib()
-        cache['attrib'] = attrib
-    return attrib
-
-
-def get_version():
-    """Get LanguageTool version."""
-    version = _get_attrib().get('version')
-    if not version:
-        match = re.search(r"LanguageTool-?.*?(\S+)$", get_language_tool_directory())
-        if match:
-            version = match.group(1)
-    return version
-
-def get_build_date():
-    """Get LanguageTool build date."""
-    return _get_attrib().get('buildDate')
-
-
-def get_languages() -> set:
-    """Get supported languages."""
-    from .server import LanguageTool
-    try:
-        languages = cache['languages']
-    except KeyError:
-        languages = LanguageTool._get_languages()
-        cache['languages'] = languages
-    return languages
-
 def get_download_directory():
     # Get download path from environment or use default.
     download_path = os.environ.get('LTP_PATH', '~/.cache/language_tool_python/')

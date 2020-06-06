@@ -5,9 +5,11 @@ import locale
 import re
 import sys
 
-from . import __version__
 from .server import LanguageTool
 from .utils import LanguageToolError
+
+import pkg_resources 
+__version__ = pkg_resources.require("language_tool_python")[0].version
 
 
 def parse_args():
@@ -138,8 +140,8 @@ def main():
         if not args.spell_check:
             lang_tool.disable_spellchecking()
 
-        lang_tool.disabled.update(args.disable)
-        lang_tool.enabled.update(args.enable)
+        lang_tool.disabled_rules.update(args.disable)
+        lang_tool.enabled_rules.update(args.enable)
         lang_tool.enabled_only = args.enabled_only
 
         try:
