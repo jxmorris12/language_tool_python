@@ -13,7 +13,7 @@ setup(
     long_description=long_description,
     author='Jack Morris',
     author_email='jxmorris12@gmail.com',
-    url='https://github.com/jxmorris12/side-by-side',
+    url='https://github.com/jxmorris12/language_tool_python',
     license='MIT',
     packages=find_packages(),
     install_requires=open('requirements.txt').readlines(),
