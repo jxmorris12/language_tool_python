@@ -14,7 +14,10 @@ from .match import Match
 from .utils import *
 
 class LanguageTool:
-    """ Main class used for checking text against different rules. """
+    """ Main class used for checking text against different rules. 
+
+        LanguageTool v2 API documentation: https://languagetool.org/http-api/swagger-ui/#!/default/post_check
+    """
     _HOST = socket.gethostbyname('localhost')
     _MIN_PORT = 8081
     _MAX_PORT = 8999
@@ -28,6 +31,7 @@ class LanguageTool:
     _PORT_RE = re.compile(r"(?:https?://.*:|port\s+)(\d+)", re.I)
 
     def __init__(self, language=None, motherTongue=None, remote_server=None):
+        print('__init__', remote_server)
         if remote_server is not None:
             self._remote = True
             if remote_server[-1] == '/': remote_server = remote_server[:-1]
@@ -42,9 +46,11 @@ class LanguageTool:
                 language = FAILSAFE_LANGUAGE
         self._language = LanguageTag(language)
         self.motherTongue = motherTongue
-        self.disabled = set()
-        self.enabled = set()
-        self.enabled_only = False
+        self.disabled_rules = set()
+        self.enabled_rules = set()
+        self.disabled_categories = set()
+        self.enabled_categories = set()
+        self.enabled_rules_only = False
         self._instances[id(self)] = self
 
     def __del__(self):
@@ -63,8 +69,8 @@ class LanguageTool:
     @language.setter
     def language(self, language):
         self._language = LanguageTag(language)
-        self.disabled.clear()
-        self.enabled.clear()
+        self.disabled_rules.clear()
+        self.enabled_rules.clear()
 
     @property
     def motherTongue(self):
@@ -105,12 +111,16 @@ class LanguageTool:
             params['srctext'] = srctext.encode('utf-8')
         if self.motherTongue is not None:
             params['motherTongue'] = self.motherTongue
-        if self.disabled:
-            params['disabled'] = ','.join(self.disabled)
-        if self.enabled:
-            params['enabled'] = ','.join(self.enabled)
-        if self.enabled_only:
+        if self.disabled_rules:
+            params['disabledRules'] = ','.join(self.disabled_rules)
+        if self.enabled_rules:
+            params['enabled'] = ','.join(self.enabled_rules)
+        if self.enabled_rules_only:
             params['enabledOnly'] = 'yes'
+        if self.disabled_categories:
+            params['disabledCategories'] = ','.join(self.disabled_categories)
+        if self.enabled_categories:
+            params['enabledCategories'] = ','.join(self.enabled_categories)
         return urllib.parse.urlencode(params).encode()
 
     def correct(self, text: str, srctext=None) -> str:
@@ -119,48 +129,44 @@ class LanguageTool:
 
     def enable_spellchecking(self):
         """Enable spell-checking rules."""
-        self.disabled.difference_update(self._spell_checking_rules)
+        self.disabled_rules.difference_update(self._spell_checking_rules)
 
     def disable_spellchecking(self):
         """Disable spell-checking rules."""
-        self.disabled.update(self._spell_checking_rules)
+        self.disabled_rules.update(self._spell_checking_rules)
 
-    @classmethod
-    def _get_languages(cls) -> set:
+    def _get_languages(self) -> set:
         """Get supported languages (by querying the server)."""
-        cls._start_server_if_needed()
-        url = urllib.parse.urljoin(cls._url, 'languages')
+        import pdb; pdb.set_trace()
+        self._start_server_if_needed()
+        url = urllib.parse.urljoin(self._url, 'languages')
         languages = set()
-        for e in cls._get_root(url, num_tries=1):
+        for e in self._get_root(url, num_tries=1):
             languages.add(e.get('code'))
             languages.add(e.get('longCode'))
         return languages
 
-    @classmethod
-    def _get_attrib(cls):
+    def _get_attrib(self):
         """Get matches element attributes."""
-        cls._start_server_if_needed()
+        self._start_server_if_needed()
         params = {'language': FAILSAFE_LANGUAGE, 'text': ''}
         data = urllib.parse.urlencode(params).encode()
-        root = cls._get_root(cls._url, data, num_tries=1)
+        root = self._get_root(self._url, data, num_tries=1)
         return root.attrib
 
-    @classmethod
-    def _start_server_if_needed(cls):
+    def _start_server_if_needed(self):
         # Start server.
-        if not cls._server_is_alive() and cls._remote is False:
-            cls._start_server_on_free_port()
+        if not self._server_is_alive() and self._remote is False:
+            self._start_server_on_free_port()
 
-    @classmethod
-    def _update_remote_server_config(cls, url):
-        cls._url = url
-        cls._remote = True
+    def _update_remote_server_config(self, url):
+        self._url = url
+        self._remote = True
 
-    @classmethod
-    def _get_root(cls, url, data=None, num_tries=2):
+    def _get_root(self, url, data=None, num_tries=2):
         for n in range(num_tries):
             try:
-                with urlopen(url, data, cls._TIMEOUT) as f:
+                with urlopen(url, data, self._TIMEOUT) as f:
                     raw_data = f.read().decode('utf-8')
                     try:
                         return json.loads(raw_data)
@@ -169,39 +175,38 @@ class LanguageTool:
                         print(raw_data)
                         raise e
             except (IOError, http.client.HTTPException) as e:
-                if cls._remote is False:
-                    cls._terminate_server()
-                    cls._start_local_server()
+                if self._remote is False:
+                    self._terminate_server()
+                    self._start_local_server()
                 if n + 1 >= num_tries:
-                    raise LanguageToolError('{}: {}'.format(cls._url, e))
+                    raise LanguageToolError('{}: {}'.format(self._url, e))
 
-    @classmethod
-    def _start_server_on_free_port(cls):
+    def _start_server_on_free_port(self):
         while True:
-            cls._url = 'http://{}:{}/v2/'.format(cls._HOST, cls._port)
+            self._url = 'http://{}:{}/v2/'.format(self._HOST, self._port)
             try:
-                cls._start_local_server()
+                self._start_local_server()
                 break
             except ServerError:
-                if cls._MIN_PORT <= cls._port < cls._MAX_PORT:
-                    cls._port += 1
+                if self._MIN_PORT <= self._port < self._MAX_PORT:
+                    self._port += 1
                 else:
                     raise
 
-    @classmethod
-    def _start_local_server(cls):
+
+    def _start_local_server(self):
         # Before starting local server, download language tool if needed.
         download_lt()
 
         err = None
         try:
-            server_cmd = get_server_cmd(cls._port)
+            server_cmd = get_server_cmd(self._port)
         except PathError as e:
             # Can't find path to LanguageTool.
             err = e
         else:
             # Need to PIPE all handles: http://bugs.python.org/issue3905
-            cls._server = subprocess.Popen(
+            self._server = subprocess.Popen(
                 server_cmd,
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
@@ -210,86 +215,84 @@ class LanguageTool:
                 startupinfo=startupinfo
             )
             # Python 2.7 compatibility
-            # for line in cls._server.stdout:
+            # for line in self._server.stdout:
             match = None
             while True:
-                line = cls._server.stdout.readline()
+                line = self._server.stdout.readline()
                 if not line:
                     break
-                match = cls._PORT_RE.search(line)
+                match = self._PORT_RE.search(line)
                 if match:
                     port = int(match.group(1))
-                    if port != cls._port:
+                    if port != self._port:
                         raise LanguageToolError('requested port {}, but got {}'.format(
-                            cls._port, port))
+                            self._port, port))
                     break
             if not match:
-                err_msg = cls._terminate_server()
-                match = cls._PORT_RE.search(err_msg)
+                err_msg = self._terminate_server()
+                match = self._PORT_RE.search(err_msg)
                 if not match:
                     raise LanguageToolError(err_msg)
                 port = int(match.group(1))
-                if port != cls._port:
+                if port != self._port:
                     raise LanguageToolError(err_msg)
 
-        if cls._server:
-            cls._consumer_thread = threading.Thread(
-                target=lambda: _consume(cls._server.stdout))
-            cls._consumer_thread.daemon = True
-            cls._consumer_thread.start()
+        if self._server:
+            self._consumer_thread = threading.Thread(
+                target=lambda: _consume(self._server.stdout))
+            self._consumer_thread.daemon = True
+            self._consumer_thread.start()
         else:
             # Couldn't start the server, so maybe there is already one running.
             params = {'language': FAILSAFE_LANGUAGE, 'text': ''}
             data = urllib.parse.urlencode(params).encode()
             try:
-                with urlopen(cls._url, data, cls._TIMEOUT) as f:
+                with urlopen(self._url, data, self._TIMEOUT) as f:
                     tree = ElementTree.parse(f)
             except (IOError, http.client.HTTPException) as e:
                 if err:
                     raise err
-                raise ServerError('{}: {}'.format(cls._url, e))
+                raise ServerError('{}: {}'.format(self._url, e))
             root = tree.getroot()
 
             # LanguageTool 1.9+
             if root.get('software') != 'LanguageTool':
                 raise ServerError('unexpected software from {}: {!r}'
-                                  .format(cls._url, root.get('software')))
+                                  .format(self._url, root.get('software')))
             raise ServerError('Server running; don\'t start a server here.')
 
-    @classmethod
-    def _server_is_alive(cls):
-        return cls._server and cls._server.poll() is None
+    def _server_is_alive(self):
+        return self._server and self._server.poll() is None
 
-    @classmethod
-    def _terminate_server(cls):
+    def _terminate_server(self):
         LanguageToolError_message = ''
 
         try:
-            cls._server.terminate()
+            self._server.terminate()
         except OSError:
             pass
 
         try:
-            LanguageToolError_message = cls._server.communicate()[1].strip()
+            LanguageToolError_message = self._server.communicate()[1].strip()
         except (IOError, ValueError):
             pass
 
         try:
-            cls._server.stdout.close()
+            self._server.stdout.close()
         except IOError:
             pass
 
         try:
-            cls._server.stdin.close()
+            self._server.stdin.close()
         except IOError:
             pass
 
         try:
-            cls._server.stderr.close()
+            self._server.stderr.close()
         except IOError:
             pass
 
-        cls._server = None
+        self._server = None
 
         return LanguageToolError_message
 
@@ -299,11 +302,11 @@ class LanguageToolPublicAPI(LanguageTool):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, remote_server='https://api.languagetool.org', **kwargs)
 
-@atexit.register
-def terminate_server():
-    """Terminate the server."""
-    if LanguageTool._server_is_alive():
-        LanguageTool._terminate_server()
+# @atexit.register
+# def terminate_server():
+#     """Terminate the server."""
+#     if LanguageTool._server_is_alive():
+#         LanguageTool._terminate_server()
 
 
 
