@@ -3,6 +3,7 @@
 """Download latest LanguageTool distribution."""
 
 import glob
+import logging
 import os
 import re
 import requests
@@ -16,6 +17,12 @@ import zipfile
 from distutils.spawn import find_executable
 from urllib.parse import urljoin
 from .utils import get_download_directory
+
+# Create logger for this file.
+logging.basicConfig(format='%(message)s')
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
 
 # Get download host from environment or default.
 BASE_URL = os.environ.get('LTP_DOWNLOAD_HOST', 'https://www.languagetool.org/download/')
@@ -95,7 +102,7 @@ def http_get(url, out_file, proxies=None):
     total = int(content_length) if content_length is not None else None
     if req.status_code == 403: # Not found on AWS
         raise Exception('Could not find at URL {}.'.format(url))
-    progress = tqdm.tqdm(unit="B", unit_scale=True, total=total)
+    progress = tqdm.tqdm(unit="B", unit_scale=True, total=total, desc='Downloading LanguageTool')
     for chunk in req.iter_content(chunk_size=1024):
         if chunk: # filter out keep-alive new chunks
             progress.update(len(chunk))
@@ -104,7 +111,7 @@ def http_get(url, out_file, proxies=None):
 
 def unzip_file(temp_file, directory_to_extract_to):
     """ Unzips a .zip file to folder path. """
-    print('Unzipping {} to {}.'.format(temp_file.name, directory_to_extract_to))
+    logger.info('Unzipping {} to {}.'.format(temp_file.name, directory_to_extract_to))
     with zipfile.ZipFile(temp_file.name, 'r') as zip_ref:
         zip_ref.extractall(directory_to_extract_to)
 
@@ -121,7 +128,7 @@ def download_zip(url, directory):
     # Remove the temporary file.
     os.remove(downloaded_file.name)
     # Tell the user the download path.
-    print('Downloaded {} to {}.'.format(url, directory))
+    logger.info('Downloaded {} to {}.'.format(url, directory))
 
 def download_lt(update=False):
     download_folder = get_download_directory()
@@ -143,7 +150,7 @@ def download_lt(update=False):
     extract_path = os.path.join(download_folder, dirname)
 
     if extract_path in old_path_list:
-        print('No update needed: {!r}'.format(dirname))
+        logger.warn('No update needed: {!r}'.format(dirname))
         return
 
     download_zip(language_tool_download_url, download_folder)
