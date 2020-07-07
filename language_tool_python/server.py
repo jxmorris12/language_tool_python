@@ -98,12 +98,6 @@ class LanguageTool:
         matches = response['matches']
         return [Match(match) for match in matches]
 
-    def _check_api(self, text: str, srctext=None) -> bytes:
-        """ Match text against enabled rules (result in XML format)."""
-        root = self._get_root(self._url, self._encode(text, srctext))
-        return (b'<?xml version="1.0" encoding="UTF-8"?>\n' +
-                ElementTree.tostring(root) + b"\n")
-
     def _encode(self, text, srctext=None):
         params = {'language': self.language, 'text': text.encode('utf-8')}
         if srctext is not None:
@@ -143,14 +137,6 @@ class LanguageTool:
             languages.add(e.get('code'))
             languages.add(e.get('longCode'))
         return languages
-    
-    def _get_attrib(self):
-        """Get matches element attributes."""
-        self._start_server_if_needed()
-        params = {'language': FAILSAFE_LANGUAGE, 'text': ''}
-        data = urllib.parse.urlencode(params).encode()
-        root = self._get_root(self._url, data, num_tries=1)
-        return root.attrib
 
     def _start_server_if_needed(self):
         # Start server.
@@ -215,8 +201,6 @@ class LanguageTool:
             global RUNNING_SERVER_PROCESSES
             RUNNING_SERVER_PROCESSES.append(self._server)
 
-            # Python 2.7 compatibility
-            # for line in self._server.stdout:
             match = None
             while True:
                 line = self._server.stdout.readline()
@@ -245,20 +229,6 @@ class LanguageTool:
             self._consumer_thread.start()
         else:
             # Couldn't start the server, so maybe there is already one running.
-            params = {'language': FAILSAFE_LANGUAGE, 'text': ''}
-            data = urllib.parse.urlencode(params).encode()
-            try:
-                with urlopen(self._url, data, self._TIMEOUT) as f:
-                    tree = ElementTree.parse(f)
-            except (IOError, http.client.HTTPException) as e:
-                if err:
-                    raise err
-                raise ServerError('{}: {}'.format(self._url, e))
-            root = tree.getroot()
-            # LanguageTool 1.9+
-            if root.get('software') != 'LanguageTool':
-                raise ServerError('unexpected software from {}: {!r}'
-                                  .format(self._url, root.get('software')))
             raise ServerError('Server running; don\'t start a server here.')
 
     def _server_is_alive(self):
