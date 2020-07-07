@@ -31,7 +31,7 @@ jobs:
         pip install -e . # Run pytest
     - name: Import language_tool_python
       run: |
-        echo "import language_tool_python\n" | python
+        printf "import language_tool_python\n" | python
     - name: Test with pytest
       run: |
         pytest -vx --dist=loadfile -n auto
