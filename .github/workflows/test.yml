@@ -29,6 +29,9 @@ jobs:
         pip install pytest pytest-xdist # Testing packages
         python setup.py install_egg_info # Workaround https://github.com/pypa/pip/issues/4537
         pip install -e . # Run pytest
+    - name: Import language_tool_python
+      run: |
+        echo "import language_tool_python\n" | python
     - name: Test with pytest
       run: |
         pytest -vx --dist=loadfile -n auto
