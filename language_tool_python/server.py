@@ -91,17 +91,15 @@ class LanguageTool:
         return {'HUNSPELL_RULE', 'HUNSPELL_NO_SUGGEST_RULE',
                 'MORFOLOGIK_RULE_' + str(self.language).replace('-', '_').upper()}
 
-    def check(self, text: str, srctext=None) -> [Match]:
+    def check(self, text: str) -> [Match]:
         """Match text against enabled rules."""
         url = urllib.parse.urljoin(self._url, 'check')
-        response = self._get_root(url, self._encode(text, srctext))
+        response = self._get_root(url, self._encode(text))
         matches = response['matches']
         return [Match(match) for match in matches]
 
-    def _encode(self, text, srctext=None):
+    def _encode(self, text):
         params = {'language': self.language, 'text': text.encode('utf-8')}
-        if srctext is not None:
-            params['srctext'] = srctext.encode('utf-8')
         if self.motherTongue is not None:
             params['motherTongue'] = self.motherTongue
         if self.disabled_rules:
@@ -116,9 +114,9 @@ class LanguageTool:
             params['enabledCategories'] = ','.join(self.enabled_categories)
         return urllib.parse.urlencode(params).encode()
 
-    def correct(self, text: str, srctext=None) -> str:
+    def correct(self, text: str) -> str:
         """Automatically apply suggestions to the text."""
-        return correct(text, self.check(text, srctext))
+        return correct(text, self.check(text))
     
     def enable_spellchecking(self):
         """Enable spell-checking rules."""
