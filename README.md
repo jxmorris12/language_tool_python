@@ -1,6 +1,8 @@
 # `language_tool_python`: a grammar checker for Python 📝
 
-<img src="https://badge.fury.io/py/language-tool-python.svg" alt="language_tool_python pypi badge" />
+![language tool python on pypi](https://badge.fury.io/py/language-tool-python.svg)
+
+![Test with PyTest](https://github.com/jxmorris12/language_tool_python/workflows/Test%20with%20PyTest/badge.svg)
 
 This is a Python wrapper for [LanguageTool](languagetool.org). LanguageTool is open-source grammar tool, also known as the spellchecker for OpenOffice. This library allows you to make to detect grammar errors and spelling mistakes through a Python script or through a command-line interface.
 

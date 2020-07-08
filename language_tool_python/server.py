@@ -14,7 +14,6 @@ from .utils import *
 
 DEBUG_MODE = False
 
-
 # Keep track of running server PIDs in a global list. This way,
 # we can ensure they're killed on exit.
 RUNNING_SERVER_PROCESSES = []
@@ -37,8 +36,8 @@ class LanguageTool:
     def __init__(self, language=None, motherTongue=None, remote_server=None):
         if remote_server is not None:
             self._remote = True
-            if remote_server[-1] == '/': remote_server = remote_server[:-1]
-            self._url = '{}/v2/'.format(remote_server)
+            self._url = parse_url(remote_server)
+            self._url = urllib.parse.urljoin(self._url, 'v2/')
             self._update_remote_server_config(self._url)
         elif not self._server_is_alive():
             self._start_server_on_free_port()
@@ -47,6 +46,9 @@ class LanguageTool:
                 language = get_locale_language()
             except ValueError:
                 language = FAILSAFE_LANGUAGE
+        # if self._url[-1] != '/':
+            # self._url += '/'
+        print('self._url:', self._url)
         self._language = LanguageTag(language, self._get_languages())
         self.motherTongue = motherTongue
         self.disabled_rules = set()

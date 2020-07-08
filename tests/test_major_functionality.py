@@ -5,6 +5,11 @@ def test_langtool_load():
 	matches = lang_tool.check('ain\'t nothin but a thang')
 	assert str(matches) == """[Match({'ruleId': 'UPPERCASE_SENTENCE_START', 'message': 'This sentence does not start with an uppercase letter', 'replacements': ['Ain'], 'context': "ain't nothin but a thang", 'offset': 0, 'errorLength': 3, 'category': 'CASING', 'ruleIssueType': 'typographical'}), Match({'ruleId': 'MORFOLOGIK_RULE_EN_US', 'message': 'Possible spelling mistake found.', 'replacements': ['nothing', 'no thin'], 'context': "ain't nothin but a thang", 'offset': 6, 'errorLength': 6, 'category': 'TYPOS', 'ruleIssueType': 'misspelling'}), Match({'ruleId': 'MORFOLOGIK_RULE_EN_US', 'message': 'Possible spelling mistake found.', 'replacements': ['than', 'thing', 'hang', 'thank', 'Chang', 'tang', 'thong', 'twang', 'Thant', 'thane', 'Thanh', 't hang', 'than g', 'Shang', 'Zhang'], 'context': "ain't nothin but a thang", 'offset': 19, 'errorLength': 5, 'category': 'TYPOS', 'ruleIssueType': 'misspelling'})]"""
 
+def test_langtool_languages():
+	import language_tool_python
+	lang_tool = language_tool_python.LanguageTool("en-US")
+	assert lang_tool._get_languages() == {'ca', 'de-CH', 'ja', 'pt-BR', 'sk', 'sl', 'uk', 'ru-RU', 'tl-PH', 'ta', 'pl-PL', 'pt', 'sl-SI', 'eo', 'it', 'ar', 'km', 'uk-UA', 'de-DE', 'da', 'en-GB', 'ta-IN', 'ca-ES', 'en-NZ', 'ga', 'ro-RO', 'pt-AO', 'br', 'ast-ES', 'pt-MZ', 'en', 'da-DK', 'ca-ES-valencia', 'en-AU', 'zh-CN', 'gl-ES', 'ga-IE', 'zh', 'de-DE-x-simple-language', 'be', 'be-BY', 'ar-DZ', 'ru', 'nl', 'en-CA', 'sv', 'fr', 'br-FR', 'en-ZA', 'ja-JP', 'tl', 'pt-PT', 'ro', 'ast', 'el-GR', 'en-US', 'de-AT', 'de', 'el', 'es', 'fa', 'pl', 'gl', 'sk-SK', 'km-KH'}
+
 def test_match():
 	import language_tool_python
 	tool = language_tool_python.LanguageTool('en-US')

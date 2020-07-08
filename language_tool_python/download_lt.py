@@ -16,7 +16,7 @@ import zipfile
 
 from distutils.spawn import find_executable
 from urllib.parse import urljoin
-from .utils import get_download_directory
+from .utils import get_language_tool_download_path
 
 # Create logger for this file.
 logging.basicConfig(format='%(message)s')
@@ -131,7 +131,7 @@ def download_zip(url, directory):
     logger.info('Downloaded {} to {}.'.format(url, directory))
 
 def download_lt(update=False):
-    download_folder = get_download_directory()
+    download_folder = get_language_tool_download_path()
     assert os.path.isdir(download_folder)
     old_path_list = [
         path for path in

@@ -4,6 +4,7 @@ import locale
 import os
 import re
 import sys
+import urllib.parse
 import urllib.request
 
 from .backports import subprocess
@@ -41,6 +42,13 @@ class PathError(LanguageToolError):
 
 cache = {}
 
+def parse_url(url_str):
+    """ Parses a URL string, and adds 'http' if necessary. """
+    if 'http' not in url_str:
+        url_str = 'http://' + url_str   
+
+    return urllib.parse.urlparse(url_str).geturl()
+
 def correct(text: str, matches: [Match]) -> str:
     """Automatically apply suggestions to the text."""
     ltext = list(text)
@@ -58,7 +66,7 @@ def correct(text: str, matches: [Match]) -> str:
         correct_offset += len(repl) - len(errors[n])
     return ''.join(ltext)
 
-def get_download_directory():
+def get_language_tool_download_path():
     # Get download path from environment or use default.
     download_path = os.environ.get('LTP_PATH', '~/.cache/language_tool_python/')
     download_path = os.path.expanduser(download_path)
@@ -68,7 +76,7 @@ def get_download_directory():
 
 def get_language_tool_directory():
     """Get LanguageTool directory."""
-    download_folder = get_download_directory()
+    download_folder = get_language_tool_download_path()
     assert os.path.isdir(download_folder)
     language_tool_path_list = [
         path for path in
