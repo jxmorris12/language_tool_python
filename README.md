@@ -95,7 +95,6 @@ The default download path is `~/.cache/language_tool_python/`. The LanguageTool 
 ## Prerequisites
 
 - `Python 3.3+ <https://www.python.org>`
-- `lib3to2 <https://bitbucket.org/amentajo/lib3to2>`
 - `LanguageTool <https://www.languagetool.org>` (Java 8.0 or higher)
 
 
