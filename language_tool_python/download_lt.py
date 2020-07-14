@@ -31,7 +31,7 @@ FILENAME = 'LanguageTool-{version}.zip'
 LATEST_VERSION = '4.9'
 
 JAVA_VERSION_REGEX = re.compile(
-    r'^(?:java|openjdk) version "(?P<major1>\d+)\.(?P<major2>\d+)\.[^"]+"',
+    r'^(?:java|openjdk) version "(?P<major1>\d+)(|\.(?P<major2>\d+)\.[^"]+)"',
     re.MULTILINE)
 
 # Updated for later versions of java
@@ -61,7 +61,9 @@ def parse_java_version(version_text):
     if not match:
         raise SystemExit(
             'Could not parse Java version from """{}""".'.format(version_text))
-    return (int(match.group('major1')), int(match.group('major2')))
+    major1 = int(match.group('major1'))
+    major2 = int(match.group('major2')) if match.group('major2') else 0
+    return (major1, major2)
 
 def confirm_java_compatibility():
     """ Confirms Java major version >= 8. """
