@@ -89,9 +89,8 @@ class LanguageTool:
         self._motherTongue = (None if motherTongue is None
                               else LanguageTag(motherTongue))
     @property
-    def _spell_checking_rules(self):
-        return {'HUNSPELL_RULE', 'HUNSPELL_NO_SUGGEST_RULE',
-                'MORFOLOGIK_RULE_' + str(self.language).replace('-', '_').upper()}
+    def _spell_checking_categories(self):
+        return {'TYPOS'}
 
     def check(self, text: str) -> [Match]:
         """Match text against enabled rules."""
@@ -122,11 +121,11 @@ class LanguageTool:
     
     def enable_spellchecking(self):
         """Enable spell-checking rules."""
-        self.disabled_rules.difference_update(self._spell_checking_rules)
+        self.disabled_categories.difference_update(self._spell_checking_categories)
 
     def disable_spellchecking(self):
         """Disable spell-checking rules."""
-        self.disabled_rules.update(self._spell_checking_rules)
+        self.disabled_categories.update(self._spell_checking_categories)
 
     def _get_languages(self) -> set:
         """Get supported languages (by querying the server)."""
