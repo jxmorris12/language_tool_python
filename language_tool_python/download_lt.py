@@ -28,7 +28,7 @@ logger.setLevel(logging.INFO)
 BASE_URL = os.environ.get('LTP_DOWNLOAD_HOST', 'https://www.languagetool.org/download/')
 FILENAME = 'LanguageTool-{version}.zip'
 
-LATEST_VERSION = '4.9'
+LATEST_VERSION = '5.0'
 
 JAVA_VERSION_REGEX = re.compile(
     r'^(?:java|openjdk) version "(?P<major1>\d+)(|\.(?P<major2>\d+)\.[^"]+)"',
@@ -132,7 +132,7 @@ def download_zip(url, directory):
     # Tell the user the download path.
     logger.info('Downloaded {} to {}.'.format(url, directory))
 
-def download_lt(update=False):
+def download_lt(update=True):
     download_folder = get_language_tool_download_path()
     assert os.path.isdir(download_folder)
     old_path_list = [
@@ -140,9 +140,6 @@ def download_lt(update=False):
         glob.glob(os.path.join(download_folder, 'LanguageTool*'))
         if os.path.isdir(path)
     ]
-
-    if old_path_list and not update:
-        return
 
     confirm_java_compatibility()
     version = LATEST_VERSION
@@ -152,7 +149,6 @@ def download_lt(update=False):
     extract_path = os.path.join(download_folder, dirname)
 
     if extract_path in old_path_list:
-        logger.warn('No update needed: {!r}'.format(dirname))
         return
 
     download_zip(language_tool_download_url, download_folder)
