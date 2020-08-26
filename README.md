@@ -31,6 +31,18 @@ Finally, you're able to pass in your own remote server as an argument to the `La
     import language_tool_python
     tool = language_tool_python.LanguageTool('ca-ES', remote_server='https://language-tool-api.mywebsite.net')  # use a remote server API, language Catalan
 
+### Apply a custom list of matches with `utils.correct`
+
+If you want to decide which `Match` objects to apply to your text, use `tool.check` (to generate the list of matches) in conjunction with `language_tool_python.utils.correct` (to apply the list of matches to text). Here is an example of generating, filtering, and applying a list of matches. In this case, spell-checking suggestions for uppercase words are ignored:
+
+>>> s = "Department of medicine Colombia University closed on August 1 Milinda Samuelli"
+>>> is_bad_rule = lambda rule: rule.message == 'Possible spelling mistake found.' and len(rule.replacements) and rule.replacements[0][0].isupper()
+>>> import language_tool_python
+>>> tool = language_tool_python.LanguageTool('en-US')
+>>> matches = tool.check(s)
+>>> matches = [rule for rule in matches if not is_bad_rule(rule)]
+>>> language_tool_python.utils.correct(s, matches)
+'Department of medicine Colombia University closed on August 1 Melinda Sam
 
 
 ## Example usage
