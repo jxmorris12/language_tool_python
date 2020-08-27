@@ -5,6 +5,7 @@ import re
 import socket
 import threading
 import urllib.parse
+from typing import List
 from weakref import WeakValueDictionary
 from .download_lt import download_lt
 from .language_tag import LanguageTag
@@ -126,6 +127,13 @@ class LanguageTool:
     def disable_spellchecking(self):
         """Disable spell-checking rules."""
         self.disabled_categories.update(self._spell_checking_categories)
+
+    def register_spellings(self, spellings: List[str]):
+        library_path = get_language_tool_directory()
+        spelling_file_path = os.path.join(library_path, "org/languagetool/resource/en/hunspell/spelling.txt")
+        with open(spelling_file_path, "a+") as spellings_file:
+            spellings_file.write("\n" + "\n".join([word for word in spellings]))
+        print(f"Updated the spellings at {spelling_file_path}")
 
     def _get_languages(self) -> set:
         """Get supported languages (by querying the server)."""
