@@ -34,7 +34,9 @@ class LanguageTool:
     _instances = WeakValueDictionary()
     _PORT_RE = re.compile(r"(?:https?://.*:|port\s+)(\d+)", re.I)
     
-    def __init__(self, language=None, motherTongue=None, remote_server=None):
+    def __init__(self, language=None, motherTongue=None, remote_server=None, newSpellings: List[str] = None):
+        if newSpellings:
+            self._register_spellings(newSpellings)
         if remote_server is not None:
             self._remote = True
             self._url = parse_url(remote_server)
@@ -128,9 +130,12 @@ class LanguageTool:
         """Disable spell-checking rules."""
         self.disabled_categories.update(self._spell_checking_categories)
 
-    def register_spellings(self, spellings: List[str]):
+    def _register_spellings(self, spellings: List[str]):
         library_path = get_language_tool_directory()
         spelling_file_path = os.path.join(library_path, "org/languagetool/resource/en/hunspell/spelling.txt")
+        if not os.path.exists(spelling_file_path):
+            raise FileNotFoundError(f"Failed to find the spellings file at {spelling_file_path}\n"
+                                    f"Please file an issue at https://github.com/jxmorris12/language_tool_python")
         with open(spelling_file_path, "a+") as spellings_file:
             spellings_file.write("\n" + "\n".join([word for word in spellings]))
         print(f"Updated the spellings at {spelling_file_path}")
