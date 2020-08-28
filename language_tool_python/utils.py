@@ -68,8 +68,10 @@ def correct(text: str, matches: [Match]) -> str:
 
 def get_language_tool_download_path():
     # Get download path from environment or use default.
-    download_path = os.environ.get('LTP_PATH', '~/.cache/language_tool_python/')
-    download_path = os.path.expanduser(download_path)
+    download_path = os.environ.get(
+        'LTP_PATH',
+        os.path.join(os.path.expanduser("~"), ".cache", "language_tool_python")
+    )
     # Make download path, if it doesn't exist.
     os.makedirs(download_path, exist_ok=True)
     return download_path
