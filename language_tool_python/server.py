@@ -46,9 +46,6 @@ class LanguageTool:
                 language = get_locale_language()
             except ValueError:
                 language = FAILSAFE_LANGUAGE
-        # if self._url[-1] != '/':
-            # self._url += '/'
-        print('self._url:', self._url)
         self._language = LanguageTag(language, self._get_languages())
         self.motherTongue = motherTongue
         self.disabled_rules = set()

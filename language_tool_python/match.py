@@ -6,11 +6,13 @@ def get_match_ordered_dict():
         ('ruleId', str), 
         ('message', str),
         ('replacements', list),
+        ('offsetInContext', int), 
         ('context', str), 
         ('offset', int), 
         ('errorLength', int),
         ('category', str), 
         ('ruleIssueType', str),
+        ('sentence', str), 
     ])
     return slots
 
@@ -48,6 +50,7 @@ class Match:
         attrib['ruleIssueType'] = attrib['rule']['issueType']
         del attrib['rule']
         # Process context.
+        attrib['offsetInContext'] = attrib['context']['offset']
         attrib['context'] = attrib['context']['text']
         # Process replacements.
         attrib['replacements'] = [r['value'] for r in attrib['replacements']]
@@ -84,6 +87,12 @@ class Match:
             self.context, ' ' * self.offset + '^' * self.errorLength
         )
         return s
+
+    @property
+    def matchedText(self):
+        """ Returns the text that garnered the error (without its surrounding context).
+        """
+        return self.context[self.offsetInContext:self.offsetInContext+self.errorLength]
 
     def __eq__(self, other):
         return list(self) == list(other)
