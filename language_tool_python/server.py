@@ -271,7 +271,7 @@ class LanguageTool:
 class LanguageToolPublicAPI(LanguageTool):
     """  Language tool client of the official API. """
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, remote_server='https://api.languagetool.org', **kwargs)
+        super().__init__(*args, remote_server='https://languagetool.org/api/', **kwargs)
 
 @atexit.register
 def terminate_server():
