@@ -13,7 +13,7 @@ from .match import Match
 from .utils import *
 
 
-DEBUG_MODE = False
+DEBUG_MODE = True
 
 # Keep track of running server PIDs in a global list. This way,
 # we can ensure they're killed on exit.
@@ -95,7 +95,7 @@ class LanguageTool:
     def check(self, text: str) -> [Match]:
         """Match text against enabled rules."""
         url = urllib.parse.urljoin(self._url, 'check')
-        response = self._get_root(url, self._encode(text))
+        response = self._query_server(url, self._encode(text))
         matches = response['matches']
         return [Match(match) for match in matches]
 
@@ -142,7 +142,7 @@ class LanguageTool:
         self._start_server_if_needed()
         url = urllib.parse.urljoin(self._url, 'languages')
         languages = set()
-        for e in self._get_root(url, num_tries=1):
+        for e in self._query_server(url, num_tries=1):
             languages.add(e.get('code'))
             languages.add(e.get('longCode'))
         return languages
@@ -156,9 +156,9 @@ class LanguageTool:
         self._url = url
         self._remote = True
 
-    def _get_root(self, url, data=None, num_tries=2):
+    def _query_server(self, url, data=None, num_tries=2):
         if DEBUG_MODE:
-            print('_get_root url:', url, 'data:', data)
+            print('_query_server url:', url, 'data:', data)
         for n in range(num_tries):
             try:
                 with urlopen(url, data, self._TIMEOUT) as f:

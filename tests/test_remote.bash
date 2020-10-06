@@ -4,7 +4,7 @@ set -eux
 
 readonly port=8081
 readonly ltp_path=$(printf "import language_tool_python\nprint(language_tool_python.utils.get_language_tool_download_path())\n" | python)
-readonly jar="${ltp_path}LanguageTool-*/languagetool-server.jar"
+readonly jar="${ltp_path}/LanguageTool-*/languagetool-server.jar"
 
 java -cp $jar org.languagetool.server.HTTPServer --port "$port" &
 java_pid=$!

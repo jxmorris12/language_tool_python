@@ -3,7 +3,6 @@ def test_langtool_load():
 	import language_tool_python
 	lang_tool = language_tool_python.LanguageTool("en-US")
 	matches = lang_tool.check('ain\'t nothin but a thang')
-	open('test_langtool_load', 'w').write(str(matches))
 	assert str(matches) == """[Match({'ruleId': 'UPPERCASE_SENTENCE_START', 'message': 'This sentence does not start with an uppercase letter.', 'replacements': ['Ain'], 'offsetInContext': 0, 'context': "ain't nothin but a thang", 'offset': 0, 'errorLength': 3, 'category': 'CASING', 'ruleIssueType': 'typographical', 'sentence': "ain't nothin but a thang"}), Match({'ruleId': 'MORFOLOGIK_RULE_EN_US', 'message': 'Possible spelling mistake found.', 'replacements': ['nothing', 'no thin'], 'offsetInContext': 6, 'context': "ain't nothin but a thang", 'offset': 6, 'errorLength': 6, 'category': 'TYPOS', 'ruleIssueType': 'misspelling', 'sentence': "ain't nothin but a thang"}), Match({'ruleId': 'MORFOLOGIK_RULE_EN_US', 'message': 'Possible spelling mistake found.', 'replacements': ['than', 'thing', 'hang', 'thank', 'Chang', 'tang', 'thong', 'twang', 'Thant', 'thane', 'Thanh', 't hang', 'Shang', 'Zhang'], 'offsetInContext': 19, 'context': "ain't nothin but a thang", 'offset': 19, 'errorLength': 5, 'category': 'TYPOS', 'ruleIssueType': 'misspelling', 'sentence': "ain't nothin but a thang"})]"""
 
 def test_langtool_languages():
@@ -17,9 +16,19 @@ def test_match():
 	text = u'A sentence with a error in the Hitchhiker’s Guide tot he Galaxy'
 	matches = tool.check(text)
 	assert len(matches) == 2
-	open('test_match', 'w').write(str(matches[0]))
 	assert str(matches[0]) == 'Offset 16, length 1, Rule ID: EN_A_VS_AN\nMessage: Use “an” instead of ‘a’ if the following word starts with a vowel sound, e.g. ‘an article’, ‘an hour’\nSuggestion: an\nA sentence with a error in the Hitchhiker’s Guide tot he ...\n                ^'
 
+def test_uk_typo():
+	import language_tool_python
+	language = language_tool_python.LanguageTool("en-UK")
+
+	sentence1 = "If you think this sentence is fine then, your wrong."
+	results1 = language.check(sentence1)
+	assert len(results1) == 1
+	assert language_tool_python.utils.correct(sentence1, results1) == "If you think this sentence is fine then, you're wrong."
+
+	results2 = language.check("You're mum is called Emily, is that right?")
+	assert len(results2) == 0
 
 def test_remote_es():
 	import language_tool_python
