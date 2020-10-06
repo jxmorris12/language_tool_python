@@ -58,3 +58,7 @@ def test_spellcheck_en_gb():
 	# Correct a sentence without spell-checking
 	tool.disable_spellchecking()
 	assert tool.correct(s) == "Wat is wrong with the spll chker"
+
+def test_debug_mode():
+    from language_tool_python.server import DEBUG_MODE
+    assert DEBUG_MODE is False
