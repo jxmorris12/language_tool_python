@@ -13,7 +13,7 @@ from .match import Match
 from .utils import *
 
 
-DEBUG_MODE = True
+DEBUG_MODE = False
 
 # Keep track of running server PIDs in a global list. This way,
 # we can ensure they're killed on exit.
