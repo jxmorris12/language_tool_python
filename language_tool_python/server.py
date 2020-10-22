@@ -5,7 +5,6 @@ import re
 import socket
 import threading
 import urllib.parse
-from typing import List
 from weakref import WeakValueDictionary
 from .download_lt import download_lt
 from .language_tag import LanguageTag
@@ -34,7 +33,7 @@ class LanguageTool:
     _instances = WeakValueDictionary()
     _PORT_RE = re.compile(r"(?:https?://.*:|port\s+)(\d+)", re.I)
     
-    def __init__(self, language=None, motherTongue=None, remote_server=None, newSpellings: List[str] = None):
+    def __init__(self, language=None, motherTongue=None, remote_server=None, newSpellings=None):
         if newSpellings:
             self._register_spellings(newSpellings)
         if remote_server is not None:
@@ -127,7 +126,7 @@ class LanguageTool:
         """Disable spell-checking rules."""
         self.disabled_categories.update(self._spell_checking_categories)
 
-    def _register_spellings(self, spellings: List[str]):
+    def _register_spellings(self, spellings):
         library_path = get_language_tool_directory()
         spelling_file_path = os.path.join(library_path, "org/languagetool/resource/en/hunspell/spelling.txt")
         if not os.path.exists(spelling_file_path):
