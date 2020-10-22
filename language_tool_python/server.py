@@ -131,11 +131,10 @@ class LanguageTool:
         library_path = get_language_tool_directory()
         spelling_file_path = os.path.join(library_path, "org/languagetool/resource/en/hunspell/spelling.txt")
         if not os.path.exists(spelling_file_path):
-            raise FileNotFoundError(f"Failed to find the spellings file at {spelling_file_path}\n"
-                                    f"Please file an issue at https://github.com/jxmorris12/language_tool_python")
+            raise FileNotFoundError("Failed to find the spellings file at {}\n Please file an issue at https://github.com/jxmorris12/language_tool_python".format(spelling_file_path))
         with open(spelling_file_path, "a+") as spellings_file:
             spellings_file.write("\n" + "\n".join([word for word in spellings]))
-        print(f"Updated the spellings at {spelling_file_path}")
+        print("Updated the spellings at {}".format(spelling_file_path))
 
     def _get_languages(self) -> set:
         """Get supported languages (by querying the server)."""
