@@ -113,7 +113,7 @@ def get_jar_info():
                 raise JavaError("Can't find Java")
             else:
                 java_path = 'C:\\Program Files (x86)\\Common Files\\Oracle\\Java\\javapath\\java.exe'
-	dir_name = get_language_tool_directory()
+        dir_name = get_language_tool_directory()
         jar_path = None
         for jar_name in JAR_NAMES:
             for jar_path in glob.glob(os.path.join(dir_name, jar_name)):
