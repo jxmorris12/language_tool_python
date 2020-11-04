@@ -69,11 +69,14 @@ def confirm_java_compatibility():
     """ Confirms Java major version >= 8. """
     java_path = find_executable('java')
     if not java_path:
-        # Just ignore this and assume an old version of Java. It might not be
-        # found because of a PATHEXT-related issue
-        # (https://bugs.python.org/issue2200).
-        raise ModuleNotFoundError('No java install detected. Please install java to use language-tool-python.')
-
+        if not os.path.isfile('C://Program Files (x86)/Common Files/Oracle/Java/javapath/java.exe'): # Check if 
+            # Just ignore this and assume an old version of Java. It might not be
+            # found because of a PATHEXT-related issue
+            # (https://bugs.python.org/issue2200).
+            raise ModuleNotFoundError('No java install detected. Please install java to use language-tool-python.')
+        else:
+            java_path = 'C:\\Program Files (x86)\\Common Files\\Oracle\\Java\\javapath\\java.exe' # Need to hardcode the path for some Windows users because java is not found by find_executable()
+            
     output = subprocess.check_output([java_path, '-version'],
                                      stderr=subprocess.STDOUT,
                                      universal_newlines=True)
