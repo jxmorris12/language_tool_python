@@ -109,8 +109,11 @@ def get_jar_info():
     except KeyError:
         java_path = which('java')
         if not java_path:
-            raise JavaError("can't find Java")
-        dir_name = get_language_tool_directory()
+            if not os.path.isfile('C://Program Files (x86)/Common Files/Oracle/Java/javapath/java.exe'):
+                raise JavaError("Can't find Java")
+            else:
+		java_path = 'C:\\Program Files (x86)\\Common Files\\Oracle\\Java\\javapath\\java.exe'
+	dir_name = get_language_tool_directory()
         jar_path = None
         for jar_name in JAR_NAMES:
             for jar_path in glob.glob(os.path.join(dir_name, jar_name)):
