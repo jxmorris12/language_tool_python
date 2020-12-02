@@ -114,4 +114,3 @@ class Match:
         if name not in get_match_ordered_dict():
             raise AttributeError('{!r} object has no attribute {!r}'
                                  .format(self.__class__.__name__, name))
-
