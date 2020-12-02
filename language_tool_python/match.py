@@ -84,7 +84,7 @@ class Match:
         if self.replacements:
             s += '\nSuggestion: {}'.format('; '.join(self.replacements))
         s += '\n{}\n{}'.format(
-            self.context, ' ' * self.offset + '^' * self.errorLength
+            self.context, ' ' * self.offsetInContext + '^' * self.errorLength
         )
         return s
 
