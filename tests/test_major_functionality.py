@@ -8,7 +8,7 @@ def test_langtool_load():
 def test_langtool_languages():
 	import language_tool_python
 	lang_tool = language_tool_python.LanguageTool("en-US")
-	assert lang_tool._get_languages() == {'ta-IN', 'en-CA', 'da', 'eo', 'pt-AO', 'de', 'gl', 'ru-RU', 'de-DE', 'en', 'br', 'en-ZA', 'pt-MZ', 'ast-ES', 'sk-SK', 'en-AU', 'ta', 'ga', 'be', 'pl', 'tl-PH', 'sl', 'ar', 'es', 'sl-SI', 'en-NZ', 'el', 'el-GR', 'ru', 'zh-CN', 'en-GB', 'be-BY', 'pl-PL', 'km-KH', 'pt', 'uk-UA', 'ca', 'de-DE-x-simple-language', 'ro', 'ca-ES', 'de-CH', 'ja-JP', 'tl', 'pt-PT', 'gl-ES', 'pt-BR', 'km', 'ga-IE', 'ja', 'sv', 'sk', 'en-US', 'de-AT', 'ca-ES-valencia', 'uk', 'it', 'zh', 'br-FR', 'da-DK', 'ast', 'fr', 'fa', 'nl', 'ro-RO'}
+	assert lang_tool._get_languages() == {'ta-IN', 'en-CA', 'da', 'eo', 'pt-AO', 'de', 'gl', 'ru-RU', 'de-DE', 'en', 'br', 'en-ZA', 'pt-MZ', 'ast-ES', 'sk-SK', 'en-AU', 'ta', 'ga', 'be', 'pl', 'tl-PH', 'sl', 'ar', 'es', 'sl-SI', 'en-NZ', 'el', 'el-GR', 'ru', 'zh-CN', 'en-GB', 'be-BY', 'pl-PL', 'km-KH', 'pt', 'uk-UA', 'ca', 'de-DE-x-simple-language', 'ro', 'ca-ES', 'de-CH', 'ja-JP', 'tl', 'pt-PT', 'gl-ES', 'pt-BR', 'km', 'ga-IE', 'ja', 'sv', 'sk', 'en-US', 'de-AT', 'ca-ES-valencia', 'uk', 'it', 'zh', 'br-FR', 'da-DK', 'ast', 'fr', 'fa', 'nl', 'ro-RO', 'nl-BE'}
 
 def test_match():
 	import language_tool_python
@@ -16,7 +16,7 @@ def test_match():
 	text = u'A sentence with a error in the Hitchhiker’s Guide tot he Galaxy'
 	matches = tool.check(text)
 	assert len(matches) == 2
-	assert str(matches[0]) == 'Offset 16, length 1, Rule ID: EN_A_VS_AN\nMessage: Use “an” instead of ‘a’ if the following word starts with a vowel sound, e.g. ‘an article’, ‘an hour’\nSuggestion: an\nA sentence with a error in the Hitchhiker’s Guide tot he ...\n                ^'
+	assert str(matches[0]) == 'Offset 16, length 1, Rule ID: EN_A_VS_AN\nMessage: Use “an” instead of ‘a’ if the following word starts with a vowel sound, e.g. ‘an article’, ‘an hour’.\nSuggestion: an\nA sentence with a error in the Hitchhiker’s Guide tot he ...\n                ^'
 
 def test_uk_typo():
 	import language_tool_python
