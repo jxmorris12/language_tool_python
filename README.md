@@ -144,6 +144,5 @@ into where the ``language_tool_python`` package resides.
 As of April 2020, `language_tool_python` was forked from `language-check` and no longer supports LanguageTool versions lower than 4.0.
 
 ### Acknowledgements 
-This is a fork of https://github.com/myint/language-check/ (which is a fork of
-https://bitbucket.org/spirit/language_tool) that produces more easily parsable
+This is a fork of https://github.com/myint/language-check/ that produces more easily parsable
 results from the command-line.
