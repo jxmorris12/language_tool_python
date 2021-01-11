@@ -10,7 +10,7 @@ This is a Python wrapper for [LanguageTool](https://languagetool.org). LanguageT
 
 ## Local and Remote Servers
 
-By default, `language_tool_python` will download a LanguageTool server `.jar` and run that in the background to detect grammar errors locally. However, LanguageTool also offers a [Public HTTP Proofreading API](http://wiki.languagetool.org/public-http-api) that is supported as well. Follow the link for rate limiting details. (Running locally won't have the same restrictions.)
+By default, `language_tool_python` will download a LanguageTool server `.jar` and run that in the background to detect grammar errors locally. However, LanguageTool also offers a [Public HTTP Proofreading API](https://dev.languagetool.org/public-http-api) that is supported as well. Follow the link for rate limiting details. (Running locally won't have the same restrictions.)
 
 ### Using `language_tool_python` locally
 
@@ -129,14 +129,13 @@ The default download path is `~/.cache/language_tool_python/`. The LanguageTool 
 
 ## Prerequisites
 
-- `Python 3.5+ <https://www.python.org>`
-- `LanguageTool <https://www.languagetool.org>` (Java 8.0 or higher)
+- [Python 3.5+](https://www.python.org)
+- [LanguageTool](https://www.languagetool.org) (Java 8.0 or higher)
 
 
 The installation process should take care of downloading LanguageTool (it may
 take a few minutes). Otherwise, you can manually download
-`LanguageTool-stable.zip
-<https://www.languagetool.org/download/LanguageTool-stable.zip>`_ and unzip it
+[LanguageTool-stable.zip](https://www.languagetool.org/download/LanguageTool-stable.zip) and unzip it
 into where the ``language_tool_python`` package resides.
 
 ### LanguageTool Version
