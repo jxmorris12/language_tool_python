@@ -16,8 +16,12 @@ clean ()
 }
 trap clean EXIT
 
-echo 'This is okay.' | \
-    python -m language_tool_python --remote-host localhost --remote-port "$port" -
+exit_status=0
 
-! echo 'This is noot okay.' | \
-    python -m language_tool_python --remote-host localhost --remote-port "$port" -
+echo 'This is okay.' | \
+    python -m language_tool_python --remote-host localhost --remote-port "$port" - || exit_status=1
+
+echo 'This is noot okay.' | \
+    python -m language_tool_python --remote-host localhost --remote-port "$port" - && exit_status=1
+
+exit "$exit_status"
