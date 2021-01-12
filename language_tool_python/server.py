@@ -86,7 +86,7 @@ class LanguageTool:
     @motherTongue.setter
     def motherTongue(self, motherTongue):
         self._motherTongue = (None if motherTongue is None
-                              else LanguageTag(motherTongue))
+                              else LanguageTag(motherTongue, self._get_languages()))
     @property
     def _spell_checking_categories(self):
         return {'TYPOS'}
