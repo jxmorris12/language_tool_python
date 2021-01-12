@@ -105,9 +105,9 @@ class LanguageTool:
         if self.disabled_rules:
             params['disabledRules'] = ','.join(self.disabled_rules)
         if self.enabled_rules:
-            params['enabled'] = ','.join(self.enabled_rules)
+            params['enabledRules'] = ','.join(self.enabled_rules)
         if self.enabled_rules_only:
-            params['enabledOnly'] = 'yes'
+            params['enabledOnly'] = 'true'
         if self.disabled_categories:
             params['disabledCategories'] = ','.join(self.disabled_categories)
         if self.enabled_categories:

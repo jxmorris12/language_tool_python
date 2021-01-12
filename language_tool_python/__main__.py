@@ -142,7 +142,7 @@ def main():
 
         lang_tool.disabled_rules.update(args.disable)
         lang_tool.enabled_rules.update(args.enable)
-        lang_tool.enabled_only = args.enabled_only
+        lang_tool.enabled_rules_only = args.enabled_only
 
         try:
             if args.apply:
