@@ -35,9 +35,9 @@ class LanguageTool:
     
     def __init__(self, language=None, motherTongue=None, remote_server=None, newSpellings=None):
         self._new_spellings = None
+        self.new_spellings_only_current_session = False
         if newSpellings:
             self._new_spellings = newSpellings
-            self.new_spellings_only_current_session = False
             self._register_spellings(self._new_spellings)
         if remote_server is not None:
             self._remote = True
