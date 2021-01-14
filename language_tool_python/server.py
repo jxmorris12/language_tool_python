@@ -34,10 +34,11 @@ class LanguageTool:
     _PORT_RE = re.compile(r"(?:https?://.*:|port\s+)(\d+)", re.I)
     
     def __init__(self, language=None, motherTongue=None, remote_server=None, newSpellings=None):
+        self._new_spellings = None
         if newSpellings:
-            self.new_spellings = newSpellings
+            self._new_spellings = newSpellings
             self.new_spellings_only_current_session = False
-            self._register_spellings(self.new_spellings)
+            self._register_spellings(self._new_spellings)
         if remote_server is not None:
             self._remote = True
             self._url = parse_url(remote_server)
@@ -72,7 +73,7 @@ class LanguageTool:
     def close(self):
         if not self._instances and self._server_is_alive():
             self._terminate_server()
-        if self.new_spellings_only_current_session:
+        if self.new_spellings_only_current_session and self._new_spellings:
             self.new_spellings_only_current_session = False
             self._unregister_spellings()
 
@@ -157,7 +158,7 @@ class LanguageTool:
         spelling_file_path = self._get_valid_spelling_file_path()
         with open(spelling_file_path, 'r+') as spellings_file:
             spellings_file.seek(0, os.SEEK_END)
-            for _ in range(len(self.new_spellings)):
+            for _ in range(len(self._new_spellings)):
                 while spellings_file.read(1) != '\n':
                     spellings_file.seek(spellings_file.tell() - 2, os.SEEK_SET)
                 spellings_file.seek(spellings_file.tell() - 2, os.SEEK_SET)
