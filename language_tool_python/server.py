@@ -152,7 +152,8 @@ class LanguageTool:
         spelling_file_path = self._get_valid_spelling_file_path()
         with open(spelling_file_path, "a+") as spellings_file:
             spellings_file.write("\n" + "\n".join([word for word in spellings]))
-        print("Registered new spellings at {}".format(spelling_file_path))
+        if DEBUG_MODE:
+            print("Registered new spellings at {}".format(spelling_file_path))
 
     def _unregister_spellings(self):
         spelling_file_path = self._get_valid_spelling_file_path()
@@ -164,7 +165,8 @@ class LanguageTool:
                 spellings_file.seek(spellings_file.tell() - 2, os.SEEK_SET)
             spellings_file.seek(spellings_file.tell() + 1, os.SEEK_SET)
             spellings_file.truncate()
-        print("Unregistered new spellings at {}".format(spelling_file_path))
+        if DEBUG_MODE:
+            print("Unregistered new spellings at {}".format(spelling_file_path))
 
     def _get_languages(self) -> set:
         """Get supported languages (by querying the server)."""
