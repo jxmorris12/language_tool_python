@@ -70,8 +70,7 @@ def test_session_only_new_spellings():
 	initial_checksum = hashlib.sha256(initial_spelling_file_contents.encode())
 
 	new_spellings = ["word1", "word2", "word3"]
-	with language_tool_python.LanguageTool('en-US', newSpellings=new_spellings) as tool:
-		tool.new_spellings_only_current_session = True
+	with language_tool_python.LanguageTool('en-US', newSpellings=new_spellings, new_spellings_persist=False) as tool:
 		tool.enabled_rules_only = True
 		tool.enabled_rules = {'MORFOLOGIK_RULE_EN_US'}
 		matches = tool.check(" ".join(new_spellings))

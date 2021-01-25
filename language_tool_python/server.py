@@ -33,9 +33,9 @@ class LanguageTool:
     _instances = WeakValueDictionary()
     _PORT_RE = re.compile(r"(?:https?://.*:|port\s+)(\d+)", re.I)
     
-    def __init__(self, language=None, motherTongue=None, remote_server=None, newSpellings=None):
+    def __init__(self, language=None, motherTongue=None, remote_server=None, newSpellings=None, new_spellings_persist=True):
         self._new_spellings = None
-        self.new_spellings_only_current_session = False
+        self._new_spellings_persist = new_spellings_persist
         if newSpellings:
             self._new_spellings = newSpellings
             self._register_spellings(self._new_spellings)
@@ -73,8 +73,8 @@ class LanguageTool:
     def close(self):
         if not self._instances and self._server_is_alive():
             self._terminate_server()
-        if self.new_spellings_only_current_session and self._new_spellings:
-            self.new_spellings_only_current_session = False
+        if not self._new_spellings_persist and self._new_spellings:
+            self._new_spellings = []
             self._unregister_spellings()
 
     @property
