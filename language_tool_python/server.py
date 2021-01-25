@@ -74,8 +74,8 @@ class LanguageTool:
         if not self._instances and self._server_is_alive():
             self._terminate_server()
         if not self._new_spellings_persist and self._new_spellings:
-            self._new_spellings = []
             self._unregister_spellings()
+            self._new_spellings = []
 
     @property
     def language(self):
