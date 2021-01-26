@@ -33,9 +33,12 @@ class LanguageTool:
     _instances = WeakValueDictionary()
     _PORT_RE = re.compile(r"(?:https?://.*:|port\s+)(\d+)", re.I)
     
-    def __init__(self, language=None, motherTongue=None, remote_server=None, newSpellings=None):
+    def __init__(self, language=None, motherTongue=None, remote_server=None, newSpellings=None, new_spellings_persist=True):
+        self._new_spellings = None
+        self._new_spellings_persist = new_spellings_persist
         if newSpellings:
-            self._register_spellings(newSpellings)
+            self._new_spellings = newSpellings
+            self._register_spellings(self._new_spellings)
         if remote_server is not None:
             self._remote = True
             self._url = parse_url(remote_server)
@@ -57,13 +60,22 @@ class LanguageTool:
         self.enabled_rules_only = False
         self._instances[id(self)] = self
 
-    def __del__(self):
-        if not self._instances and self._server_is_alive():
-            self._terminate_server()
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
     def __repr__(self):
         return '{}(language={!r}, motherTongue={!r})'.format(
             self.__class__.__name__, self.language, self.motherTongue)
+
+    def close(self):
+        if not self._instances and self._server_is_alive():
+            self._terminate_server()
+        if not self._new_spellings_persist and self._new_spellings:
+            self._unregister_spellings()
+            self._new_spellings = []
 
     @property
     def language(self):
@@ -126,14 +138,35 @@ class LanguageTool:
         """Disable spell-checking rules."""
         self.disabled_categories.update(self._spell_checking_categories)
 
-    def _register_spellings(self, spellings):
+    @staticmethod
+    def _get_valid_spelling_file_path() -> str:
         library_path = get_language_tool_directory()
         spelling_file_path = os.path.join(library_path, "org/languagetool/resource/en/hunspell/spelling.txt")
         if not os.path.exists(spelling_file_path):
-            raise FileNotFoundError("Failed to find the spellings file at {}\n Please file an issue at https://github.com/jxmorris12/language_tool_python".format(spelling_file_path))
+            raise FileNotFoundError("Failed to find the spellings file at {}\n Please file an issue at "
+                                    "https://github.com/jxmorris12/language_tool_python/issues"
+                                    .format(spelling_file_path))
+        return spelling_file_path
+
+    def _register_spellings(self, spellings):
+        spelling_file_path = self._get_valid_spelling_file_path()
         with open(spelling_file_path, "a+") as spellings_file:
             spellings_file.write("\n" + "\n".join([word for word in spellings]))
-        print("Updated the spellings at {}".format(spelling_file_path))
+        if DEBUG_MODE:
+            print("Registered new spellings at {}".format(spelling_file_path))
+
+    def _unregister_spellings(self):
+        spelling_file_path = self._get_valid_spelling_file_path()
+        with open(spelling_file_path, 'r+') as spellings_file:
+            spellings_file.seek(0, os.SEEK_END)
+            for _ in range(len(self._new_spellings)):
+                while spellings_file.read(1) != '\n':
+                    spellings_file.seek(spellings_file.tell() - 2, os.SEEK_SET)
+                spellings_file.seek(spellings_file.tell() - 2, os.SEEK_SET)
+            spellings_file.seek(spellings_file.tell() + 1, os.SEEK_SET)
+            spellings_file.truncate()
+        if DEBUG_MODE:
+            print("Unregistered new spellings at {}".format(spelling_file_path))
 
     def _get_languages(self) -> set:
         """Get supported languages (by querying the server)."""
