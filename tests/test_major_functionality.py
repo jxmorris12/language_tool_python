@@ -59,6 +59,33 @@ def test_spellcheck_en_gb():
 	tool.disable_spellchecking()
 	assert tool.correct(s) == "Wat is wrong with the spll chker"
 
+def test_session_only_new_spellings():
+	import os
+	import hashlib
+	import language_tool_python
+	library_path = language_tool_python.utils.get_language_tool_directory()
+	spelling_file_path = os.path.join(library_path, "org/languagetool/resource/en/hunspell/spelling.txt")
+	with open(spelling_file_path, 'r') as spelling_file:
+		initial_spelling_file_contents = spelling_file.read()
+	initial_checksum = hashlib.sha256(initial_spelling_file_contents.encode())
+
+	new_spellings = ["word1", "word2", "word3"]
+	with language_tool_python.LanguageTool('en-US', newSpellings=new_spellings, new_spellings_persist=False) as tool:
+		tool.enabled_rules_only = True
+		tool.enabled_rules = {'MORFOLOGIK_RULE_EN_US'}
+		matches = tool.check(" ".join(new_spellings))
+
+	with open(spelling_file_path, 'r') as spelling_file:
+		subsequent_spelling_file_contents = spelling_file.read()
+	subsequent_checksum = hashlib.sha256(subsequent_spelling_file_contents.encode())
+
+	if initial_checksum != subsequent_checksum:
+		with open(spelling_file_path, 'w') as spelling_file:
+			spelling_file.write(initial_spelling_file_contents)
+
+	assert not matches
+	assert initial_checksum.hexdigest() == subsequent_checksum.hexdigest()
+
 def test_debug_mode():
     from language_tool_python.server import DEBUG_MODE
     assert DEBUG_MODE is False
