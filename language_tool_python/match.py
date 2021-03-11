@@ -1,3 +1,4 @@
+import unicodedata
 from collections import OrderedDict
 from functools import total_ordering
 
@@ -56,6 +57,8 @@ class Match:
         attrib['replacements'] = [r['value'] for r in attrib['replacements']]
         # Rename error length.
         attrib['errorLength'] = attrib['length']
+        # Normalize unicode
+        attrib['message'] = unicodedata.normalize("NFKC", attrib['message'])
         # Store objects on self.
         for k, v in attrib.items():
             setattr(self, k, v)
