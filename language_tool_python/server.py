@@ -36,9 +36,6 @@ class LanguageTool:
     def __init__(self, language=None, motherTongue=None, remote_server=None, newSpellings=None, new_spellings_persist=True):
         self._new_spellings = None
         self._new_spellings_persist = new_spellings_persist
-        if newSpellings:
-            self._new_spellings = newSpellings
-            self._register_spellings(self._new_spellings)
         if remote_server is not None:
             self._remote = True
             self._url = parse_url(remote_server)
@@ -51,6 +48,9 @@ class LanguageTool:
                 language = get_locale_language()
             except ValueError:
                 language = FAILSAFE_LANGUAGE
+        if newSpellings:
+            self._new_spellings = newSpellings
+            self._register_spellings(self._new_spellings)
         self._language = LanguageTag(language, self._get_languages())
         self.motherTongue = motherTongue
         self.disabled_rules = set()
