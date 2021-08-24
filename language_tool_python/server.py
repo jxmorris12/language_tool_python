@@ -150,14 +150,14 @@ class LanguageTool:
 
     def _register_spellings(self, spellings):
         spelling_file_path = self._get_valid_spelling_file_path()
-        with open(spelling_file_path, "a+") as spellings_file:
+        with open(spelling_file_path, "a+", encoding='utf-8') as spellings_file:
             spellings_file.write("\n" + "\n".join([word for word in spellings]))
         if DEBUG_MODE:
             print("Registered new spellings at {}".format(spelling_file_path))
 
     def _unregister_spellings(self):
         spelling_file_path = self._get_valid_spelling_file_path()
-        with open(spelling_file_path, 'r+') as spellings_file:
+        with open(spelling_file_path, 'r+', encoding='utf-8') as spellings_file:
             spellings_file.seek(0, os.SEEK_END)
             for _ in range(len(self._new_spellings)):
                 while spellings_file.read(1) != '\n':
