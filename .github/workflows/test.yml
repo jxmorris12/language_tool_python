@@ -35,7 +35,7 @@ jobs:
     - name: Test with pytest
       run: |
         pytest -vx --dist=loadfile -n auto
-    - name: Run command-line tests
-      run: |
-        ./tests/test_local.bash  # Test command-line with local server
-        ./tests/test_remote.bash # Test command-line with remote server
+    #- name: Run command-line tests
+    #  run: |
+    #    ./tests/test_local.bash  # Test command-line with local server
+    #    ./tests/test_remote.bash # Test command-line with remote server
