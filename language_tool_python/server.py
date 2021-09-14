@@ -1,15 +1,25 @@
+from typing import Dict
+
 import atexit
 import http.client
 import json
+import os
 import re
+import requests
 import socket
 import threading
 import urllib.parse
 from weakref import WeakValueDictionary
+
+from .backports import subprocess
 from .download_lt import download_lt
 from .language_tag import LanguageTag
 from .match import Match
-from .utils import *
+from .utils import (
+    correct,
+    parse_url, get_locale_language, get_language_tool_directory, get_server_cmd,
+    FAILSAFE_LANGUAGE, startupinfo,
+    LanguageToolError, ServerError, JavaError, PathError)
 
 
 DEBUG_MODE = False
@@ -106,12 +116,12 @@ class LanguageTool:
     def check(self, text: str) -> [Match]:
         """Match text against enabled rules."""
         url = urllib.parse.urljoin(self._url, 'check')
-        response = self._query_server(url, self._encode(text))
+        response = self._query_server(url, self._create_params(text))
         matches = response['matches']
         return [Match(match) for match in matches]
 
-    def _encode(self, text):
-        params = {'language': self.language, 'text': text.encode('utf-8')}
+    def _create_params(self, text: str) -> Dict[str, str]:
+        params = {'language': str(self.language), 'text': text}
         if self.motherTongue is not None:
             params['motherTongue'] = self.motherTongue
         if self.disabled_rules:
@@ -124,7 +134,8 @@ class LanguageTool:
             params['disabledCategories'] = ','.join(self.disabled_categories)
         if self.enabled_categories:
             params['enabledCategories'] = ','.join(self.enabled_categories)
-        return urllib.parse.urlencode(params).encode()
+        # return urllib.parse.urlencode(params).encode()
+        return params
 
     def correct(self, text: str) -> str:
         """Automatically apply suggestions to the text."""
@@ -187,18 +198,18 @@ class LanguageTool:
         self._url = url
         self._remote = True
 
-    def _query_server(self, url, data=None, num_tries=2):
+    def _query_server(self, url, params=None, num_tries=2):
         if DEBUG_MODE:
-            print('_query_server url:', url, 'data:', data)
+            print('_query_server url:', url, 'params:', params)
         for n in range(num_tries):
             try:
-                with urlopen(url, data, self._TIMEOUT) as f:
-                    raw_data = f.read().decode('utf-8')
+                with requests.get(url, params=params, timeout=self._TIMEOUT) as response:
                     try:
-                        return json.loads(raw_data)
+                        return response.json()
                     except json.decoder.JSONDecodeError as e:
-                        print('URL {url} and data {data} returned invalid JSON response:')
-                        print(raw_data)
+                        print(f'URL {url} and params {params} returned invalid JSON response:')
+                        print(response)
+                        print(response.content)
                         raise e
             except (IOError, http.client.HTTPException) as e:
                 if self._remote is False:

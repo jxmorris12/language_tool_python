@@ -21,6 +21,9 @@ class LanguageTag:
     def __str__(self):
         return self.normalized_tag
 
+    def __repr__(self):
+        return f'<LanguageTag "{str(self)}">'
+
     def _normalize(self, tag):
         if not tag:
             raise ValueError('empty language tag')

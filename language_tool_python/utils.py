@@ -20,7 +20,6 @@ JAR_NAMES = [
 FAILSAFE_LANGUAGE = 'en'
 
 # https://mail.python.org/pipermail/python-dev/2011-July/112551.html
-USE_URLOPEN_RESOURCE_WARNING_FIX = (3, 1) < sys.version_info < (3, 4)
 
 if os.name == 'nt':
     startupinfo = subprocess.STARTUPINFO()
@@ -130,36 +129,3 @@ def get_jar_info():
 def get_locale_language():
     """Get the language code for the current locale setting."""
     return locale.getlocale()[0] or locale.getdefaultlocale()[0]
-
-
-if USE_URLOPEN_RESOURCE_WARNING_FIX:
-    class ClosingHTTPResponse(http.client.HTTPResponse):
-
-        def __init__(self, sock, *args, **kwargs):
-            super().__init__(sock, *args, **kwargs)
-            self._socket_close = sock.close
-
-        def close(self):
-            super().close()
-            self._socket_close()
-
-    class ClosingHTTPConnection(http.client.HTTPConnection):
-        response_class = ClosingHTTPResponse
-
-    class ClosingHTTPHandler(urllib.request.HTTPHandler):
-
-        def http_open(self, req):
-            return self.do_open(ClosingHTTPConnection, req)
-
-    urlopen = urllib.request.build_opener(ClosingHTTPHandler).open
-
-else:
-    try:
-        urllib.response.addinfourl.__exit__
-    except AttributeError:
-        from contextlib import closing
-
-        def urlopen(*args, **kwargs):
-            return closing(urllib.request.urlopen(*args, **kwargs))
-    else:
-        urlopen = urllib.request.urlopen
