@@ -207,7 +207,7 @@ class LanguageTool:
                     try:
                         return response.json()
                     except json.decoder.JSONDecodeError as e:
-                        print(f'URL {url} and params {params} returned invalid JSON response:')
+                        print('URL {} and params {} returned invalid JSON response:'.format(url, params))
                         print(response)
                         print(response.content)
                         raise e

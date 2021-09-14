@@ -22,7 +22,7 @@ class LanguageTag:
         return self.normalized_tag
 
     def __repr__(self):
-        return f'<LanguageTag "{str(self)}">'
+        return '<LanguageTag "{}">'.format(str(self))
 
     def _normalize(self, tag):
         if not tag:
