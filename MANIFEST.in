@@ -5,4 +5,5 @@ include run_doctest.py
 include test.bash
 include test.py
 include test_remote.bash
+include requirements.txt
 exclude language_tool_python/Language-Tool-*
