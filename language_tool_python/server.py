@@ -68,6 +68,7 @@ class LanguageTool:
         self.disabled_categories = set()
         self.enabled_categories = set()
         self.enabled_rules_only = False
+        self.preferred_variants = set()
         self._instances[id(self)] = self
 
     def __enter__(self):
@@ -134,6 +135,8 @@ class LanguageTool:
             params['disabledCategories'] = ','.join(self.disabled_categories)
         if self.enabled_categories:
             params['enabledCategories'] = ','.join(self.enabled_categories)
+        if self.preferred_variants:
+            params['preferredVariants'] = ','.join(self.preferred_variants)
         # return urllib.parse.urlencode(params).encode()
         return params
 
@@ -187,6 +190,7 @@ class LanguageTool:
         for e in self._query_server(url, num_tries=1):
             languages.add(e.get('code'))
             languages.add(e.get('longCode'))
+        languages.add("auto")
         return languages
 
     def _start_server_if_needed(self):
