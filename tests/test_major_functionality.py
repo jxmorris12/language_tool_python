@@ -1,33 +1,32 @@
 
 def test_langtool_load():
 	import language_tool_python
-	lang_tool = language_tool_python.LanguageTool("en-US")
-	matches = lang_tool.check('ain\'t nothin but a thang')
+	tool = language_tool_python.LanguageTool("en-US")
+	matches = tool.check('ain\'t nothin but a thang')
 	assert str(matches) == """[Match({'ruleId': 'UPPERCASE_SENTENCE_START', 'message': 'This sentence does not start with an uppercase letter.', 'replacements': ['Ai'], 'offsetInContext': 0, 'context': "ain't nothin but a thang", 'offset': 0, 'errorLength': 2, 'category': 'CASING', 'ruleIssueType': 'typographical', 'sentence': "ain't nothin but a thang"}), Match({'ruleId': 'MORFOLOGIK_RULE_EN_US', 'message': 'Possible spelling mistake found.', 'replacements': ['nothing', 'no thin'], 'offsetInContext': 6, 'context': "ain't nothin but a thang", 'offset': 6, 'errorLength': 6, 'category': 'TYPOS', 'ruleIssueType': 'misspelling', 'sentence': "ain't nothin but a thang"}), Match({'ruleId': 'MORFOLOGIK_RULE_EN_US', 'message': 'Possible spelling mistake found.', 'replacements': ['than', 'thing', 'hang', 'thank', 'Chang', 'tang', 'thong', 'twang', 'Thant', 'thane', 'Thanh', 'Jhang', 'Shang', 'Zhang'], 'offsetInContext': 19, 'context': "ain't nothin but a thang", 'offset': 19, 'errorLength': 5, 'category': 'TYPOS', 'ruleIssueType': 'misspelling', 'sentence': "ain't nothin but a thang"})]"""
+	tool.close()
 
 
-def test_process_starts_and_stops():
+def test_process_starts_and_stops_in_context_manager():
 	import language_tool_python
-	with language_tool_python.LanguageTool("en-US") as lang_tool:
-		proc: subprocess.Popen = lang_tool._server
+	with language_tool_python.LanguageTool("en-US") as tool:
+		proc: subprocess.Popen = tool._server
 		# Make sure process is running before killing language tool object.
-		assert proc.poll() is None, "lang_tool._server not running after creation"
-		# lang_tool.close() # Explicitly close() object so process stops before garbage collection.
+		assert proc.poll() is None, "tool._server not running after creation"
 	# Make sure process stopped after close() was called.
-	assert proc.poll() is not None, "lang_tool._server should stop running after deletion"
-	import time; time.sleep(10)
-	# if poll is None: # p.subprocess is alive
+	assert proc.poll() is not None, "tool._server should stop running after deletion"
 
-def test_process_starts_and_closes():
+
+def test_process_starts_and_stops_on_close():
 	import language_tool_python
-	lang_tool = language_tool_python.LanguageTool("en-US")
-	proc: subprocess.Popen = lang_tool._server
+	tool = language_tool_python.LanguageTool("en-US")
+	proc: subprocess.Popen = tool._server
 	# Make sure process is running before killing language tool object.
-	assert proc.poll() is None, "lang_tool._server not running after creation"
-	lang_tool.close() # Explicitly close() object so process stops before garbage collection.
-	del lang_tool
+	assert proc.poll() is None, "tool._server not running after creation"
+	tool.close() # Explicitly close() object so process stops before garbage collection.
+	del tool
 	# Make sure process stopped after close() was called.
-	assert proc.poll() is not None, "lang_tool._server should stop running after deletion"
+	assert proc.poll() is not None, "tool._server should stop running after deletion"
 	# if poll is None: # p.subprocess is alive
 	
 
@@ -35,8 +34,9 @@ def test_process_starts_and_closes():
 
 def test_langtool_languages():
 	import language_tool_python
-	lang_tool = language_tool_python.LanguageTool("en-US")
-	assert lang_tool._get_languages() == {'es-AR', 'ta-IN', 'en-CA', 'da', 'eo', 'pt-AO', 'de', 'gl', 'ru-RU', 'de-DE', 'en', 'br', 'en-ZA', 'pt-MZ', 'ast-ES', 'sk-SK', 'en-AU', 'ta', 'ga', 'be', 'pl', 'tl-PH', 'sl', 'ar', 'es', 'sl-SI', 'en-NZ', 'el', 'el-GR', 'ru', 'zh-CN', 'en-GB', 'be-BY', 'pl-PL', 'km-KH', 'pt', 'uk-UA', 'ca', 'de-DE-x-simple-language', 'ro', 'ca-ES', 'de-CH', 'ja-JP', 'tl', 'pt-PT', 'gl-ES', 'pt-BR', 'km', 'ga-IE', 'ja', 'sv', 'sk', 'en-US', 'de-AT', 'ca-ES-valencia', 'uk', 'it', 'zh', 'br-FR', 'da-DK', 'ast', 'fr', 'fa', 'nl', 'ro-RO', 'nl-BE', 'auto'}
+	tool = language_tool_python.LanguageTool("en-US")
+	assert tool._get_languages() == {'es-AR', 'ta-IN', 'en-CA', 'da', 'eo', 'pt-AO', 'de', 'gl', 'ru-RU', 'de-DE', 'en', 'br', 'en-ZA', 'pt-MZ', 'ast-ES', 'sk-SK', 'en-AU', 'ta', 'ga', 'be', 'pl', 'tl-PH', 'sl', 'ar', 'es', 'sl-SI', 'en-NZ', 'el', 'el-GR', 'ru', 'zh-CN', 'en-GB', 'be-BY', 'pl-PL', 'km-KH', 'pt', 'uk-UA', 'ca', 'de-DE-x-simple-language', 'ro', 'ca-ES', 'de-CH', 'ja-JP', 'tl', 'pt-PT', 'gl-ES', 'pt-BR', 'km', 'ga-IE', 'ja', 'sv', 'sk', 'en-US', 'de-AT', 'ca-ES-valencia', 'uk', 'it', 'zh', 'br-FR', 'da-DK', 'ast', 'fr', 'fa', 'nl', 'ro-RO', 'nl-BE', 'auto'}
+	tool.close()
 
 def test_match():
 	import language_tool_python
@@ -45,18 +45,20 @@ def test_match():
 	matches = tool.check(text)
 	assert len(matches) == 2
 	assert str(matches[0]) == 'Offset 16, length 1, Rule ID: EN_A_VS_AN\nMessage: Use “an” instead of ‘a’ if the following word starts with a vowel sound, e.g. ‘an article’, ‘an hour’.\nSuggestion: an\nA sentence with a error in the Hitchhiker’s Guide tot he ...\n                ^'
+	tool.close()
 
 def test_uk_typo():
 	import language_tool_python
-	language = language_tool_python.LanguageTool("en-UK")
+	tool = language_tool_python.LanguageTool("en-UK")
 
 	sentence1 = "If you think this sentence is fine then, your wrong."
-	results1 = language.check(sentence1)
+	results1 = tool.check(sentence1)
 	assert len(results1) == 1
 	assert language_tool_python.utils.correct(sentence1, results1) == "If you think this sentence is fine then, you're wrong."
 
-	results2 = language.check("You're mum is called Emily, is that right?")
+	results2 = tool.check("You're mum is called Emily, is that right?")
 	assert len(results2) == 0
+	tool.close()
 
 def test_remote_es():
 	import language_tool_python
@@ -64,6 +66,7 @@ def test_remote_es():
 	es_text = 'Escriba un texto aquí. LanguageTool le ayudará a afrentar algunas dificultades propias de la escritura. Se a hecho un esfuerzo para detectar errores tipográficos, ortograficos y incluso gramaticales. También algunos errores de estilo, a grosso modo.'
 	matches = tool.check(es_text)
 	assert str(matches) == """[Match({'ruleId': 'AFRENTAR_DIFICULTADES', 'message': 'Confusión entre «afrontar» y «afrentar».', 'replacements': ['afrontar'], 'offsetInContext': 43, 'context': '...n texto aquí. LanguageTool le ayudará a afrentar algunas dificultades propias de la escr...', 'offset': 49, 'errorLength': 8, 'category': 'INCORRECT_EXPRESSIONS', 'ruleIssueType': 'grammar', 'sentence': 'LanguageTool le ayudará a afrentar algunas dificultades propias de la escritura.'}), Match({'ruleId': 'PRON_HABER_PARTICIPIO', 'message': 'El v. ‘haber’ se escribe con hache.', 'replacements': ['ha'], 'offsetInContext': 43, 'context': '...ificultades propias de la escritura. Se a hecho un esfuerzo para detectar errores...', 'offset': 107, 'errorLength': 1, 'category': 'MISSPELLING', 'ruleIssueType': 'misspelling', 'sentence': 'Se a hecho un esfuerzo para detectar errores tipográficos, ortograficos y incluso gramaticales.'}), Match({'ruleId': 'MORFOLOGIK_RULE_ES', 'message': 'Se ha encontrado un posible error ortográfico.', 'replacements': ['ortográficos', 'ortográficas', 'ortográfico', 'orográficos', 'ortografiaos', 'ortografíeos'], 'offsetInContext': 43, 'context': '...rzo para detectar errores tipográficos, ortograficos y incluso gramaticales. También algunos...', 'offset': 163, 'errorLength': 12, 'category': 'TYPOS', 'ruleIssueType': 'misspelling', 'sentence': 'Se a hecho un esfuerzo para detectar errores tipográficos, ortograficos y incluso gramaticales.'}), Match({'ruleId': 'Y_E_O_U', 'message': 'Cuando precede a palabras que comienzan por ‘i’, la conjunción ‘y’ se transforma en ‘e’.', 'replacements': ['e'], 'offsetInContext': 43, 'context': '...ctar errores tipográficos, ortograficos y incluso gramaticales. También algunos e...', 'offset': 176, 'errorLength': 1, 'category': 'GRAMMAR', 'ruleIssueType': 'grammar', 'sentence': 'Se a hecho un esfuerzo para detectar errores tipográficos, ortograficos y incluso gramaticales.'}), Match({'ruleId': 'GROSSO_MODO', 'message': 'Esta expresión latina se usa sin preposición.', 'replacements': ['grosso modo'], 'offsetInContext': 43, 'context': '...les. También algunos errores de estilo, a grosso modo.', 'offset': 235, 'errorLength': 13, 'category': 'GRAMMAR', 'ruleIssueType': 'grammar', 'sentence': 'También algunos errores de estilo, a grosso modo.'})]"""
+	tool.close()
 
 def test_correct_en_us():
 	import language_tool_python
@@ -73,6 +76,7 @@ def test_correct_en_us():
 	assert len(matches) == 4
 
 	assert tool.correct('cz of this brand is awsome,,i love this brand very much') == 'Cz of this brand is awesome,I love this brand very much'
+	tool.close()
 
 def test_spellcheck_en_gb():
 	import language_tool_python
@@ -86,6 +90,7 @@ def test_spellcheck_en_gb():
 	# Correct a sentence without spell-checking
 	tool.disable_spellchecking()
 	assert tool.correct(s) == "Wat is wrong with the spll chker"
+	tool.close()
 
 def test_session_only_new_spellings():
 	import os
