@@ -5,6 +5,34 @@ def test_langtool_load():
 	matches = lang_tool.check('ain\'t nothin but a thang')
 	assert str(matches) == """[Match({'ruleId': 'UPPERCASE_SENTENCE_START', 'message': 'This sentence does not start with an uppercase letter.', 'replacements': ['Ai'], 'offsetInContext': 0, 'context': "ain't nothin but a thang", 'offset': 0, 'errorLength': 2, 'category': 'CASING', 'ruleIssueType': 'typographical', 'sentence': "ain't nothin but a thang"}), Match({'ruleId': 'MORFOLOGIK_RULE_EN_US', 'message': 'Possible spelling mistake found.', 'replacements': ['nothing', 'no thin'], 'offsetInContext': 6, 'context': "ain't nothin but a thang", 'offset': 6, 'errorLength': 6, 'category': 'TYPOS', 'ruleIssueType': 'misspelling', 'sentence': "ain't nothin but a thang"}), Match({'ruleId': 'MORFOLOGIK_RULE_EN_US', 'message': 'Possible spelling mistake found.', 'replacements': ['than', 'thing', 'hang', 'thank', 'Chang', 'tang', 'thong', 'twang', 'Thant', 'thane', 'Thanh', 'Jhang', 'Shang', 'Zhang'], 'offsetInContext': 19, 'context': "ain't nothin but a thang", 'offset': 19, 'errorLength': 5, 'category': 'TYPOS', 'ruleIssueType': 'misspelling', 'sentence': "ain't nothin but a thang"})]"""
 
+
+def test_process_starts_and_stops():
+	import language_tool_python
+	with language_tool_python.LanguageTool("en-US") as lang_tool:
+		proc: subprocess.Popen = lang_tool._server
+		# Make sure process is running before killing language tool object.
+		assert proc.poll() is None, "lang_tool._server not running after creation"
+		# lang_tool.close() # Explicitly close() object so process stops before garbage collection.
+	# Make sure process stopped after close() was called.
+	assert proc.poll() is not None, "lang_tool._server should stop running after deletion"
+	import time; time.sleep(10)
+	# if poll is None: # p.subprocess is alive
+
+def test_process_starts_and_closes():
+	import language_tool_python
+	lang_tool = language_tool_python.LanguageTool("en-US")
+	proc: subprocess.Popen = lang_tool._server
+	# Make sure process is running before killing language tool object.
+	assert proc.poll() is None, "lang_tool._server not running after creation"
+	lang_tool.close() # Explicitly close() object so process stops before garbage collection.
+	del lang_tool
+	# Make sure process stopped after close() was called.
+	assert proc.poll() is not None, "lang_tool._server should stop running after deletion"
+	# if poll is None: # p.subprocess is alive
+	
+
+# TODO(jxm): Add test to confirm that multiple instances connect to the same process instead of starting new ones.
+
 def test_langtool_languages():
 	import language_tool_python
 	lang_tool = language_tool_python.LanguageTool("en-US")

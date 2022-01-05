@@ -65,6 +65,8 @@ From the interpreter:
 >>> matches = tool.check(text)
 >>> len(matches)
 2
+...
+>>> tool.close() # Call `close()` to shut off the server when you're done.
 ```
 
 Check out some ``Match`` object attributes:
@@ -99,6 +101,28 @@ From the command line:
 $ echo 'This are bad.' > example.txt
 $ language_tool_python example.txt
 example.txt:1:1: THIS_NNS[3]: Did you mean 'these'?
+```
+
+## Closing LanguageTool
+
+`language_tool_python` runs a LanguageTool Java server in the background. It will shut the server off when garbage collected, for example when a created `language_tool_python.LanguageTool` object goes out of scope. However, if garbage collection takes awhile, the process might not get deleted right away. If you're seeing lots of processes get spawned and not get deleted, you can explicitly close them:
+
+
+```python
+import language_tool_python
+tool = language_tool_python.LanguageToolPublicAPI('de-DE') # starts a process
+# do stuff with `tool`
+tool.close() # explicitly shut off the LanguageTool
+```
+
+You can also use a context manager (`with .. as`) to explicitly control when the server is started and stopped:
+
+```python
+import language_tool_python
+
+with language_tool_python.LanguageToolPublicAPI('de-DE') as tool:
+  # do stuff with `tool`
+# no need to call `close() as it will happen at the end of the with statement
 ```
 
 ## Installation

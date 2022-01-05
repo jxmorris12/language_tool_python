@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, List
 
 import atexit
 import http.client
@@ -7,11 +7,10 @@ import os
 import re
 import requests
 import socket
+import subprocess
 import threading
 import urllib.parse
-from weakref import WeakValueDictionary
 
-from .backports import subprocess
 from .download_lt import download_lt
 from .language_tag import LanguageTag
 from .match import Match
@@ -26,11 +25,11 @@ DEBUG_MODE = False
 
 # Keep track of running server PIDs in a global list. This way,
 # we can ensure they're killed on exit.
-RUNNING_SERVER_PROCESSES = []
+RUNNING_SERVER_PROCESSES: List[subprocess.Popen] = []
 
 class LanguageTool:
-    """ Main class used for checking text against different rules. 
-        LanguageTool v2 API documentation: https://languagetool.org/http-api/swagger-ui/#!/default/post_check
+    """Main class used for checking text against different rules. 
+    LanguageTool v2 API documentation: https://languagetool.org/http-api/swagger-ui/#!/default/post_check
     """
     _HOST = socket.gethostbyname('localhost')
     _MIN_PORT = 8081
@@ -38,9 +37,8 @@ class LanguageTool:
     _TIMEOUT = 5 * 60
     _remote = False
     _port = _MIN_PORT
-    _server = None
-    _consumer_thread = None
-    _instances = WeakValueDictionary()
+    _server: subprocess.Popen = None
+    _consumer_thread: threading.Thread = None
     _PORT_RE = re.compile(r"(?:https?://.*:|port\s+)(\d+)", re.I)
     
     def __init__(self, language=None, motherTongue=None, remote_server=None, newSpellings=None, new_spellings_persist=True):
@@ -68,12 +66,14 @@ class LanguageTool:
         self.disabled_categories = set()
         self.enabled_categories = set()
         self.enabled_rules_only = False
-        self._instances[id(self)] = self
-
+    
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+    def __del__(self):
         self.close()
 
     def __repr__(self):
@@ -81,7 +81,7 @@ class LanguageTool:
             self.__class__.__name__, self.language, self.motherTongue)
 
     def close(self):
-        if not self._instances and self._server_is_alive():
+        if self._server_is_alive():
             self._terminate_server()
         if not self._new_spellings_persist and self._new_spellings:
             self._unregister_spellings()
@@ -311,7 +311,7 @@ class LanguageTool:
         return LanguageToolError_message
 
 class LanguageToolPublicAPI(LanguageTool):
-    """  Language tool client of the official API. """
+    """Language tool client of the official API."""
     def __init__(self, *args, **kwargs):
         super().__init__(*args, remote_server='https://languagetool.org/api/', **kwargs)
 

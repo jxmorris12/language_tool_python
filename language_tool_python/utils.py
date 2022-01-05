@@ -3,11 +3,11 @@ import glob
 import locale
 import os
 import re
+import subprocess
 import sys
 import urllib.parse
 import urllib.request
 
-from .backports import subprocess
 from .match import Match
 from .which import which
 
