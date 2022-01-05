@@ -25,7 +25,7 @@ DEBUG_MODE = False
 
 # Keep track of running server PIDs in a global list. This way,
 # we can ensure they're killed on exit.
-RUNNING_SERVER_PROCESSES: List[subprocess.Popen] = []
+RUNNING_SERVER_PROCESSES: List = []
 
 class LanguageTool:
     """Main class used for checking text against different rules. 
