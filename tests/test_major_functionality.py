@@ -34,7 +34,6 @@ def test_process_starts_and_stops_on_close():
 	# Make sure process stopped after close() was called.
 	assert proc.poll() is not None, "tool._server should stop running after deletion"
 	# remember --> if poll is None: # p.subprocess is alive
-	tool.close()
 	
 def test_local_client_server_connection():
 	import language_tool_python

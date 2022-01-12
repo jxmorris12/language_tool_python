@@ -151,7 +151,7 @@ You can run LanguageTool on one host and connect to it from another.  This is us
 
 ## Configuration
 
-LanguageTool offers lots of built-in configuration options. See the LanguageTool [HTTPServerConfig](https://languagetool.org/development/api/org/languagetool/server/HTTPServerConfig.html) documentation for some 
+LanguageTool offers lots of built-in configuration options. 
 
 ### Example: Enabling caching
 Here's an example of using the configuration options to enable caching. Some users have reported that this helps performance a lot.
@@ -170,6 +170,8 @@ tool = language_tool_python.LanguageTool('en-US', config={ 'maxTextLength': 100 
 ```
 
 ### Full list of configuration options
+
+Here's a full list of configuration options. See the LanguageTool [HTTPServerConfig](https://languagetool.org/development/api/org/languagetool/server/HTTPServerConfig.html) documentation for details.
 
 ```
 'maxTextLength' - maximum text length, longer texts will cause an error (optional)
