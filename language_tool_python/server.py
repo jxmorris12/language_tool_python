@@ -31,7 +31,6 @@ class LanguageTool:
     """Main class used for checking text against different rules. 
     LanguageTool v2 API documentation: https://languagetool.org/http-api/swagger-ui/#!/default/post_check
     """
-    _HOST = socket.gethostbyname('localhost')
     _MIN_PORT = 8081
     _MAX_PORT = 8999
     _TIMEOUT = 5 * 60
@@ -41,9 +40,13 @@ class LanguageTool:
     _consumer_thread: threading.Thread = None
     _PORT_RE = re.compile(r"(?:https?://.*:|port\s+)(\d+)", re.I)
     
-    def __init__(self, language=None, motherTongue=None, remote_server=None, newSpellings=None, new_spellings_persist=True):
+    def __init__(self,  language=None, motherTongue=None,
+                        remote_server=None, newSpellings=None,
+                        new_spellings_persist=True,
+                        host=None):
         self._new_spellings = None
         self._new_spellings_persist = new_spellings_persist
+        self._host = host or socket.gethostbyname('localhost')
         if remote_server is not None:
             self._remote = True
             self._url = parse_url(remote_server)
@@ -223,7 +226,7 @@ class LanguageTool:
 
     def _start_server_on_free_port(self):
         while True:
-            self._url = 'http://{}:{}/v2/'.format(self._HOST, self._port)
+            self._url = 'http://{}:{}/v2/'.format(self._host, self._port)
             try:
                 self._start_local_server()
                 break

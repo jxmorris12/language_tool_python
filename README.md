@@ -125,6 +125,30 @@ with language_tool_python.LanguageToolPublicAPI('de-DE') as tool:
 # no need to call `close() as it will happen at the end of the with statement
 ```
 
+## Client-Server Model
+
+You can run LanguageTool on one host and connect to it from another.  This is useful in some distributed scenarios. Here's a simple example:
+
+#### server
+
+```python
+>>> import language_tool_python
+>>> tool = language_tool_python.LanguageTool('en-US', host='0.0.0.0')
+>>> tool._url
+'http://0.0.0.0:8081/v2/'
+```
+
+#### client
+```python
+>>> import language_tool_python
+>>> lang_tool = language_tool_python.LanguageTool('en-US', remote_server='http://0.0.0.0:8081')
+>>>
+>>>
+>>> lang_tool.check('helo darknes my old frend')
+[Match({'ruleId': 'UPPERCASE_SENTENCE_START', 'message': 'This sentence does not start with an uppercase letter.', 'replacements': ['Helo'], 'offsetInContext': 0, 'context': 'helo darknes my old frend', 'offset': 0, 'errorLength': 4, 'category': 'CASING', 'ruleIssueType': 'typographical', 'sentence': 'helo darknes my old frend'}), Match({'ruleId': 'MORFOLOGIK_RULE_EN_US', 'message': 'Possible spelling mistake found.', 'replacements': ['darkness', 'darkens', 'darkies'], 'offsetInContext': 5, 'context': 'helo darknes my old frend', 'offset': 5, 'errorLength': 7, 'category': 'TYPOS', 'ruleIssueType': 'misspelling', 'sentence': 'helo darknes my old frend'}), Match({'ruleId': 'MORFOLOGIK_RULE_EN_US', 'message': 'Possible spelling mistake found.', 'replacements': ['friend', 'trend', 'Fred', 'freed', 'Freud', 'Friend', 'fend', 'fiend', 'frond', 'rend', 'fr end'], 'offsetInContext': 20, 'context': 'helo darknes my old frend', 'offset': 20, 'errorLength': 5, 'category': 'TYPOS', 'ruleIssueType': 'misspelling', 'sentence': 'helo darknes my old frend'})]
+>>>
+```
+
 ## Installation
 
 To install via pip:
@@ -155,7 +179,6 @@ The default download path is `~/.cache/language_tool_python/`. The LanguageTool 
 
 - [Python 3.6+](https://www.python.org)
 - [LanguageTool](https://www.languagetool.org) (Java 8.0 or higher)
-
 
 The installation process should take care of downloading LanguageTool (it may
 take a few minutes). Otherwise, you can manually download

@@ -29,8 +29,12 @@ def test_process_starts_and_stops_on_close():
 	assert proc.poll() is not None, "tool._server should stop running after deletion"
 	# if poll is None: # p.subprocess is alive
 	
-
-# TODO(jxm): Add test to confirm that multiple instances connect to the same process instead of starting new ones.
+def test_local_client_server_connection():
+	import language_tool_python
+	tool1 = language_tool_python.LanguageTool('en-US', host='0.0.0.0')
+	url = 'http://{}:{}/'.format(tool1._host, tool1._port)
+	tool2 = language_tool_python.LanguageTool('en-US', remote_server=url)
+	assert len(tool2.check('helo darknes my old frend'))
 
 def test_langtool_languages():
 	import language_tool_python
