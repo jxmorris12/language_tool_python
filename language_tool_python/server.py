@@ -11,6 +11,7 @@ import subprocess
 import threading
 import urllib.parse
 
+from .config_file import LanguageToolConfig
 from .download_lt import download_lt
 from .language_tag import LanguageTag
 from .match import Match
@@ -43,10 +44,15 @@ class LanguageTool:
     def __init__(self,  language=None, motherTongue=None,
                         remote_server=None, newSpellings=None,
                         new_spellings_persist=True,
-                        host=None):
+                        host=None, config=None):
         self._new_spellings = None
         self._new_spellings_persist = new_spellings_persist
         self._host = host or socket.gethostbyname('localhost')
+
+        if remote_server:
+            assert config is None, "cannot pass config file to remote server"
+        self.config = LanguageToolConfig(config) if config else None
+
         if remote_server is not None:
             self._remote = True
             self._url = parse_url(remote_server)
@@ -213,10 +219,11 @@ class LanguageTool:
                     try:
                         return response.json()
                     except json.decoder.JSONDecodeError as e:
-                        print('URL {} and params {} returned invalid JSON response:'.format(url, params))
-                        print(response)
-                        print(response.content)
-                        raise e
+                        if DEBUG_MODE:
+                            print('URL {} and params {} returned invalid JSON response:'.format(url, params))
+                            print(response)
+                            print(response.content)
+                        raise LanguageToolError(response.content.decode())
             except (IOError, http.client.HTTPException) as e:
                 if self._remote is False:
                     self._terminate_server()
@@ -241,7 +248,12 @@ class LanguageTool:
         download_lt()
         err = None
         try:
-            server_cmd = get_server_cmd(self._port)
+            if DEBUG_MODE:
+                if self._port:
+                    print('language_tool_python initializing with port:', self._port)
+                if self.config:
+                    print('language_tool_python initializing with temporary config file:', self.config.path)
+            server_cmd = get_server_cmd(self._port, self.config)
         except PathError as e:
             # Can't find path to LanguageTool.
             err = e

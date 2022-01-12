@@ -1,3 +1,5 @@
+from typing import List, Tuple
+
 import http.client
 import glob
 import locale
@@ -8,6 +10,7 @@ import sys
 import urllib.parse
 import urllib.request
 
+from .config_file import LanguageToolConfig
 from .match import Match
 from .which import which
 
@@ -38,8 +41,6 @@ class JavaError(LanguageToolError):
 
 class PathError(LanguageToolError):
     pass
-
-cache = {}
 
 def parse_url(url_str):
     """ Parses a URL string, and adds 'http' if necessary. """
@@ -91,38 +92,37 @@ def get_language_tool_directory():
     return max(language_tool_path_list)
 
 
-def get_server_cmd(port=None):
-    try:
-        cmd = cache['server_cmd']
-    except KeyError:
-        java_path, jar_path = get_jar_info()
-        cmd = [java_path, '-cp', jar_path,
-               'org.languagetool.server.HTTPServer']
-        cache['server_cmd'] = cmd
-    return cmd if port is None else cmd + ['-p', str(port)]
+def get_server_cmd(port: int=None, config: LanguageToolConfig=None) -> List[str]:
+    java_path, jar_path = get_jar_info()
+    cmd = [java_path, '-cp', jar_path,
+            'org.languagetool.server.HTTPServer']
+
+    if port is not None:
+        cmd +=  ['-p', str(port)]
+    
+    if config is not None:
+        cmd += ['--config', config.path]
+
+    return cmd
 
 
-def get_jar_info():
-    try:
-        java_path, jar_path = cache['jar_info']
-    except KeyError:
-        java_path = which('java')
-        if not java_path:
-            raise JavaError("can't find Java")
-        dir_name = get_language_tool_directory()
-        jar_path = None
-        for jar_name in JAR_NAMES:
-            for jar_path in glob.glob(os.path.join(dir_name, jar_name)):
-                if os.path.isfile(jar_path):
-                    break
-            else:
-                jar_path = None
-            if jar_path:
+def get_jar_info() -> Tuple[str, str]:
+    java_path = which('java')
+    if not java_path:
+        raise JavaError("can't find Java")
+    dir_name = get_language_tool_directory()
+    jar_path = None
+    for jar_name in JAR_NAMES:
+        for jar_path in glob.glob(os.path.join(dir_name, jar_name)):
+            if os.path.isfile(jar_path):
                 break
         else:
-            raise PathError("can't find languagetool-standalone in {!r}"
-                            .format(dir_name))
-        cache['jar_info'] = java_path, jar_path
+            jar_path = None
+        if jar_path:
+            break
+    else:
+        raise PathError("can't find languagetool-standalone in {!r}"
+                        .format(dir_name))
     return java_path, jar_path
 
 

@@ -1,3 +1,10 @@
+import re
+import time
+
+import pytest
+
+from language_tool_python.utils import LanguageToolError
+
 
 def test_langtool_load():
 	import language_tool_python
@@ -16,7 +23,6 @@ def test_process_starts_and_stops_in_context_manager():
 	# Make sure process stopped after close() was called.
 	assert proc.poll() is not None, "tool._server should stop running after deletion"
 
-
 def test_process_starts_and_stops_on_close():
 	import language_tool_python
 	tool = language_tool_python.LanguageTool("en-US")
@@ -27,7 +33,8 @@ def test_process_starts_and_stops_on_close():
 	del tool
 	# Make sure process stopped after close() was called.
 	assert proc.poll() is not None, "tool._server should stop running after deletion"
-	# if poll is None: # p.subprocess is alive
+	# remember --> if poll is None: # p.subprocess is alive
+	tool.close()
 	
 def test_local_client_server_connection():
 	import language_tool_python
@@ -35,6 +42,38 @@ def test_local_client_server_connection():
 	url = 'http://{}:{}/'.format(tool1._host, tool1._port)
 	tool2 = language_tool_python.LanguageTool('en-US', remote_server=url)
 	assert len(tool2.check('helo darknes my old frend'))
+	tool1.close()
+	tool2.close()
+
+def test_config_text_length():
+	import language_tool_python
+	tool = language_tool_python.LanguageTool('en-US', config={ 'maxTextLength': 12 })
+	# With this config file, checking text with >12 characters should raise an error.
+	error_msg = re.escape("Error: Your text exceeds the limit of 12 characters (it's 27 characters). Please submit a shorter text.")
+	with pytest.raises(LanguageToolError, match=error_msg):
+		tool.check('Hello darkness my old frend')
+	# But checking shorter text should work fine.
+	# (should have 1 match for this one)
+	assert len(tool.check('Hello darkne'))
+	tool.close()
+
+def test_config_caching():
+	import language_tool_python
+	tool = language_tool_python.LanguageTool('en-US', config={ 'cacheSize': 1000, 'pipelineCaching': True })
+	s = 'hello darkness my old frend'
+	t1 = time.time()
+	tool.check(s)
+	t2 = time.time()
+	tool.check(s)
+	t3 = time.time()
+
+	print(t3 - t2, t2 - t1)
+	# This is a silly test that says: caching should speed up a grammary-checking by a factor
+	# of speed_factor when checking the same sentence twice. It theoretically could be very flaky.
+	# But in practice I've observed speedup of around 250x (6.76s to 0.028s).
+	speedup_factor = 10.0
+	assert (t2 - t1) / speedup_factor > (t3 - t2)
+	tool.close()
 
 def test_langtool_languages():
 	import language_tool_python
