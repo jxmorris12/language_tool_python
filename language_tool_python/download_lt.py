@@ -28,7 +28,7 @@ logger.setLevel(logging.INFO)
 BASE_URL = os.environ.get('LTP_DOWNLOAD_HOST', 'https://www.languagetool.org/download/')
 FILENAME = 'LanguageTool-{version}.zip'
 
-LATEST_VERSION = '5.6'
+LATEST_VERSION = '5.7'
 
 JAVA_VERSION_REGEX = re.compile(
     r'^(?:java|openjdk) version "(?P<major1>\d+)(|\.(?P<major2>\d+)\.[^"]+)"',
@@ -132,7 +132,7 @@ def download_zip(url, directory):
     # Tell the user the download path.
     logger.info('Downloaded {} to {}.'.format(url, directory))
 
-def download_lt(update=True):
+def download_lt():
     download_folder = get_language_tool_download_path()
     assert os.path.isdir(download_folder)
     old_path_list = [
@@ -154,4 +154,4 @@ def download_lt(update=True):
     download_zip(language_tool_download_url, download_folder)
 
 if __name__ == '__main__':
-    sys.exit(download_lt(update=True))
+    sys.exit(download_lt())
