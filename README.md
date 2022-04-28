@@ -51,7 +51,7 @@ If you want to decide which `Match` objects to apply to your text, use `tool.che
 >>> matches = tool.check(s)
 >>> matches = [rule for rule in matches if not is_bad_rule(rule)]
 >>> language_tool_python.utils.correct(s, matches)
-'Department of medicine Colombia University closed on August 1 Melinda Sam
+'Department of medicine Colombia University closed on August 1 Melinda Sam'
 ```
 
 ## Example usage
