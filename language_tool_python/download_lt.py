@@ -28,7 +28,7 @@ logger.setLevel(logging.INFO)
 BASE_URL = os.environ.get('LTP_DOWNLOAD_HOST', 'https://www.languagetool.org/download/')
 FILENAME = 'LanguageTool-{version}.zip'
 
-LATEST_VERSION = '5.7'
+LATEST_VERSION = '6.0'
 
 JAVA_VERSION_REGEX = re.compile(
     r'^(?:java|openjdk) version "(?P<major1>\d+)(|\.(?P<major2>\d+)\.[^"]+)"',
@@ -69,9 +69,6 @@ def confirm_java_compatibility():
     """ Confirms Java major version >= 8. """
     java_path = find_executable('java')
     if not java_path:
-        # Just ignore this and assume an old version of Java. It might not be
-        # found because of a PATHEXT-related issue
-        # (https://bugs.python.org/issue2200).
         raise ModuleNotFoundError('No java install detected. Please install java to use language-tool-python.')
 
     output = subprocess.check_output([java_path, '-version'],
@@ -145,7 +142,7 @@ def download_lt():
     version = LATEST_VERSION
     filename = FILENAME.format(version=version)
     language_tool_download_url = urljoin(BASE_URL, filename)
-    dirname = os.path.splitext(filename)[0]
+    dirname, _ = os.path.splitext(filename)
     extract_path = os.path.join(download_folder, dirname)
 
     if extract_path in old_path_list:
