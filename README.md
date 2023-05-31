@@ -216,6 +216,10 @@ To install via pip:
 $ pip install --upgrade language_tool_python
 ```
 
+### What rules does LanguageTool have?
+
+Searching for a specific rule to enable or disable? Curious the breadth of rules LanguageTool applies? This page contains a massive list of all 5,000+ grammatical rules that are programmed into LanguageTool: https://community.languagetool.org/rule/list?lang=en&offset=30&max=10
+
 ### Customizing Download URL or Path
 
 To overwrite the host part of URL that is used to download LanguageTool-{version}.zip:
