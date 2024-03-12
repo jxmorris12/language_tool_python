@@ -9,10 +9,9 @@ import re
 import requests
 import subprocess
 import sys
-import os
 import tempfile
 import tqdm
-import zipfile 
+import zipfile
 
 from distutils.spawn import find_executable
 from urllib.parse import urljoin
@@ -28,7 +27,7 @@ logger.setLevel(logging.INFO)
 BASE_URL = os.environ.get('LTP_DOWNLOAD_HOST', 'https://www.languagetool.org/download/')
 FILENAME = 'LanguageTool-{version}.zip'
 
-LATEST_VERSION = '6.0'
+LATEST_VERSION = '6.2'
 
 JAVA_VERSION_REGEX = re.compile(
     r'^(?:java|openjdk) version "(?P<major1>\d+)(|\.(?P<major2>\d+)\.[^"]+)"',
@@ -57,7 +56,7 @@ def parse_java_version(version_text):
     (1, 8)
 
     """
-    match = re.search(JAVA_VERSION_REGEX, version_text) or re.search(JAVA_VERSION_REGEX_UPDATED, version_text) 
+    match = re.search(JAVA_VERSION_REGEX, version_text) or re.search(JAVA_VERSION_REGEX_UPDATED, version_text)
     if not match:
         raise SystemExit(
             'Could not parse Java version from """{}""".'.format(version_text))
@@ -121,7 +120,7 @@ def download_zip(url, directory):
     downloaded_file = tempfile.NamedTemporaryFile(suffix='.zip', delete=False)
     http_get(url, downloaded_file)
     # Close the file so we can extract it.
-    downloaded_file.close() 
+    downloaded_file.close()
     # Extract zip file to path.
     unzip_file(downloaded_file, directory)
     # Remove the temporary file.
