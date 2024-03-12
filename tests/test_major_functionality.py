@@ -77,7 +77,7 @@ def test_config_caching():
 def test_langtool_languages():
 	import language_tool_python
 	tool = language_tool_python.LanguageTool("en-US")
-	assert tool._get_languages() == {'es-AR', 'ta-IN', 'en-CA', 'da', 'eo', 'pt-AO', 'de', 'gl', 'ru-RU', 'de-DE', 'en', 'br', 'en-ZA', 'pt-MZ', 'ast-ES', 'sk-SK', 'en-AU', 'ta', 'ga', 'be', 'pl', 'tl-PH', 'sl', 'ar', 'es', 'sl-SI', 'en-NZ', 'el', 'el-GR', 'ru', 'zh-CN', 'en-GB', 'be-BY', 'pl-PL', 'km-KH', 'pt', 'uk-UA', 'ca', 'de-DE-x-simple-language', 'ro', 'ca-ES', 'de-CH', 'ja-JP', 'tl', 'pt-PT', 'gl-ES', 'pt-BR', 'km', 'ga-IE', 'ja', 'sv', 'sk', 'en-US', 'de-AT', 'ca-ES-valencia', 'uk', 'it', 'zh', 'br-FR', 'da-DK', 'ast', 'fr', 'fa', 'nl', 'ro-RO', 'nl-BE', 'auto'}
+	assert tool._get_languages() == {'es-AR', 'ast-ES', 'fa', 'ar', 'ja', 'pl', 'en-ZA', 'sl', 'be-BY', 'gl', 'de-DE-x-simple-language-DE', 'ga', 'da-DK', 'ca-ES-valencia', 'eo', 'pt-PT', 'ro', 'fr-FR', 'sv-SE', 'br-FR', 'es-ES', 'be', 'de-CH', 'pl-PL', 'it-IT', 'de-DE-x-simple-language', 'en-NZ', 'sv', 'auto', 'km', 'pt', 'da', 'ta-IN', 'de', 'fa-IR', 'ca', 'de-AT', 'de-DE', 'sk', 'ta', 'uk', 'en-US', 'zh', 'uk-UA', 'pt-AO', 'el-GR', 'br', 'ca-ES-balear', 'fr', 'sk-SK', 'pt-BR', 'ro-RO', 'it', 'es', 'ru-RU', 'km-KH', 'en-GB', 'sl-SI', 'gl-ES', 'pt-MZ', 'nl', 'el', 'ca-ES', 'zh-CN', 'de-LU', 'nl-NL', 'ja-JP', 'ast', 'tl', 'ga-IE', 'en-AU', 'en', 'ru', 'nl-BE', 'en-CA', 'tl-PH'}
 	tool.close()
 
 def test_match():
