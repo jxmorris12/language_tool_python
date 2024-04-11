@@ -12,7 +12,7 @@ import threading
 import urllib.parse
 
 from .config_file import LanguageToolConfig
-from .download_lt import download_lt
+from .download_lt import download_lt, LT_DOWNLOAD_VERSION
 from .language_tag import LanguageTag
 from .match import Match
 from .utils import (
@@ -45,10 +45,14 @@ class LanguageTool:
     _consumer_thread: threading.Thread = None
     _PORT_RE = re.compile(r"(?:https?://.*:|port\s+)(\d+)", re.I)
 
-    def __init__(self, language=None, motherTongue=None,
-                 remote_server=None, newSpellings=None,
-                 new_spellings_persist=True,
-                 host=None, config=None):
+    def __init__(
+            self, language=None, motherTongue=None,
+            remote_server=None, newSpellings=None,
+            new_spellings_persist=True,
+            host=None, config=None,
+            language_tool_download_version: str = LT_DOWNLOAD_VERSION
+    ):
+        self.language_tool_download_version = language_tool_download_version
         self._new_spellings = None
         self._new_spellings_persist = new_spellings_persist
         self._host = host or socket.gethostbyname('localhost')
@@ -276,7 +280,7 @@ class LanguageTool:
 
     def _start_local_server(self):
         # Before starting local server, download language tool if needed.
-        download_lt()
+        download_lt(self.language_tool_download_version)
         err = None
         try:
             if DEBUG_MODE:
