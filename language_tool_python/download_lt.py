@@ -31,7 +31,7 @@ logger.setLevel(logging.INFO)
 BASE_URL = os.environ.get('LTP_DOWNLOAD_HOST', 'https://www.languagetool.org/download/')
 FILENAME = 'LanguageTool-{version}.zip'
 
-LT_DOWNLOAD_VERSION = '6.2'
+LTP_DOWNLOAD_VERSION = '6.2'
 
 JAVA_VERSION_REGEX = re.compile(
     r'^(?:java|openjdk) version "(?P<major1>\d+)(|\.(?P<major2>\d+)\.[^"]+)"',
@@ -116,7 +116,7 @@ def http_get(url, out_file, proxies=None):
     if req.status_code == 403:  # Not found on AWS
         raise Exception('Could not find at URL {}.'.format(url))
     progress = tqdm.tqdm(unit="B", unit_scale=True, total=total,
-                         desc=f'Downloading LanguageTool {LT_DOWNLOAD_VERSION}')
+                         desc=f'Downloading LanguageTool {LTP_DOWNLOAD_VERSION}')
     for chunk in req.iter_content(chunk_size=1024):
         if chunk:  # filter out keep-alive new chunks
             progress.update(len(chunk))
@@ -148,7 +148,7 @@ def download_zip(url, directory):
     logger.info('Downloaded {} to {}.'.format(url, directory))
 
 
-def download_lt(language_tool_version: Optional[str] = LT_DOWNLOAD_VERSION):
+def download_lt(language_tool_version: Optional[str] = LTP_DOWNLOAD_VERSION):
     confirm_java_compatibility()
 
     download_folder = get_language_tool_download_path()

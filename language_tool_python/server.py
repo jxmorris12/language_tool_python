@@ -12,7 +12,7 @@ import threading
 import urllib.parse
 
 from .config_file import LanguageToolConfig
-from .download_lt import download_lt, LT_DOWNLOAD_VERSION
+from .download_lt import download_lt, LTP_DOWNLOAD_VERSION
 from .language_tag import LanguageTag
 from .match import Match
 from .utils import (
@@ -50,7 +50,7 @@ class LanguageTool:
             remote_server=None, newSpellings=None,
             new_spellings_persist=True,
             host=None, config=None,
-            language_tool_download_version: str = LT_DOWNLOAD_VERSION
+            language_tool_download_version: str = LTP_DOWNLOAD_VERSION
     ):
         self.language_tool_download_version = language_tool_download_version
         self._new_spellings = None
