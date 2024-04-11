@@ -8,7 +8,7 @@ import sys
 from .server import LanguageTool
 from .utils import LanguageToolError
 
-import pkg_resources 
+import pkg_resources
 __version__ = pkg_resources.require("language_tool_python")[0].version
 
 

@@ -4,7 +4,7 @@
 
 ![Test with PyTest](https://github.com/jxmorris12/language_tool_python/workflows/Test%20with%20PyTest/badge.svg)
 
-Current LanguageTool version: **5.5**
+Current LanguageTool version: **6.2**
 
 This is a Python wrapper for [LanguageTool](https://languagetool.org). LanguageTool is open-source grammar tool, also known as the spellchecker for OpenOffice. This library allows you to make to detect grammar errors and spelling mistakes through a Python script or through a command-line interface.
 
@@ -151,7 +151,7 @@ You can run LanguageTool on one host and connect to it from another.  This is us
 
 ## Configuration
 
-LanguageTool offers lots of built-in configuration options. 
+LanguageTool offers lots of built-in configuration options.
 
 ### Example: Enabling caching
 Here's an example of using the configuration options to enable caching. Some users have reported that this helps performance a lot.
@@ -222,13 +222,20 @@ Searching for a specific rule to enable or disable? Curious the breadth of rules
 
 ### Customizing Download URL or Path
 
+If LanguageTool is already installed on your system, you can defined the following environment variable:
+```bash
+$ export LTP_JAR_DIR_PATH = /path/to/the/language/tool/jar/files
+```
+
+Overwise, `language_tool_python` can download LanguageTool for you automatically.
+
 To overwrite the host part of URL that is used to download LanguageTool-{version}.zip:
 
 ```bash
 $ export LTP_DOWNLOAD_HOST = [alternate URL]
 ```
 
-This can be used to downgrade to an older version, for example, or to download from a mirror. 
+This can be used to downgrade to an older version, for example, or to download from a mirror.
 
 And to choose the specific folder to download the server to:
 
@@ -252,6 +259,7 @@ into where the ``language_tool_python`` package resides.
 
 As of April 2020, `language_tool_python` was forked from `language-check` and no longer supports LanguageTool versions lower than 4.0.
 
-### Acknowledgements 
+### Acknowledgements
+
 This is a fork of https://github.com/myint/language-check/ that produces more easily parsable
 results from the command-line.
