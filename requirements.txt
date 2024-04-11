@@ -1,2 +1,4 @@
+pip
 requests
 tqdm
+wheel

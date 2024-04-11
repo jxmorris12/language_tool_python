@@ -12,14 +12,16 @@ import threading
 import urllib.parse
 
 from .config_file import LanguageToolConfig
-from .download_lt import download_lt
+from .download_lt import download_lt, LTP_DOWNLOAD_VERSION
 from .language_tag import LanguageTag
 from .match import Match
 from .utils import (
     correct,
-    parse_url, get_locale_language, get_language_tool_directory, get_server_cmd,
+    parse_url, get_locale_language,
+    get_language_tool_directory, get_server_cmd,
     FAILSAFE_LANGUAGE, startupinfo,
-    LanguageToolError, ServerError, JavaError, PathError)
+    LanguageToolError, ServerError, PathError
+)
 
 
 DEBUG_MODE = False
@@ -28,9 +30,11 @@ DEBUG_MODE = False
 # we can ensure they're killed on exit.
 RUNNING_SERVER_PROCESSES: List[subprocess.Popen] = []
 
+
 class LanguageTool:
-    """Main class used for checking text against different rules. 
-    LanguageTool v2 API documentation: https://languagetool.org/http-api/swagger-ui/#!/default/post_check
+    """Main class used for checking text against different rules.
+    LanguageTool v2 API documentation:
+    https://languagetool.org/http-api/swagger-ui/#!/default/post_check
     """
     _MIN_PORT = 8081
     _MAX_PORT = 8999
@@ -40,11 +44,15 @@ class LanguageTool:
     _server: subprocess.Popen = None
     _consumer_thread: threading.Thread = None
     _PORT_RE = re.compile(r"(?:https?://.*:|port\s+)(\d+)", re.I)
-    
-    def __init__(self,  language=None, motherTongue=None,
-                        remote_server=None, newSpellings=None,
-                        new_spellings_persist=True,
-                        host=None, config=None):
+
+    def __init__(
+            self, language=None, motherTongue=None,
+            remote_server=None, newSpellings=None,
+            new_spellings_persist=True,
+            host=None, config=None,
+            language_tool_download_version: str = LTP_DOWNLOAD_VERSION
+    ):
+        self.language_tool_download_version = language_tool_download_version
         self._new_spellings = None
         self._new_spellings_persist = new_spellings_persist
         self._host = host or socket.gethostbyname('localhost')
@@ -115,15 +123,19 @@ class LanguageTool:
         checking bilingual texts.
         """
         return self._motherTongue
+
     @motherTongue.setter
     def motherTongue(self, motherTongue):
-        self._motherTongue = (None if motherTongue is None
-                              else LanguageTag(motherTongue, self._get_languages()))
+        self._motherTongue = (
+            None if motherTongue is None
+            else LanguageTag(motherTongue, self._get_languages())
+        )
+
     @property
     def _spell_checking_categories(self):
         return {'TYPOS'}
 
-    def check(self, text: str) -> [Match]:
+    def check(self, text: str) -> List[Match]:
         """Match text against enabled rules."""
         url = urllib.parse.urljoin(self._url, 'check')
         response = self._query_server(url, self._create_params(text))
@@ -151,10 +163,12 @@ class LanguageTool:
     def correct(self, text: str) -> str:
         """Automatically apply suggestions to the text."""
         return correct(text, self.check(text))
-    
+
     def enable_spellchecking(self):
         """Enable spell-checking rules."""
-        self.disabled_categories.difference_update(self._spell_checking_categories)
+        self.disabled_categories.difference_update(
+            self._spell_checking_categories
+        )
 
     def disable_spellchecking(self):
         """Disable spell-checking rules."""
@@ -163,23 +177,33 @@ class LanguageTool:
     @staticmethod
     def _get_valid_spelling_file_path() -> str:
         library_path = get_language_tool_directory()
-        spelling_file_path = os.path.join(library_path, "org/languagetool/resource/en/hunspell/spelling.txt")
+        spelling_file_path = os.path.join(
+            library_path, "org/languagetool/resource/en/hunspell/spelling.txt"
+        )
         if not os.path.exists(spelling_file_path):
-            raise FileNotFoundError("Failed to find the spellings file at {}\n Please file an issue at "
-                                    "https://github.com/jxmorris12/language_tool_python/issues"
-                                    .format(spelling_file_path))
+            raise FileNotFoundError(
+                "Failed to find the spellings file at {}\n "
+                "Please file an issue at "
+                "https://github.com/jxmorris12/language_tool_python/issues"
+                .format(spelling_file_path))
         return spelling_file_path
 
     def _register_spellings(self, spellings):
         spelling_file_path = self._get_valid_spelling_file_path()
-        with open(spelling_file_path, "a+", encoding='utf-8') as spellings_file:
-            spellings_file.write("\n" + "\n".join([word for word in spellings]))
+        with (
+            open(spelling_file_path, "a+", encoding='utf-8')
+        ) as spellings_file:
+            spellings_file.write(
+                "\n" + "\n".join([word for word in spellings])
+            )
         if DEBUG_MODE:
             print("Registered new spellings at {}".format(spelling_file_path))
 
     def _unregister_spellings(self):
         spelling_file_path = self._get_valid_spelling_file_path()
-        with open(spelling_file_path, 'r+', encoding='utf-8') as spellings_file:
+        with (
+            open(spelling_file_path, 'r+', encoding='utf-8')
+        ) as spellings_file:
             spellings_file.seek(0, os.SEEK_END)
             for _ in range(len(self._new_spellings)):
                 while spellings_file.read(1) != '\n':
@@ -188,7 +212,9 @@ class LanguageTool:
             spellings_file.seek(spellings_file.tell() + 1, os.SEEK_SET)
             spellings_file.truncate()
         if DEBUG_MODE:
-            print("Unregistered new spellings at {}".format(spelling_file_path))
+            print(
+                "Unregistered new spellings at {}".format(spelling_file_path)
+            )
 
     def _get_languages(self) -> set:
         """Get supported languages (by querying the server)."""
@@ -215,12 +241,18 @@ class LanguageTool:
             print('_query_server url:', url, 'params:', params)
         for n in range(num_tries):
             try:
-                with requests.get(url, params=params, timeout=self._TIMEOUT) as response:
+                with (
+                    requests.get(url, params=params, timeout=self._TIMEOUT)
+                ) as response:
                     try:
                         return response.json()
                     except json.decoder.JSONDecodeError as e:
                         if DEBUG_MODE:
-                            print('URL {} and params {} returned invalid JSON response:'.format(url, params))
+                            print(
+                                'URL {} and params {} '
+                                'returned invalid JSON response: {}'
+                                .format(url, params, e)
+                            )
                             print(response)
                             print(response.content)
                         raise LanguageToolError(response.content.decode())
@@ -245,14 +277,21 @@ class LanguageTool:
 
     def _start_local_server(self):
         # Before starting local server, download language tool if needed.
-        download_lt()
+        download_lt(self.language_tool_download_version)
         err = None
         try:
             if DEBUG_MODE:
                 if self._port:
-                    print('language_tool_python initializing with port:', self._port)
+                    print(
+                        'language_tool_python initializing with port:',
+                        self._port
+                    )
                 if self.config:
-                    print('language_tool_python initializing with temporary config file:', self.config.path)
+                    print(
+                        'language_tool_python initializing '
+                        'with temporary config file:',
+                        self.config.path
+                    )
             server_cmd = get_server_cmd(self._port, self.config)
         except PathError as e:
             # Can't find path to LanguageTool.
@@ -279,8 +318,10 @@ class LanguageTool:
                 if match:
                     port = int(match.group(1))
                     if port != self._port:
-                        raise LanguageToolError('requested port {}, but got {}'.format(
-                            self._port, port))
+                        raise LanguageToolError(
+                            'requested port {}, but got {}'
+                            .format(self._port, port)
+                        )
                     break
             if not match:
                 err_msg = self._terminate_server()
@@ -298,7 +339,12 @@ class LanguageTool:
             self._consumer_thread.start()
         else:
             # Couldn't start the server, so maybe there is already one running.
-            raise ServerError('Server running; don\'t start a server here.')
+            if err:
+                raise Exception(err)
+            else:
+                raise ServerError(
+                    'Server running; don\'t start a server here.'
+                )
 
     def _server_is_alive(self):
         return self._server and self._server.poll() is None
@@ -328,10 +374,14 @@ class LanguageTool:
         self._server = None
         return LanguageToolError_message
 
+
 class LanguageToolPublicAPI(LanguageTool):
     """Language tool client of the official API."""
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, remote_server='https://languagetool.org/api/', **kwargs)
+        super().__init__(
+            *args, remote_server='https://languagetool.org/api/', **kwargs
+        )
+
 
 @atexit.register
 def terminate_server():
