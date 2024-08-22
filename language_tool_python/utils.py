@@ -57,8 +57,26 @@ def parse_url(url_str):
     return urllib.parse.urlparse(url_str).geturl()
 
 
+def _4_bytes_encoded_positions(text: str) -> List[int]:
+    """Return a list of positions of 4-byte encoded characters in the text."""
+    positions = []
+    char_index = 0
+    for char in text:
+        if len(char.encode('utf-8')) == 4:
+            positions.append(char_index)
+            # Adding 1 to the index because 4 byte characters are
+            # 2 bytes in length in LanguageTool, instead of 1 byte in Python.
+            char_index += 1
+        char_index += 1
+    return positions
+
+
 def correct(text: str, matches: List[Match]) -> str:
     """Automatically apply suggestions to the text."""
+    # Get the positions of 4-byte encoded characters in the text because without 
+    # carrying out this step, the offsets of the matches could be incorrect.
+    for match in matches:
+        match.offset -= sum(1 for i in _4_bytes_encoded_positions(text) if i <= match.offset)
     ltext = list(text)
     matches = [match for match in matches if match.replacements]
     errors = [ltext[match.offset:match.offset + match.errorLength]
