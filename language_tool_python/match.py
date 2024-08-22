@@ -100,7 +100,9 @@ class Match:
     def select_replacement(self, index: int) -> None:
         """Choose one suggestion and delete the others. Usefull when you want to apply a specific suggestion.\n
         By default, the first suggestion is chosen."""
-        if index < 0 or index >= len(self.replacements):
+        if not self.replacements:
+            raise ValueError('This Match has no suggestions')
+        elif index < 0 or index >= len(self.replacements):
             raise ValueError('This Match\'s suggestions are numbered from 0 to {}'.format(len(self.replacements) - 1))
         self.replacements = [self.replacements[index]]
 
