@@ -54,6 +54,23 @@ If you want to decide which `Match` objects to apply to your text, use `tool.che
 'Department of medicine Colombia University closed on August 1 Melinda Sam'
 ```
 
+### Apply a specific suggestion of a match with `Match.select_replacement` and `utils.correct`
+
+If you want to apply a particular suggestion from a `Match`, use `Match.select_replacement` (to select a replacement with its index) in conjunction with `language_tool_python.utils.correct` (to apply selected replacements from the `Match` list to the text). Here is an example of generating, selecting replacements, and applying the list of matches. In this case, the third replacement (book) is selected.
+
+```python
+>>> import language_tool_python
+>>> s = "There is a bok on the table." 
+>>> tool = language_tool_python.LanguageTool('en-US')
+>>> matches = tool.check(s)
+>>> matches
+[Match({'ruleId': 'MORFOLOGIK_RULE_EN_US', 'message': 'Possible spelling mistake found.', 'replacements': ['BOK', 'OK', 'book', 'box'], 'offsetInContext': 11, 'context': 'There is a bok on the table.', 'offset': 11, 'errorLength': 3, 'category': 'TYPOS', 'ruleIssueType': 'misspelling', 'sentence': 'There is a bok on the table.'})]
+>>> matches[0].select_replacement(2) 
+>>> patched_text = language_tool_python.utils.correct(s, matches)    
+>>> patched_text
+'There is a book on the table.'
+```
+
 ## Example usage
 
 From the interpreter:
