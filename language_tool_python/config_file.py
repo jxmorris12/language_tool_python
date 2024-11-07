@@ -9,7 +9,7 @@ ALLOWED_CONFIG_KEYS = {
     'maxSpellingSuggestions', 'maxCheckThreads', 'cacheSize', 'cacheTTLSeconds', 'cacheSize', 'requestLimit',
     'requestLimitInBytes', 'timeoutRequestLimit', 'requestLimitPeriodInSeconds', 'languageModel',
     'word2vecModel', 'fasttextModel', 'fasttextBinary', 'maxWorkQueueSize', 'rulesFile', 'warmUp',
-    'blockedReferrers' 'premiumOnly', 'disabledRuleIds', 'pipelineCaching', 'maxPipelinePoolSize',
+    'blockedReferrers', 'premiumOnly', 'disabledRuleIds', 'pipelineCaching', 'maxPipelinePoolSize',
     'pipelineCaching', 'pipelineExpireTimeInSeconds', 'pipelinePrewarming'
 }
 class LanguageToolConfig:
