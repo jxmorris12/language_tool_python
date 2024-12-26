@@ -13,7 +13,7 @@ import tqdm
 from typing import Optional
 import zipfile
 
-from distutils.spawn import find_executable
+from shutil import which
 from urllib.parse import urljoin
 from .utils import (
     find_existing_language_tool_downloads,
@@ -41,7 +41,6 @@ JAVA_VERSION_REGEX = re.compile(
 JAVA_VERSION_REGEX_UPDATED = re.compile(
     r'^(?:java|openjdk) [version ]?(?P<major1>\d+)\.(?P<major2>\d+)',
     re.MULTILINE)
-
 
 def parse_java_version(version_text):
     """Return Java version (major1, major2).
@@ -74,7 +73,7 @@ def parse_java_version(version_text):
 
 def confirm_java_compatibility():
     """ Confirms Java major version >= 8. """
-    java_path = find_executable('java')
+    java_path = which('java')
     if not java_path:
         raise ModuleNotFoundError(
             'No java install detected. '
