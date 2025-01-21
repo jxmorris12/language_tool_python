@@ -7,7 +7,7 @@ with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='language_tool_python',
-    version='2.8.1',
+    version='2.8.2',
     description='Checks grammar using LanguageTool.',
     long_description_content_type='text/markdown',
     long_description=long_description,
