@@ -25,10 +25,10 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip setuptools wheel
+        python -m pip install --upgrade pip setuptools wheel build
         pip install pytest pytest-xdist # Testing packages
-        python setup.py install_egg_info # Workaround https://github.com/pypa/pip/issues/4537
-        pip install -e . # Run pytest
+        python -m build --sdist --wheel
+        pip install dist/*.whl # Run pytest
     - name: Import language_tool_python
       run: |
         printf "import language_tool_python\n" | python
