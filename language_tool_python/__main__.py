@@ -4,12 +4,17 @@ import argparse
 import locale
 import re
 import sys
+from importlib.metadata import version
+import tomllib
 
 from .server import LanguageTool
 from .utils import LanguageToolError
 
-import pkg_resources
-__version__ = pkg_resources.require("language_tool_python")[0].version
+try:
+    __version__ = version("language_tool_python")
+except PackageNotFoundError:
+    with open("pyproject.toml", "rb") as f:
+        __version__ = tomllib.load(f)["project"]["version"]
 
 
 def parse_args():
