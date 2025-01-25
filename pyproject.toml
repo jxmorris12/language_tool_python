@@ -2,18 +2,16 @@
 name = "language_tool_python"
 version = "2.8.2"
 description = "Checks grammar using LanguageTool."
-readme = "README.md"
+readme = { file = "README.md", content-type = "text/markdown" }
 license = { file = "LICENSE" }
 authors = [
     { name = "Jack Morris", email = "jxmorris12@gmail.com" }
 ]
-urls = { Homepage = "https://github.com/jxmorris12/language_tool_python" }
+urls = { Repository = "https://github.com/jxmorris12/language_tool_python.git" }
 
 dependencies = [
-    "pip",
     "requests",
-    "tqdm",
-    "wheel"
+    "tqdm"
 ]
 
 [project.optional-dependencies]
