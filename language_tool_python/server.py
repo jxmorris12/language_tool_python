@@ -10,6 +10,7 @@ import socket
 import subprocess
 import threading
 import urllib.parse
+import psutil
 
 from .config_file import LanguageToolConfig
 from .download_lt import download_lt, LTP_DOWNLOAD_VERSION
@@ -20,7 +21,8 @@ from .utils import (
     parse_url, get_locale_language,
     get_language_tool_directory, get_server_cmd,
     FAILSAFE_LANGUAGE, startupinfo,
-    LanguageToolError, ServerError, PathError
+    LanguageToolError, ServerError, PathError,
+    kill_process_force
 )
 
 
@@ -67,6 +69,7 @@ class LanguageTool:
             self._url = urllib.parse.urljoin(self._url, 'v2/')
             self._update_remote_server_config(self._url)
         elif not self._server_is_alive():
+            self._stop_consume_event = threading.Event()
             self._start_server_on_free_port()
         if language is None:
             try:
@@ -334,7 +337,7 @@ class LanguageTool:
 
         if self._server:
             self._consumer_thread = threading.Thread(
-                target=lambda: _consume(self._server.stdout))
+                target=lambda: self._consume(self._server.stdout))
             self._consumer_thread.daemon = True
             self._consumer_thread.start()
         else:
@@ -345,34 +348,70 @@ class LanguageTool:
                 raise ServerError(
                     'Server running; don\'t start a server here.'
                 )
+    
+    def _consume(self, stdout):
+        """Consume/ignore the rest of the server output.
+        Without this, the server will end up hanging due to the buffer
+        filling up.
+        """
+        while not self._stop_consume_event.is_set() and stdout.readline():
+            pass
+
 
     def _server_is_alive(self):
         return self._server and self._server.poll() is None
 
     def _terminate_server(self):
-        LanguageToolError_message = ''
-        try:
-            self._server.terminate()
-        except OSError:
-            pass
-        try:
-            LanguageToolError_message = self._server.communicate()[1].strip()
-        except (IOError, ValueError):
-            pass
-        try:
-            self._server.stdout.close()
-        except IOError:
-            pass
-        try:
-            self._server.stdin.close()
-        except IOError:
-            pass
-        try:
-            self._server.stderr.close()
-        except IOError:
-            pass
-        self._server = None
-        return LanguageToolError_message
+        """
+        Terminate the LanguageTool server process and its associated resources.
+        This method ensures the server process and any associated threads or child processes
+        are properly terminated and cleaned up.
+        """
+        # Signal the consumer thread to stop consuming stdout
+        self._stop_consume_event.set()
+        if self._consumer_thread:
+            # Wait for the consumer thread to finish
+            self._consumer_thread.join(timeout=5)
+
+        error_message = ''
+        if self._server:
+            try:
+                try:
+                    # Get the main server process using psutil
+                    proc = psutil.Process(self._server.pid)
+                except psutil.NoSuchProcess:
+                    # If the process doesn't exist, set proc to None
+                    proc = None
+                
+                # Attempt to terminate the process gracefully
+                self._server.terminate()
+                # Wait for the process to terminate and capture any stderr output
+                _, stderr = self._server.communicate(timeout=5)
+
+            except subprocess.TimeoutExpired:
+                # If the process does not terminate within the timeout, force kill it
+                kill_process_force(proc=proc)
+                # Capture remaining stderr output after force termination
+                _, stderr = self._server.communicate()
+
+            finally:
+                # Close all associated file descriptors (stdin, stdout, stderr)
+                if self._server.stdin:
+                    self._server.stdin.close()
+                if self._server.stdout:
+                    self._server.stdout.close()
+                if self._server.stderr:
+                    self._server.stderr.close()
+
+                # Release the server process object
+                self._server = None
+
+            # Capture any error messages from stderr, if available
+            if stderr:
+                error_message = stderr.strip()
+
+        # Return the error message, if any, for further logging or debugging
+        return error_message
 
 
 class LanguageToolPublicAPI(LanguageTool):
@@ -386,14 +425,5 @@ class LanguageToolPublicAPI(LanguageTool):
 @atexit.register
 def terminate_server():
     """Terminate the server."""
-    for proc in RUNNING_SERVER_PROCESSES:
-        proc.terminate()
-
-
-def _consume(stdout):
-    """Consume/ignore the rest of the server output.
-    Without this, the server will end up hanging due to the buffer
-    filling up.
-    """
-    while stdout.readline():
-        pass
+    for pid in [p.pid for p in RUNNING_SERVER_PROCESSES]:
+        kill_process_force(pid=pid)
