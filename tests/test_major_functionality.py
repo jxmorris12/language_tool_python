@@ -95,7 +95,7 @@ def test_process_starts_and_stops_on_close():
 
 def test_local_client_server_connection():
     import language_tool_python
-    tool1 = language_tool_python.LanguageTool('en-US', host='0.0.0.0')
+    tool1 = language_tool_python.LanguageTool('en-US', host='127.0.0.1')
     url = 'http://{}:{}/'.format(tool1._host, tool1._port)
     tool2 = language_tool_python.LanguageTool('en-US', remote_server=url)
     assert len(tool2.check('helo darknes my old frend'))
