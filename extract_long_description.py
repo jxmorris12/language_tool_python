@@ -1,8 +1,8 @@
-import tomllib
+import toml
 import os
 
 with open("pyproject.toml", "rb") as f:
-    pyproject = tomllib.load(f)
+    pyproject = toml.loads(f.read().decode('utf-8'))
 
 readme_path = pyproject["project"]["readme"]
 

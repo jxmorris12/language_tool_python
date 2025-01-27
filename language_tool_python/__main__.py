@@ -5,7 +5,7 @@ import locale
 import re
 import sys
 from importlib.metadata import version
-import tomllib
+import toml
 
 from .server import LanguageTool
 from .utils import LanguageToolError
@@ -14,7 +14,7 @@ try:
     __version__ = version("language_tool_python")
 except PackageNotFoundError:
     with open("pyproject.toml", "rb") as f:
-        __version__ = tomllib.load(f)["project"]["version"]
+        __version__ = toml.loads(f.read().decode('utf-8'))["project"]["version"]
 
 
 def parse_args():

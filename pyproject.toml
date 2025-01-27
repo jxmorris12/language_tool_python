@@ -13,7 +13,8 @@ urls = { Repository = "https://github.com/jxmorris12/language_tool_python.git" }
 dependencies = [
     "requests",
     "tqdm",
-    "psutil"
+    "psutil",
+    "toml"
 ]
 
 [project.optional-dependencies]

@@ -58,3 +58,9 @@ jobs:
       run: |
         source venv/bin/activate
         pytest -vx --dist=loadfile -n auto
+
+    - name: Run additional tests in bash scripts for Ubuntu
+      run: |
+        source venv/bin/activate
+        bash tests/test_local.bash
+        bash tests/test_remote.bash
