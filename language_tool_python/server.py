@@ -87,6 +87,7 @@ class LanguageTool:
         self.enabled_categories = set()
         self.enabled_rules_only = False
         self.preferred_variants = set()
+        self.picky = False
 
     def __enter__(self):
         return self
@@ -161,6 +162,8 @@ class LanguageTool:
             params['enabledCategories'] = ','.join(self.enabled_categories)
         if self.preferred_variants:
             params['preferredVariants'] = ','.join(self.preferred_variants)
+        if self.picky:
+            params['level'] = 'picky'
         return params
 
     def correct(self, text: str) -> str:

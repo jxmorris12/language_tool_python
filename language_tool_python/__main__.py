@@ -38,6 +38,8 @@ def parse_args():
     parser.add_argument('--enabled-only', action='store_true',
                         help='disable all rules except those specified in '
                              '--enable')
+    parser.add_argument('-p', '--picky', action='store_true',
+                        help='If set, additional rules will be activated.')
     parser.add_argument(
         '--version', action='version',
         version='%(prog)s {}'.format(__version__),
@@ -123,6 +125,9 @@ def main():
         lang_tool.disabled_rules.update(args.disable)
         lang_tool.enabled_rules.update(args.enable)
         lang_tool.enabled_rules_only = args.enabled_only
+
+        if args.picky:
+            lang_tool.picky = True
 
         try:
             if args.apply:

@@ -114,8 +114,9 @@ def http_get(url, out_file, proxies=None):
     total = int(content_length) if content_length is not None else None
     if req.status_code == 403:  # Not found on AWS
         raise Exception('Could not find at URL {}.'.format(url))
+    version = re.search(r'(\d+\.\d+)', url).group(1)
     progress = tqdm.tqdm(unit="B", unit_scale=True, total=total,
-                         desc=f'Downloading LanguageTool {LTP_DOWNLOAD_VERSION}')
+                         desc=f'Downloading LanguageTool {version}')
     for chunk in req.iter_content(chunk_size=1024):
         if chunk:  # filter out keep-alive new chunks
             progress.update(len(chunk))
