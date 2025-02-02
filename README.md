@@ -4,7 +4,7 @@
 
 ![Test with PyTest](https://github.com/jxmorris12/language_tool_python/workflows/Test%20with%20PyTest/badge.svg)
 
-Current LanguageTool version: **6.4**
+Current LanguageTool version: **6.5**
 
 This is a Python wrapper for [LanguageTool](https://languagetool.org). LanguageTool is open-source grammar tool, also known as the spellchecker for OpenOffice. This library allows you to make to detect grammar errors and spelling mistakes through a Python script or through a command-line interface.
 
@@ -193,7 +193,6 @@ Here's a full list of configuration options. See the LanguageTool [HTTPServerCon
 ```
 'maxTextLength' - maximum text length, longer texts will cause an error (optional)
 'maxTextHardLength' - maximum text length, applies even to users with a special secret 'token' parameter (optional)
-'secretTokenKey' - secret JWT token key, if set by user and valid, maxTextLength can be increased by the user (optional)
 'maxCheckTimeMillis' - maximum time in milliseconds allowed per check (optional)
 'maxErrorsPerWordRate' - checking will stop with error if there are more rules matches per word (optional)
 'maxSpellingSuggestions' - only this many spelling errors will have suggestions for performance reasons (optional,
@@ -205,17 +204,14 @@ Here's a full list of configuration options. See the LanguageTool [HTTPServerCon
 'requestLimitInBytes' - maximum aggregated size of requests per requestLimitPeriodInSeconds (optional)
 'timeoutRequestLimit' - maximum number of timeout request (optional)
 'requestLimitPeriodInSeconds' - time period to which requestLimit and timeoutRequestLimit applies (optional)
-'languageModel' - a directory with '1grams', '2grams', '3grams' sub directories which contain a Lucene index
+'languageModel' - a directory with '1grams', '2grams', '3grams' sub directories per language which contain a Lucene index
                   each with ngram occurrence counts; activates the confusion rule if supported (optional)
-'word2vecModel' - a directory with word2vec data (optional), see
-https://github.com/languagetool-org/languagetool/blob/master/languagetool-standalone/CHANGES.md#word2vec
 'fasttextModel' - a model file for better language detection (optional), see
                   https://fasttext.cc/docs/en/language-identification.html
 'fasttextBinary' - compiled fasttext executable for language detection (optional), see
                   https://fasttext.cc/docs/en/support.html
 'maxWorkQueueSize' - reject request if request queue gets larger than this (optional)
-'rulesFile' - a file containing rules configuration, such as .langugagetool.cfg (optional)
-'warmUp' - set to 'true' to warm up server at start, i.e. run a short check with all languages (optional)
+'rulesFile' - a file containing rules configuration, such as .languagetool.cfg (optional)
 'blockedReferrers' - a comma-separated list of HTTP referrers (and 'Origin' headers) that are blocked and will not be served (optional)
 'premiumOnly' - activate only the premium rules (optional)
 'disabledRuleIds' - a comma-separated list of rule ids that are turned off for this server (optional)
