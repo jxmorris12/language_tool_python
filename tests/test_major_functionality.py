@@ -255,6 +255,17 @@ def test_session_only_new_spellings():
     assert initial_checksum.hexdigest() == subsequent_checksum.hexdigest()
 
 
+def test_disabled_rule_in_config():
+    import language_tool_python
+    GRAMMAR_TOOL_CONFIG = {
+        'disabledRuleIds': ['MORFOLOGIK_RULE_EN_US']
+    }
+    with language_tool_python.LanguageTool('en-US', config=GRAMMAR_TOOL_CONFIG) as tool:
+        text = "He realised that the organization was in jeopardy."
+        matches = tool.check(text)
+        assert len(matches) == 0
+
+
 def test_debug_mode():
     from language_tool_python.server import DEBUG_MODE
     assert DEBUG_MODE is False

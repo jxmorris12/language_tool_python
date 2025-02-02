@@ -5,12 +5,12 @@ import os
 import tempfile
 
 ALLOWED_CONFIG_KEYS = { 
-    'maxTextLength', 'maxTextHardLength', 'secretTokenKey', 'maxCheckTimeMillis', 'maxErrorsPerWordRate',
-    'maxSpellingSuggestions', 'maxCheckThreads', 'cacheSize', 'cacheTTLSeconds', 'cacheSize', 'requestLimit',
+    'maxTextLength', 'maxTextHardLength', 'maxCheckTimeMillis', 'maxErrorsPerWordRate',
+    'maxSpellingSuggestions', 'maxCheckThreads', 'cacheSize', 'cacheTTLSeconds', 'requestLimit',
     'requestLimitInBytes', 'timeoutRequestLimit', 'requestLimitPeriodInSeconds', 'languageModel',
-    'word2vecModel', 'fasttextModel', 'fasttextBinary', 'maxWorkQueueSize', 'rulesFile', 'warmUp',
+    'fasttextModel', 'fasttextBinary', 'maxWorkQueueSize', 'rulesFile',
     'blockedReferrers', 'premiumOnly', 'disabledRuleIds', 'pipelineCaching', 'maxPipelinePoolSize',
-    'pipelineCaching', 'pipelineExpireTimeInSeconds', 'pipelinePrewarming'
+    'pipelineExpireTimeInSeconds', 'pipelinePrewarming'
 }
 class LanguageToolConfig:
     config: Dict[str, Any]
@@ -19,6 +19,15 @@ class LanguageToolConfig:
         assert set(config.keys()) <= ALLOWED_CONFIG_KEYS, f"unexpected keys in config: {set(config.keys()) - ALLOWED_CONFIG_KEYS}"
         assert len(config), "config cannot be empty"
         self.config = config
+
+        if 'disabledRuleIds' in self.config:
+            self.config['disabledRuleIds'] = ','.join(self.config['disabledRuleIds'])
+        if 'blockedReferrers' in self.config:
+            self.config['blockedReferrers'] = ','.join(self.config['blockedReferrers'])
+        for key in ["pipelineCaching", "premiumOnly", "pipelinePrewarming"]:
+            if key in self.config:
+                self.config[key] = str(bool(self.config[key])).lower()
+
         self.path = self._create_temp_file()
     
     def _create_temp_file(self) -> str:
