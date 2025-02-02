@@ -4,12 +4,17 @@ import argparse
 import locale
 import re
 import sys
+from importlib.metadata import version
+import toml
 
 from .server import LanguageTool
 from .utils import LanguageToolError
 
-import pkg_resources
-__version__ = pkg_resources.require("language_tool_python")[0].version
+try:
+    __version__ = version("language_tool_python")
+except PackageNotFoundError:
+    with open("pyproject.toml", "rb") as f:
+        __version__ = toml.loads(f.read().decode('utf-8'))["project"]["version"]
 
 
 def parse_args():
@@ -33,6 +38,8 @@ def parse_args():
     parser.add_argument('--enabled-only', action='store_true',
                         help='disable all rules except those specified in '
                              '--enable')
+    parser.add_argument('-p', '--picky', action='store_true',
+                        help='If set, additional rules will be activated.')
     parser.add_argument(
         '--version', action='version',
         version='%(prog)s {}'.format(__version__),
@@ -77,14 +84,6 @@ def get_text(filename, encoding, ignore):
     return text
 
 
-def print_unicode(text):
-    """Print in a portable manner."""
-    if sys.version_info[0] < 3:
-        text = text.encode('utf-8')
-
-    print(text)
-
-
 def main():
     args = parse_args()
 
@@ -109,33 +108,16 @@ def main():
             if args.remote_port is not None:
                 remote_server += ':{}'.format(args.remote_port)
         lang_tool = LanguageTool(
+            language=args.language,
             motherTongue=args.mother_tongue,
             remote_server=remote_server,
         )
-        guess_language = None
 
         try:
             text = get_text(filename, encoding, ignore=args.ignore_lines)
         except UnicodeError as exception:
             print('{}: {}'.format(filename, exception), file=sys.stderr)
             continue
-
-        if args.language:
-            if args.language.lower() == 'auto':
-                try:
-                    from guess_language import guess_language
-                except ImportError:
-                    print('guess_language is unavailable.', file=sys.stderr)
-                    return 1
-                else:
-                    language = guess_language(text)
-                    print('Detected language: {}'.format(language),
-                          file=sys.stderr)
-                    if not language:
-                        return 1
-                    lang_tool.language = language
-            else:
-                lang_tool.language = args.language
 
         if not args.spell_check:
             lang_tool.disable_spellchecking()
@@ -144,9 +126,12 @@ def main():
         lang_tool.enabled_rules.update(args.enable)
         lang_tool.enabled_rules_only = args.enabled_only
 
+        if args.picky:
+            lang_tool.picky = True
+
         try:
             if args.apply:
-                print_unicode(lang_tool.correct(text))
+                print(lang_tool.correct(text))
             else:
                 for match in lang_tool.check(text):
                     rule_id = match.ruleId
@@ -162,7 +147,7 @@ def main():
                     if replacement_text and not message.endswith(('.', '?')):
                         message += '; suggestions: ' + replacement_text
 
-                    print_unicode('{}: {}: {}'.format(
+                    print('{}: {}: {}'.format(
                         filename,
                         rule_id,
                         message))

@@ -15,4 +15,4 @@ check:
 		./language_tool_python \
 		$(wildcard ./language_tool_python/*.py) \
 		$(wildcard *.py)
-	python setup.py --long-description | rstcheck -
+	python extract_long_description.py | rstcheck -

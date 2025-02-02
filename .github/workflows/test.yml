@@ -12,30 +12,55 @@ on:
 jobs:
   build:
 
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
-        python-version: [3.6, 3.7, 3.8]
+        python-version: ["3.9", "3.10", "3.11"]
 
     steps:
     - uses: actions/checkout@v2
+    
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
+    
+    - name: Set up JDK 21
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'temurin'
+        java-version: '21'
+
+    - name: Create and activate virtualenv
+      run: |
+        python -m venv venv
+        source venv/bin/activate
+        python -m pip install --upgrade pip
+
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip setuptools wheel
-        pip install pytest pytest-xdist # Testing packages
-        python setup.py install_egg_info # Workaround https://github.com/pypa/pip/issues/4537
-        pip install -e . # Run pytest
+        source venv/bin/activate
+        pip install setuptools wheel build pytest pytest-xdist
+        python -m build --sdist --wheel
+        pip install dist/*.whl
+
+    - name: Verify installed packages
+      run: |
+        source venv/bin/activate
+        pip list
+
     - name: Import language_tool_python
       run: |
+        source venv/bin/activate
         printf "import language_tool_python\n" | python
+
     - name: Test with pytest
       run: |
+        source venv/bin/activate
         pytest -vx --dist=loadfile -n auto
-    #- name: Run command-line tests
-    #  run: |
-    #    ./tests/test_local.bash  # Test command-line with local server
-    #    ./tests/test_remote.bash # Test command-line with remote server
+
+    - name: Run additional tests in bash scripts for Ubuntu
+      run: |
+        source venv/bin/activate
+        bash tests/test_local.bash
+        bash tests/test_remote.bash

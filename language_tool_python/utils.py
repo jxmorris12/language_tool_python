@@ -6,6 +6,7 @@ import os
 import subprocess
 import urllib.parse
 import urllib.request
+import psutil
 
 from .config_file import LanguageToolConfig
 from .match import Match
@@ -177,3 +178,23 @@ def get_jar_info() -> Tuple[str, str]:
 def get_locale_language():
     """Get the language code for the current locale setting."""
     return locale.getlocale()[0] or locale.getdefaultlocale()[0]
+
+
+def kill_process_force(*, pid=None, proc=None):
+    """Kill a process and its children forcefully.
+    Usefin when the process is unresponsive, particulary on Windows.
+    Using psutil is more reliable than killing the process with subprocess."""
+    assert any([pid, proc]), "Must pass either pid or proc"
+    try:
+        proc = psutil.Process(pid) if proc is None else proc
+    except psutil.NoSuchProcess:
+        return
+    for child in proc.children(recursive=True):
+        try:
+            child.kill()
+        except psutil.NoSuchProcess:
+            pass
+    try:
+        proc.kill()
+    except psutil.NoSuchProcess:
+        pass
