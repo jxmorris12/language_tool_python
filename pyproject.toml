@@ -1,6 +1,6 @@
 [project]
 name = "language_tool_python"
-version = "2.8.2"
+version = "2.9.0"
 requires-python = ">=3.9"
 description = "Checks grammar using LanguageTool."
 readme = { file = "README.md", content-type = "text/markdown" }
