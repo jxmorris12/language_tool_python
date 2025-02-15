@@ -22,7 +22,7 @@ class LanguageTag:
         return self.normalized_tag
 
     def __repr__(self):
-        return '<LanguageTag "{}">'.format(str(self))
+        return f'<LanguageTag "{str(self)}">'
 
     def _normalize(self, tag):
         if not tag:
@@ -35,4 +35,4 @@ class LanguageTag:
             try:
                 return languages[self._LANGUAGE_RE.match(tag).group(1).lower()]
             except (KeyError, AttributeError):
-                raise ValueError('unsupported language: {!r}'.format(tag))
+                raise ValueError(f'unsupported language: {tag!r}')

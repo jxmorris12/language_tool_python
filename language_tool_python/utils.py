@@ -116,18 +116,13 @@ def get_language_tool_directory() -> str:
     """Get LanguageTool directory."""
     download_folder = get_language_tool_download_path()
     if not os.path.isdir(download_folder):
-        raise NotADirectoryError(
-            "LanguageTool directory path is not a valid directory {}."
-            .format(download_folder)
-        )
+        raise NotADirectoryError(f"LanguageTool directory path is not a valid directory {download_folder}.")
     language_tool_path_list = find_existing_language_tool_downloads(
         download_folder
     )
 
     if not len(language_tool_path_list):
-        raise FileNotFoundError(
-            'LanguageTool not found in {}.'.format(download_folder)
-        )
+        raise FileNotFoundError(f'LanguageTool not found in {download_folder}.')
 
     # Return the latest version found in the directory.
     return max(language_tool_path_list)
@@ -170,8 +165,7 @@ def get_jar_info() -> Tuple[str, str]:
         if jar_path:
             break
     else:
-        raise PathError("can't find languagetool-standalone in {!r}"
-                        .format(jar_dir_name))
+        raise PathError(f"can't find languagetool-standalone in {jar_dir_name!r}")
     return java_path, jar_path
 
 

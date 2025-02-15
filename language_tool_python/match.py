@@ -69,26 +69,18 @@ class Match:
             slots += list(set(self.__dict__).difference(slots))
             attrs = [slot for slot in slots
                      if slot in self.__dict__ and not slot.startswith('_')]
-            return '{{{}}}'.format(
-                ', '.join([
-                    '{!r}: {!r}'.format(attr, getattr(self, attr))
-                    for attr in attrs
-                ])
-            )
+            return f"{{{', '.join([f'{attr!r}: {getattr(self, attr)!r}' for attr in attrs])}}}"
 
-        return '{}({})'.format(self.__class__.__name__, _ordered_dict_repr())
+        return f'{self.__class__.__name__}({_ordered_dict_repr()})'
 
     def __str__(self):
         ruleId = self.ruleId
-        s = 'Offset {}, length {}, Rule ID: {}'.format(
-            self.offset, self.errorLength, ruleId)
+        s = f'Offset {self.offset}, length {self.errorLength}, Rule ID: {ruleId}'
         if self.message:
-            s += '\nMessage: {}'.format(self.message)
+            s += f'\nMessage: {self.message}'
         if self.replacements:
-            s += '\nSuggestion: {}'.format('; '.join(self.replacements))
-        s += '\n{}\n{}'.format(
-            self.context, ' ' * self.offsetInContext + '^' * self.errorLength
-        )
+            s += f"\nSuggestion: {'; '.join(self.replacements)}"
+        s += f"\n{self.context}\n{' ' * self.offsetInContext + '^' * self.errorLength}"
         return s
 
     @property
@@ -103,7 +95,7 @@ class Match:
         if not self.replacements:
             raise ValueError('This Match has no suggestions')
         elif index < 0 or index >= len(self.replacements):
-            raise ValueError('This Match\'s suggestions are numbered from 0 to {}'.format(len(self.replacements) - 1))
+            raise ValueError(f'This Match\'s suggestions are numbered from 0 to {len(self.replacements) - 1}')
         self.replacements = [self.replacements[index]]
 
     def __eq__(self, other):
@@ -124,5 +116,4 @@ class Match:
 
     def __getattr__(self, name):
         if name not in get_match_ordered_dict():
-            raise AttributeError('{!r} object has no attribute {!r}'
-                                 .format(self.__class__.__name__, name))
+            raise AttributeError(f'{self.__class__.__name__!r} object has no attribute {name!r}')

@@ -99,8 +99,7 @@ class LanguageTool:
         self.close()
 
     def __repr__(self):
-        return '{}(language={!r}, motherTongue={!r})'.format(
-            self.__class__.__name__, self.language, self.motherTongue)
+        return f'{self.__class__.__name__}(language={self.language!r}, motherTongue={self.motherTongue!r})'
 
     def close(self):
         if self._server_is_alive():
@@ -188,10 +187,9 @@ class LanguageTool:
         )
         if not os.path.exists(spelling_file_path):
             raise FileNotFoundError(
-                "Failed to find the spellings file at {}\n "
+                f"Failed to find the spellings file at {spelling_file_path}\n "
                 "Please file an issue at "
-                "https://github.com/jxmorris12/language_tool_python/issues"
-                .format(spelling_file_path))
+                "https://github.com/jxmorris12/language_tool_python/issues")
         return spelling_file_path
 
     def _register_spellings(self):
@@ -205,7 +203,7 @@ class LanguageTool:
                     spellings_file.write("\n")
                 spellings_file.write("\n".join(new_spellings))
         if DEBUG_MODE:
-            print("Registered new spellings at {}".format(spelling_file_path))
+            print(f"Registered new spellings at {spelling_file_path}")
 
     def _unregister_spellings(self):
         spelling_file_path = self._get_valid_spelling_file_path()
@@ -258,9 +256,8 @@ class LanguageTool:
                     except json.decoder.JSONDecodeError as e:
                         if DEBUG_MODE:
                             print(
-                                'URL {} and params {} '
-                                'returned invalid JSON response: {}'
-                                .format(url, params, e)
+                                f'URL {url} and params {params} '
+                                f'returned invalid JSON response: {e}'
                             )
                             print(response)
                             print(response.content)
@@ -270,11 +267,11 @@ class LanguageTool:
                     self._terminate_server()
                     self._start_local_server()
                 if n + 1 >= num_tries:
-                    raise LanguageToolError('{}: {}'.format(self._url, e))
+                    raise LanguageToolError(f'{self._url}: {e}')
 
     def _start_server_on_free_port(self):
         while True:
-            self._url = 'http://{}:{}/v2/'.format(self._host, self._port)
+            self._url = f'http://{self._host}:{self._port}/v2/'
             try:
                 self._start_local_server()
                 break
@@ -327,10 +324,7 @@ class LanguageTool:
                 if match:
                     port = int(match.group(1))
                     if port != self._port:
-                        raise LanguageToolError(
-                            'requested port {}, but got {}'
-                            .format(self._port, port)
-                        )
+                        raise LanguageToolError(f'requested port {self._port}, but got {port}')
                     break
             if not match:
                 err_msg = self._terminate_server()

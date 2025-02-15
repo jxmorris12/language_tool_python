@@ -64,8 +64,7 @@ def parse_java_version(version_text):
         or re.search(JAVA_VERSION_REGEX_UPDATED, version_text)
     )
     if not match:
-        raise SystemExit(
-            'Could not parse Java version from """{}""".'.format(version_text))
+        raise SystemExit(f'Could not parse Java version from """{version_text}""".')
     major1 = int(match.group('major1'))
     major2 = int(match.group('major2')) if match.group('major2') else 0
     return (major1, major2)
@@ -95,7 +94,7 @@ def confirm_java_compatibility():
     elif major_version >= 8:
         return True
     else:
-        raise SystemError('Detected java {}.{}. LanguageTool requires Java >= 8.'.format(major_version, minor_version))
+        raise SystemError(f'Detected java {major_version}.{minor_version}. LanguageTool requires Java >= 8.')
 
 
 def get_common_prefix(z):
@@ -113,7 +112,7 @@ def http_get(url, out_file, proxies=None):
     content_length = req.headers.get('Content-Length')
     total = int(content_length) if content_length is not None else None
     if req.status_code == 403:  # Not found on AWS
-        raise Exception('Could not find at URL {}.'.format(url))
+        raise Exception(f'Could not find at URL {url}.')
     version = re.search(r'(\d+\.\d+)', url).group(1)
     progress = tqdm.tqdm(unit="B", unit_scale=True, total=total,
                          desc=f'Downloading LanguageTool {version}')
@@ -126,9 +125,7 @@ def http_get(url, out_file, proxies=None):
 
 def unzip_file(temp_file, directory_to_extract_to):
     """ Unzips a .zip file to folder path. """
-    logger.info(
-        'Unzipping {} to {}.'.format(temp_file.name, directory_to_extract_to)
-    )
+    logger.info(f'Unzipping {temp_file.name} to {directory_to_extract_to}.')
     with zipfile.ZipFile(temp_file.name, 'r') as zip_ref:
         zip_ref.extractall(directory_to_extract_to)
 
@@ -145,7 +142,7 @@ def download_zip(url, directory):
     # Remove the temporary file.
     os.remove(downloaded_file.name)
     # Tell the user the download path.
-    logger.info('Downloaded {} to {}.'.format(url, directory))
+    logger.info(f'Downloaded {url} to {directory}.')
 
 
 def download_lt(language_tool_version: Optional[str] = LTP_DOWNLOAD_VERSION):

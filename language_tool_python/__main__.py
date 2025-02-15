@@ -42,7 +42,7 @@ def parse_args():
                         help='If set, additional rules will be activated.')
     parser.add_argument(
         '--version', action='version',
-        version='%(prog)s {}'.format(__version__),
+        version=f'%(prog)s {__version__}',
         help='show version')
     parser.add_argument('-a', '--apply', action='store_true',
                         help='automatically apply suggestions if available')
@@ -106,7 +106,7 @@ def main():
         if args.remote_host is not None:
             remote_server = args.remote_host
             if args.remote_port is not None:
-                remote_server += ':{}'.format(args.remote_port)
+                remote_server += f':{args.remote_port}'
         lang_tool = LanguageTool(
             language=args.language,
             motherTongue=args.mother_tongue,
@@ -116,7 +116,7 @@ def main():
         try:
             text = get_text(filename, encoding, ignore=args.ignore_lines)
         except UnicodeError as exception:
-            print('{}: {}'.format(filename, exception), file=sys.stderr)
+            print(f'{filename}: {exception}', file=sys.stderr)
             continue
 
         if not args.spell_check:
@@ -137,7 +137,7 @@ def main():
                     rule_id = match.ruleId
 
                     replacement_text = ', '.join(
-                        "'{}'".format(word)
+                        f"'{word}'"
                         for word in match.replacements).strip()
 
                     message = match.message
@@ -147,14 +147,11 @@ def main():
                     if replacement_text and not message.endswith(('.', '?')):
                         message += '; suggestions: ' + replacement_text
 
-                    print('{}: {}: {}'.format(
-                        filename,
-                        rule_id,
-                        message))
+                    print(f'{filename}: {rule_id}: {message}')
 
                     status = 2
         except LanguageToolError as exception:
-            print('{}: {}'.format(filename, exception), file=sys.stderr)
+            print(f'{filename}: {exception}', file=sys.stderr)
             continue
 
     return status
