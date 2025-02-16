@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Optional, Any, Set
 
 import atexit
 import http.client
@@ -53,7 +53,7 @@ class LanguageTool:
             new_spellings_persist=True,
             host=None, config=None,
             language_tool_download_version: str = LTP_DOWNLOAD_VERSION
-    ):
+    ) -> None:
         self.language_tool_download_version = language_tool_download_version
         self._new_spellings = None
         self._new_spellings_persist = new_spellings_persist
@@ -89,19 +89,19 @@ class LanguageTool:
         self.preferred_variants = set()
         self.picky = False
 
-    def __enter__(self):
+    def __enter__(self) -> str:
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: Optional[type], exc_val: Optional[BaseException], exc_tb: Optional[Any]) -> None:
         self.close()
 
-    def __del__(self):
+    def __del__(self) -> None:
         self.close()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f'{self.__class__.__name__}(language={self.language!r}, motherTongue={self.motherTongue!r})'
 
-    def close(self):
+    def close(self) -> None:
         if self._server_is_alive():
             self._terminate_server()
         if not self._new_spellings_persist and self._new_spellings:
@@ -109,18 +109,18 @@ class LanguageTool:
             self._new_spellings = []
 
     @property
-    def language(self):
+    def language(self) -> LanguageTag:
         """The language to be used."""
         return self._language
 
     @language.setter
-    def language(self, language):
+    def language(self, language: str) -> None:
         self._language = LanguageTag(language, self._get_languages())
         self.disabled_rules.clear()
         self.enabled_rules.clear()
 
     @property
-    def motherTongue(self):
+    def motherTongue(self) -> Optional[LanguageTag]:
         """The user's mother tongue or None.
         The mother tongue may also be used as a source language for
         checking bilingual texts.
@@ -128,14 +128,14 @@ class LanguageTool:
         return self._motherTongue
 
     @motherTongue.setter
-    def motherTongue(self, motherTongue):
+    def motherTongue(self, motherTongue: Optional[str]) -> None:
         self._motherTongue = (
             None if motherTongue is None
             else LanguageTag(motherTongue, self._get_languages())
         )
 
     @property
-    def _spell_checking_categories(self):
+    def _spell_checking_categories(self) -> Set[str]:
         return {'TYPOS'}
 
     def check(self, text: str) -> List[Match]:
@@ -169,13 +169,13 @@ class LanguageTool:
         """Automatically apply suggestions to the text."""
         return correct(text, self.check(text))
 
-    def enable_spellchecking(self):
+    def enable_spellchecking(self) -> None:
         """Enable spell-checking rules."""
         self.disabled_categories.difference_update(
             self._spell_checking_categories
         )
 
-    def disable_spellchecking(self):
+    def disable_spellchecking(self) -> None:
         """Disable spell-checking rules."""
         self.disabled_categories.update(self._spell_checking_categories)
 
@@ -192,7 +192,7 @@ class LanguageTool:
                 "https://github.com/jxmorris12/language_tool_python/issues")
         return spelling_file_path
 
-    def _register_spellings(self):
+    def _register_spellings(self) -> None:
         spelling_file_path = self._get_valid_spelling_file_path()
         with open(spelling_file_path, "r+", encoding='utf-8') as spellings_file:
             existing_spellings = set(line.strip() for line in spellings_file.readlines())
@@ -205,7 +205,7 @@ class LanguageTool:
         if DEBUG_MODE:
             print(f"Registered new spellings at {spelling_file_path}")
 
-    def _unregister_spellings(self):
+    def _unregister_spellings(self) -> None:
         spelling_file_path = self._get_valid_spelling_file_path()
 
         with open(spelling_file_path, 'r', encoding='utf-8') as spellings_file:
@@ -223,7 +223,7 @@ class LanguageTool:
         if DEBUG_MODE:
             print(f"Unregistered new spellings at {spelling_file_path}")
 
-    def _get_languages(self) -> set:
+    def _get_languages(self) -> Set[str]:
         """Get supported languages (by querying the server)."""
         self._start_server_if_needed()
         url = urllib.parse.urljoin(self._url, 'languages')
@@ -234,16 +234,18 @@ class LanguageTool:
         languages.add("auto")
         return languages
 
-    def _start_server_if_needed(self):
+    def _start_server_if_needed(self) -> None:
         # Start server.
         if not self._server_is_alive() and self._remote is False:
             self._start_server_on_free_port()
 
-    def _update_remote_server_config(self, url):
+    def _update_remote_server_config(self, url: str) -> None:
         self._url = url
         self._remote = True
 
-    def _query_server(self, url, params=None, num_tries=2):
+    def _query_server(
+        self, url: str, params: Optional[Dict[str, str]] = None, num_tries: int = 2
+    ) -> Any:
         if DEBUG_MODE:
             print('_query_server url:', url, 'params:', params)
         for n in range(num_tries):
@@ -269,7 +271,7 @@ class LanguageTool:
                 if n + 1 >= num_tries:
                     raise LanguageToolError(f'{self._url}: {e}')
 
-    def _start_server_on_free_port(self):
+    def _start_server_on_free_port(self) -> None:
         while True:
             self._url = f'http://{self._host}:{self._port}/v2/'
             try:
@@ -281,7 +283,7 @@ class LanguageTool:
                 else:
                     raise
 
-    def _start_local_server(self):
+    def _start_local_server(self) -> None:
         # Before starting local server, download language tool if needed.
         download_lt(self.language_tool_download_version)
         err = None
@@ -349,7 +351,7 @@ class LanguageTool:
                     'Server running; don\'t start a server here.'
                 )
     
-    def _consume(self, stdout):
+    def _consume(self, stdout: Any) -> None:
         """Consume/ignore the rest of the server output.
         Without this, the server will end up hanging due to the buffer
         filling up.
@@ -358,10 +360,10 @@ class LanguageTool:
             pass
 
 
-    def _server_is_alive(self):
+    def _server_is_alive(self) -> bool:
         return self._server and self._server.poll() is None
 
-    def _terminate_server(self):
+    def _terminate_server(self) -> str:
         """
         Terminate the LanguageTool server process and its associated resources.
         This method ensures the server process and any associated threads or child processes
@@ -416,14 +418,14 @@ class LanguageTool:
 
 class LanguageToolPublicAPI(LanguageTool):
     """Language tool client of the official API."""
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(
             *args, remote_server='https://languagetool.org/api/', **kwargs
         )
 
 
 @atexit.register
-def terminate_server():
+def terminate_server() -> None:
     """Terminate the server."""
     for pid in [p.pid for p in RUNNING_SERVER_PROCESSES]:
         kill_process_force(pid=pid)

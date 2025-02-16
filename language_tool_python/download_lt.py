@@ -10,7 +10,7 @@ import subprocess
 import sys
 import tempfile
 import tqdm
-from typing import Optional
+from typing import IO, Dict, Optional, Tuple
 import zipfile
 
 from shutil import which
@@ -42,7 +42,7 @@ JAVA_VERSION_REGEX_UPDATED = re.compile(
     r'^(?:java|openjdk) [version ]?(?P<major1>\d+)\.(?P<major2>\d+)',
     re.MULTILINE)
 
-def parse_java_version(version_text):
+def parse_java_version(version_text: str) -> Tuple[int, int]:
     """Return Java version (major1, major2).
 
     >>> parse_java_version('''java version "1.6.0_65"
@@ -70,7 +70,7 @@ def parse_java_version(version_text):
     return (major1, major2)
 
 
-def confirm_java_compatibility():
+def confirm_java_compatibility() -> bool:
     """ Confirms Java major version >= 8. """
     java_path = which('java')
     if not java_path:
@@ -97,7 +97,7 @@ def confirm_java_compatibility():
         raise SystemError(f'Detected java {major_version}.{minor_version}. LanguageTool requires Java >= 8.')
 
 
-def get_common_prefix(z):
+def get_common_prefix(z: zipfile.ZipFile) -> Optional[str]:
     """Get common directory in a zip file if any."""
     name_list = z.namelist()
     if name_list and all(n.startswith(name_list[0]) for n in name_list[1:]):
@@ -105,7 +105,7 @@ def get_common_prefix(z):
     return None
 
 
-def http_get(url, out_file, proxies=None):
+def http_get(url: str, out_file: IO[bytes], proxies: Optional[Dict[str, str]] = None) -> None:
     """ Get contents of a URL and save to a file.
     """
     req = requests.get(url, stream=True, proxies=proxies)
@@ -123,14 +123,14 @@ def http_get(url, out_file, proxies=None):
     progress.close()
 
 
-def unzip_file(temp_file, directory_to_extract_to):
+def unzip_file(temp_file: str, directory_to_extract_to: str) -> None:
     """ Unzips a .zip file to folder path. """
     logger.info(f'Unzipping {temp_file.name} to {directory_to_extract_to}.')
     with zipfile.ZipFile(temp_file.name, 'r') as zip_ref:
         zip_ref.extractall(directory_to_extract_to)
 
 
-def download_zip(url, directory):
+def download_zip(url: str, directory: str) -> None:
     """ Downloads and unzips zip file from `url` to `directory`. """
     # Download file.
     downloaded_file = tempfile.NamedTemporaryFile(suffix='.zip', delete=False)
@@ -145,7 +145,7 @@ def download_zip(url, directory):
     logger.info(f'Downloaded {url} to {directory}.')
 
 
-def download_lt(language_tool_version: Optional[str] = LTP_DOWNLOAD_VERSION):
+def download_lt(language_tool_version: Optional[str] = LTP_DOWNLOAD_VERSION) -> None:
     confirm_java_compatibility()
 
     download_folder = get_language_tool_download_path()

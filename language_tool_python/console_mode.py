@@ -2,6 +2,7 @@
 """Write to stdout without causing UnicodeEncodeError."""
 
 import sys
+from typing import Any, Tuple
 
 
 if (getattr(sys.stdout, 'errors', '') == 'strict' and
@@ -21,12 +22,12 @@ if (getattr(sys.stdout, 'errors', '') == 'strict' and
             0x201d: '"',
         }
 
-        def simplify(s):
+        def simplify(s: str) -> str:
             s = s.translate(TRANSLIT_MAP)
             return ''.join([c for c in unicodedata.normalize('NFKD', s)
                             if not unicodedata.combining(c)])
 
-        def simple_translit_error_handler(error):
+        def simple_translit_error_handler(error: UnicodeEncodeError) -> Tuple[str, int]:
             if not isinstance(error, UnicodeEncodeError):
                 raise error
             chunk = error.object[error.start:error.end]
@@ -40,20 +41,20 @@ if (getattr(sys.stdout, 'errors', '') == 'strict' and
             """Filter a stream through simple transliteration."""
             errors = 'simple_translit'
 
-            def __init__(self, target):
+            def __init__(self, target: Any) -> None:
                 self.target = target
 
-            def __getattr__(self, name):
+            def __getattr__(self, name: str) -> Any:
                 return getattr(self.target, name)
 
-            def write(self, s):
+            def write(self, s: str) -> None:
                 self.target.write(self.downgrade(s))
 
-            def writelines(self, lines):
+            def writelines(self, lines: Any) -> None:
                 self.target.writelines(
                     [self.downgrade(line) for line in lines])
 
-            def downgrade(self, s):
+            def downgrade(self, s: str) -> str:
                 return (s.encode(self.target.encoding, self.errors)
                         .decode(self.target.encoding))
 

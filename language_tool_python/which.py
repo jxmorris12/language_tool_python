@@ -4,13 +4,14 @@
 
 import os
 import sys
+from typing import List, Optional
 
 
 __all__ = ['which']
 
 WIN_ALLOW_CROSS_ARCH = True
 
-def which(program):
+def which(program: str) -> Optional[str]:
     """Identify the location of an executable file."""
     if os.path.split(program)[0]:
         program_path = find_exe(program)
@@ -24,16 +25,16 @@ def which(program):
     return None
 
 
-def is_exe(path):
+def is_exe(path: str) -> bool:
     return os.path.isfile(path) and os.access(path, os.X_OK)
 
 
-def _get_path_list():
+def _get_path_list() -> List[str]:
     return os.environ['PATH'].split(os.pathsep)
 
 
 if os.name == 'nt':
-    def find_exe(program):
+    def find_exe(program: str) -> Optional[str]:
         root, ext = os.path.splitext(program)
         if ext:
             if is_exe(program):
@@ -45,7 +46,7 @@ if os.name == 'nt':
                     return program_path
         return None
 
-    def get_path_list():
+    def get_path_list() -> List[str]:
         paths = _get_path_list()
         if WIN_ALLOW_CROSS_ARCH:
             alt_sys_path = os.path.expandvars(r"$WINDIR\Sysnative")
@@ -58,13 +59,13 @@ if os.name == 'nt':
         return paths
 
 else:
-    def find_exe(program):
+    def find_exe(program: str) -> Optional[str]:
         return program if is_exe(program) else None
 
     get_path_list = _get_path_list
 
 
-def main():
+def main() -> int:
     for arg in sys.argv[1:]:
         path = which(arg)
         if path:

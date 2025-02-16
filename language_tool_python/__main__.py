@@ -4,8 +4,9 @@ import argparse
 import locale
 import re
 import sys
-from importlib.metadata import version
+from importlib.metadata import version, PackageNotFoundError
 import toml
+from typing import Any, Optional, Set, Union
 
 from .server import LanguageTool
 from .utils import LanguageToolError
@@ -17,7 +18,7 @@ except PackageNotFoundError:
         __version__ = toml.loads(f.read().decode('utf-8'))["project"]["version"]
 
 
-def parse_args():
+def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=__doc__.strip() if __doc__ else None,
         prog='language_tool_python')
@@ -69,22 +70,22 @@ def parse_args():
 
 
 class RulesAction(argparse.Action):
-    def __call__(self, parser, namespace, values, option_string=None):
+    def __call__(self, parser: argparse.ArgumentParser, namespace: Any, values: Any, option_string: Optional[str] = None) -> str:
         getattr(namespace, self.dest).update(values)
 
 
-def get_rules(rules: str) -> set:
+def get_rules(rules: str) -> Set[str]:
     return {rule.upper() for rule in re.findall(r"[\w\-]+", rules)}
 
 
-def get_text(filename, encoding, ignore):
+def get_text(filename: Union[str, int], encoding: Optional[str], ignore: Optional[str]) -> str:
     with open(filename, encoding=encoding) as f:
         text = ''.join('\n' if (ignore and re.match(ignore, line)) else line
                        for line in f.readlines())
     return text
 
 
-def main():
+def main() -> int:
     args = parse_args()
 
     status = 0

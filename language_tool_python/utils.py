@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 import glob
 import locale
@@ -50,7 +50,7 @@ class PathError(LanguageToolError):
     pass
 
 
-def parse_url(url_str):
+def parse_url(url_str: str) -> str:
     """ Parses a URL string, and adds 'http' if necessary. """
     if 'http' not in url_str:
         url_str = 'http://' + url_str
@@ -129,7 +129,7 @@ def get_language_tool_directory() -> str:
 
 
 def get_server_cmd(
-        port: int = None, config: LanguageToolConfig = None
+    port: Optional[int] = None, config: Optional[LanguageToolConfig] = None
 ) -> List[str]:
     java_path, jar_path = get_jar_info()
     cmd = [java_path, '-cp', jar_path,
@@ -169,12 +169,12 @@ def get_jar_info() -> Tuple[str, str]:
     return java_path, jar_path
 
 
-def get_locale_language():
+def get_locale_language() -> str:
     """Get the language code for the current locale setting."""
     return locale.getlocale()[0] or locale.getdefaultlocale()[0]
 
 
-def kill_process_force(*, pid=None, proc=None):
+def kill_process_force(*, pid: Optional[int] = None, proc: Optional[psutil.Process] = None) -> None:
     """Kill a process and its children forcefully.
     Usefin when the process is unresponsive, particulary on Windows.
     Using psutil is more reliable than killing the process with subprocess."""
