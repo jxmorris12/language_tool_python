@@ -1,7 +1,3 @@
-# -*- coding: utf-8 -*-
-
-"""Cross-platform which command."""
-
 import os
 import sys
 from typing import List, Optional
@@ -70,7 +66,3 @@ def main() -> int:
         path = which(arg)
         if path:
             print(path)
-
-
-if __name__ == '__main__':
-    sys.exit(main())

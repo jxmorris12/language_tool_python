@@ -1,7 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-"""Download latest LanguageTool distribution."""
-
 import logging
 import os
 import re
@@ -171,7 +167,3 @@ def download_lt(language_tool_version: Optional[str] = LTP_DOWNLOAD_VERSION) -> 
         if extract_path in old_path_list:
             return
         download_zip(language_tool_download_url, download_folder)
-
-
-if __name__ == '__main__':
-    sys.exit(download_lt())
