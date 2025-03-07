@@ -1,8 +1,29 @@
 import unicodedata
 from collections import OrderedDict
+from typing import Any, Dict, Iterator, OrderedDict as OrderedDictType
 from functools import total_ordering
 
-def get_match_ordered_dict():
+def get_match_ordered_dict() -> OrderedDictType[str, type]:
+    """
+    Returns an ordered dictionary with predefined keys and their corresponding types.
+
+    :return: An OrderedDict where each key is a string representing a specific attribute 
+             and each value is the type of that attribute.
+    :rtype: OrderedDictType[str, type]
+
+    The keys and their corresponding types are:
+    
+    - 'ruleId': str
+    - 'message': str
+    - 'replacements': list
+    - 'offsetInContext': int
+    - 'context': str
+    - 'offset': int
+    - 'errorLength': int
+    - 'category': str
+    - 'ruleIssueType': str
+    - 'sentence': str
+    """
     slots = OrderedDict([
         ('ruleId', str), 
         ('message', str),
@@ -16,6 +37,26 @@ def get_match_ordered_dict():
         ('sentence', str), 
     ])
     return slots
+
+def auto_type(obj: Any) -> Any:
+    """
+    Attempts to automatically convert the input object to an integer or float.
+    If the conversion to an integer fails, it tries to convert to a float.
+    If both conversions fail, it returns the original object.
+
+    :param obj: The object to be converted.
+    :type obj: Any
+    :return: The converted object as an integer, float, or the original object.
+    :rtype: Any
+    """
+
+    try:
+        return int(obj)
+    except ValueError:
+        try:
+            return float(obj)
+        except ValueError:
+            return obj
 
 """ Sample match JSON:
     {
@@ -32,19 +73,43 @@ def get_match_ordered_dict():
     }
 
 """
-def auto_type(obj):
-    try:
-        return int(obj)
-    except ValueError:
-        try:
-            return float(obj)
-        except ValueError:
-            return obj
 
 @total_ordering
 class Match:
-    """Hold information about where a rule matches text."""
-    def __init__(self, attrib):
+    """
+    Represents a match object that contains information about a language rule violation.
+
+    :param attrib: A dictionary containing various attributes for the match.
+                       The dictionary is expected to have the following keys:
+
+                       - 'rule': A dictionary with keys 'category' (which has an 'id') and 'id', 'issueType'.
+
+                       - 'context': A dictionary with keys 'offset' and 'text'.
+
+                       - 'replacements': A list of dictionaries, each containing a 'value'.
+
+                       - 'length': The length of the error.
+
+                       - 'message': The message describing the error.
+    :type attrib: Dict[str, Any]
+
+    Attributes:
+        ruleId (str): The ID of the rule that was violated.
+        message (str): The message describing the error.
+        replacements (list): A list of suggested replacements for the error.
+        offsetInContext (int): The offset of the error in the context.
+        context (str): The context in which the error occurred.
+        offset (int): The offset of the error.
+        errorLength (int): The length of the error.
+        category (str): The category of the rule that was violated.
+        ruleIssueType (str): The issue type of the rule that was violated.
+    """
+    
+    def __init__(self, attrib: Dict[str, Any]) -> None:
+        """
+        Initialize a Match object with the given attributes.
+        The method processes and normalizes the attributes before storing them on the object.
+        """
         # Process rule.
         attrib['category'] = attrib['rule']['category']['id']
         attrib['ruleId'] = attrib['rule']['id']
@@ -63,66 +128,149 @@ class Match:
         for k, v in attrib.items():
             setattr(self, k, v)
 
-    def __repr__(self):
-        def _ordered_dict_repr():
+    def __repr__(self) -> str:
+        """
+        Return a string representation of the object.
+        This method provides a detailed string representation of the object,
+        including its class name and a dictionary of its attributes.
+
+        :return: A string representation of the object.
+        :rtype: str
+        """
+        def _ordered_dict_repr() -> str:
+            """
+            Generate a string representation of the object's attributes in an ordered dictionary format.
+
+            This method collects the attributes of the object, ensuring that the order of attributes
+            is preserved as defined by `get_match_ordered_dict()`. Attributes that are not part of the
+            ordered dictionary are appended at the end. Attributes starting with an underscore are
+            excluded from the representation.
+
+            :return: A string representation of the object's attributes in an ordered dictionary format.
+            :rtype: str
+            """
             slots = list(get_match_ordered_dict())
             slots += list(set(self.__dict__).difference(slots))
             attrs = [slot for slot in slots
                      if slot in self.__dict__ and not slot.startswith('_')]
-            return '{{{}}}'.format(
-                ', '.join([
-                    '{!r}: {!r}'.format(attr, getattr(self, attr))
-                    for attr in attrs
-                ])
-            )
+            return f"{{{', '.join([f'{attr!r}: {getattr(self, attr)!r}' for attr in attrs])}}}"
 
-        return '{}({})'.format(self.__class__.__name__, _ordered_dict_repr())
+        return f'{self.__class__.__name__}({_ordered_dict_repr()})'
 
-    def __str__(self):
+    def __str__(self) -> str:
+        """
+        Returns a string representation of the match object.
+
+        The string includes the offset, error length, rule ID, message, 
+        suggestions, and context with a visual indicator of the error position.
+
+        :return: A formatted string describing the match object.
+        :rtype: str
+        """
         ruleId = self.ruleId
-        s = 'Offset {}, length {}, Rule ID: {}'.format(
-            self.offset, self.errorLength, ruleId)
+        s = f'Offset {self.offset}, length {self.errorLength}, Rule ID: {ruleId}'
         if self.message:
-            s += '\nMessage: {}'.format(self.message)
+            s += f'\nMessage: {self.message}'
         if self.replacements:
-            s += '\nSuggestion: {}'.format('; '.join(self.replacements))
-        s += '\n{}\n{}'.format(
-            self.context, ' ' * self.offsetInContext + '^' * self.errorLength
-        )
+            s += f"\nSuggestion: {'; '.join(self.replacements)}"
+        s += f"\n{self.context}\n{' ' * self.offsetInContext + '^' * self.errorLength}"
         return s
 
     @property
-    def matchedText(self):
-        """ Returns the text that garnered the error (without its surrounding context).
+    def matchedText(self) -> str:
+        """
+        Returns the substring from the context that corresponds to the matched text.
+
+        :return: The matched text from the context.
+        :rtype: str
         """
         return self.context[self.offsetInContext:self.offsetInContext+self.errorLength]
     
     def select_replacement(self, index: int) -> None:
-        """Choose one suggestion and delete the others. Usefull when you want to apply a specific suggestion.\n
-        By default, the first suggestion is chosen."""
+        """
+        Select a single replacement suggestion based on the given index and update the replacements list, leaving only the selected replacement.
+
+        :param index: The index of the replacement to select.
+        :type index: int
+        :raises ValueError: If there are no replacement suggestions.
+        :raises ValueError: If the index is out of the valid range.
+        """
+        
         if not self.replacements:
             raise ValueError('This Match has no suggestions')
         elif index < 0 or index >= len(self.replacements):
-            raise ValueError('This Match\'s suggestions are numbered from 0 to {}'.format(len(self.replacements) - 1))
+            raise ValueError(f'This Match\'s suggestions are numbered from 0 to {len(self.replacements) - 1}')
         self.replacements = [self.replacements[index]]
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
+        """
+        Compare this object with another for equality.
+
+        :param other: The object to compare with.
+        :type other: Any
+        :return: True if both objects are equal, False otherwise.
+        :rtype: bool
+        """
         return list(self) == list(other)
 
-    def __lt__(self, other):
+    def __lt__(self, other: Any) -> bool:
+        """
+        Compare this object with another object for less-than ordering.
+
+        :param other: The object to compare with.
+        :type other: Any
+        :return: True if this object is less than the other object, False otherwise.
+        :rtype: bool
+        """
         return list(self) < list(other)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Any]:
+        """
+        Return an iterator over the attributes of the match object.
+
+        This method allows the match object to be iterated over, yielding the 
+        values of its attributes in the order defined by `get_match_ordered_dict`.
+
+        :return: An iterator over the attribute values of the match object.
+        :rtype: Iterator[Any]
+        """
         return iter(getattr(self, attr) for attr in get_match_ordered_dict())
 
-    def __setattr__(self, key, value):
+    def __setattr__(self, key: str, value: Any) -> None:
+        """
+        Set an attribute on the instance.
+
+        This method overrides the default behavior of setting an attribute.
+        It attempts to transform the value using a function from `get_match_ordered_dict()`
+        based on the provided key. If the key is not found in the dictionary, the attribute
+        is not set.
+
+        :param key: The name of the attribute to set.
+        :type key: str
+        :param value: The value to set the attribute to.
+        :type value: Any
+        :raises KeyError: If the key is not found in the dictionary returned by `get_match_ordered_dict()`.
+        """
         try:
             value = get_match_ordered_dict()[key](value)
         except KeyError:
             return
         super().__setattr__(key, value)
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> Any:
+        """
+        Handle attribute access for undefined attributes.
+
+        This method is called when an attribute lookup has not found the attribute in the usual places 
+        (i.e., it is not an instance attribute nor is it found in the class tree for self). This method 
+        checks if the attribute name is in the ordered dictionary returned by `get_match_ordered_dict()`. 
+        If the attribute name is not found, it raises an AttributeError.
+
+        :param name: The name of the attribute being accessed.
+        :type name: str
+        :return: The value of the attribute if it exists.
+        :rtype: Any
+        :raises AttributeError: If the attribute does not exist.
+        """
         if name not in get_match_ordered_dict():
-            raise AttributeError('{!r} object has no attribute {!r}'
-                                 .format(self.__class__.__name__, name))
+            raise AttributeError(f'{self.__class__.__name__!r} object has no attribute {name!r}')
