@@ -13,6 +13,7 @@ from urllib.parse import urljoin
 from .utils import (
     find_existing_language_tool_downloads,
     get_language_tool_download_path,
+    PathError,
     LTP_JAR_DIR_PATH_ENV_VAR
 )
 
@@ -125,13 +126,13 @@ def http_get(url: str, out_file: IO[bytes], proxies: Optional[Dict[str, str]] = 
     :type out_file: IO[bytes]
     :param proxies: Optional dictionary of proxies to use for the request.
     :type proxies: Optional[Dict[str, str]]
-    :raises Exception: If the file could not be found at the given URL (HTTP 403).
+    :raises PathError: If the file could not be found at the given URL (HTTP 404).
     """
     req = requests.get(url, stream=True, proxies=proxies)
     content_length = req.headers.get('Content-Length')
     total = int(content_length) if content_length is not None else None
-    if req.status_code == 403:  # Not found on AWS
-        raise Exception(f'Could not find at URL {url}.')
+    if req.status_code == 404:
+        raise PathError(f'Could not find at URL {url}. The given version may not exist.')
     version = re.search(r'(\d+\.\d+)', url).group(1)
     progress = tqdm.tqdm(unit="B", unit_scale=True, total=total,
                          desc=f'Downloading LanguageTool {version}')
