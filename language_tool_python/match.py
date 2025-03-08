@@ -1,6 +1,6 @@
 import unicodedata
 from collections import OrderedDict
-from typing import Any, Dict, Iterator, OrderedDict as OrderedDictType
+from typing import Any, Dict, Tuple, Iterator, OrderedDict as OrderedDictType
 from functools import total_ordering
 
 def get_match_ordered_dict() -> OrderedDictType[str, type]:
@@ -185,6 +185,23 @@ class Match:
         :rtype: str
         """
         return self.context[self.offsetInContext:self.offsetInContext+self.errorLength]
+
+    def get_line_and_column(self, original_text: str) -> Tuple[int, int]:
+        """
+        Returns the line and column number of the error in the context.
+
+        :param original_text: The original text in which the error occurred. We need this to calculate the line and column number, because the context has no more newline characters.
+        :type original_text: str
+        :return: A tuple containing the line and column number of the error.
+        :rtype: Tuple[int, int]
+        """
+
+        context_without_additions = self.context[3:-3] if len(self.context) > 6 else self.context
+        if context_without_additions not in original_text.replace('\n', ' '):
+            raise ValueError('The original text does not match the context of the error')
+        line = original_text.count('\n', 0, self.offset)
+        column = self.offset - original_text.rfind('\n', 0, self.offset)
+        return line + 1, column
     
     def select_replacement(self, index: int) -> None:
         """
