@@ -1,6 +1,6 @@
 import unicodedata
 from collections import OrderedDict
-from typing import Any, Dict, Tuple, Iterator, OrderedDict as OrderedDictType
+from typing import Any, Dict, Tuple, Iterator, OrderedDict as OrderedDictType, List
 from functools import total_ordering
 
 def get_match_ordered_dict() -> OrderedDictType[str, type]:
@@ -58,21 +58,29 @@ def auto_type(obj: Any) -> Any:
         except ValueError:
             return obj
 
-""" Sample match JSON:
-    {
-        'message': 'Possible spelling mistake found.', 
-        'shortMessage': 'Spelling mistake', 
-        'replacements': [{'value': 'newt'}, {'value': 'not'}, {'value': 'new', 'shortDescription': 'having just been made'}, {'value': 'news'}, {'value': 'foot', 'shortDescription': 'singular'}, {'value': 'root', 'shortDescription': 'underground organ of a plant'}, {'value': 'boot'}, {'value': 'noon'}, {'value': 'loot', 'shortDescription': 'plunder'}, {'value': 'moot'}, {'value': 'Root'}, {'value': 'soot', 'shortDescription': 'carbon black'}, {'value': 'newts'}, {'value': 'nook'}, {'value': 'Lieut'}, {'value': 'coot'}, {'value': 'hoot'}, {'value': 'toot'}, {'value': 'snoot'}, {'value': 'neut'}, {'value': 'nowt'}, {'value': 'Noor'}, {'value': 'noob'}], 
-        'offset': 8, 
-        'length': 4, 
-        'context': {'text': 'This is noot okay. ', 'offset': 8, 'length': 4}, 'sentence': 'This is noot okay.', 
-        'type': {'typeName': 'Other'}, 
-        'rule': {'id': 'MORFOLOGIK_RULE_EN_US', 'description': 'Possible spelling mistake', 'issueType': 'misspelling', 'category': {'id': 'TYPOS', 'name': 'Possible Typo'}}, 
-        'ignoreForIncompleteSentence': False, 
-        'contextForSureMatch': 0
-    }
+def four_byte_char_positions(text: str) -> List[int]:
+    """
+    Identify positions of 4-byte encoded characters in a UTF-8 string.
+    This function scans through the input text and identifies the positions
+    of characters that are encoded with 4 bytes in UTF-8. These characters
+    are typically non-BMP (Basic Multilingual Plane) characters, such as
+    certain emoji and some rare Chinese, Japanese, and Korean characters.
 
-"""
+    :param text: The input string to be analyzed.
+    :type text: str
+    :return: A list of positions where 4-byte encoded characters are found.
+    :rtype: List[int]
+    """
+    positions = []
+    char_index = 0
+    for char in text:
+        if len(char.encode('utf-8')) == 4:
+            positions.append(char_index)
+            # Adding 1 to the index because 4 byte characters are
+            # 2 bytes in length in LanguageTool, instead of 1 byte in Python.
+            char_index += 1
+        char_index += 1
+    return positions
 
 @total_ordering
 class Match:
@@ -92,6 +100,8 @@ class Match:
 
                        - 'message': The message describing the error.
     :type attrib: Dict[str, Any]
+    :param text: The original text in which the error occurred (the whole text, not just the context).
+    :type text: str
 
     Attributes:
         ruleId (str): The ID of the rule that was violated.
@@ -103,12 +113,31 @@ class Match:
         errorLength (int): The length of the error.
         category (str): The category of the rule that was violated.
         ruleIssueType (str): The issue type of the rule that was violated.
+
+    Exemple of a match object received from the LanguageTool API :
+    
+    ```
+    {
+        'message': 'Possible spelling mistake found.', 
+        'shortMessage': 'Spelling mistake', 
+        'replacements': [{'value': 'newt'}, {'value': 'not'}, {'value': 'new', 'shortDescription': 'having just been made'}, {'value': 'news'}, {'value': 'foot', 'shortDescription': 'singular'}, {'value': 'root', 'shortDescription': 'underground organ of a plant'}, {'value': 'boot'}, {'value': 'noon'}, {'value': 'loot', 'shortDescription': 'plunder'}, {'value': 'moot'}, {'value': 'Root'}, {'value': 'soot', 'shortDescription': 'carbon black'}, {'value': 'newts'}, {'value': 'nook'}, {'value': 'Lieut'}, {'value': 'coot'}, {'value': 'hoot'}, {'value': 'toot'}, {'value': 'snoot'}, {'value': 'neut'}, {'value': 'nowt'}, {'value': 'Noor'}, {'value': 'noob'}], 
+        'offset': 8, 
+        'length': 4, 
+        'context': {'text': 'This is noot okay. ', 'offset': 8, 'length': 4}, 'sentence': 'This is noot okay.', 
+        'type': {'typeName': 'Other'}, 
+        'rule': {'id': 'MORFOLOGIK_RULE_EN_US', 'description': 'Possible spelling mistake', 'issueType': 'misspelling', 'category': {'id': 'TYPOS', 'name': 'Possible Typo'}}, 
+        'ignoreForIncompleteSentence': False, 
+        'contextForSureMatch': 0
+    }
+    ```
     """
     
-    def __init__(self, attrib: Dict[str, Any]) -> None:
+    def __init__(self, attrib: Dict[str, Any], text: str) -> None:
         """
         Initialize a Match object with the given attributes.
         The method processes and normalizes the attributes before storing them on the object.
+        This method adjusts the positions of 4-byte encoded characters in the text
+        to ensure the offsets of the matches are correct.
         """
         # Process rule.
         attrib['category'] = attrib['rule']['category']['id']
@@ -127,6 +156,11 @@ class Match:
         # Store objects on self.
         for k, v in attrib.items():
             setattr(self, k, v)
+        
+        # Get the positions of 4-byte encoded characters in the text because without 
+        # carrying out this step, the offsets of the matches could be incorrect.
+        four_byte_positions = four_byte_char_positions(text)
+        self.offset -= sum(1 for pos in four_byte_positions if pos < self.offset)
 
     def __repr__(self) -> str:
         """

@@ -273,7 +273,7 @@ class LanguageTool:
         url = urllib.parse.urljoin(self._url, 'check')
         response = self._query_server(url, self._create_params(text))
         matches = response['matches']
-        return [Match(match) for match in matches]
+        return [Match(match, text) for match in matches]
 
     def _create_params(self, text: str) -> Dict[str, str]:
         """
