@@ -270,7 +270,7 @@ into where the ``language_tool_python`` package resides.
 
 ### LanguageTool Version
 
-As of April 2020, `language_tool_python` was forked from `language-check` and no longer supports LanguageTool versions lower than 4.0.
+LanguageTool versions under 6.0 are no longer downloadable from the LanguageTool website. If you need to use an older version, you can download it from the [LanguageTool GitHub tags page](https://github.com/languagetool-org/languagetool/tags) and build it yourself.
 
 ### Acknowledgements
 

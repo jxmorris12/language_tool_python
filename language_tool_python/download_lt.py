@@ -132,7 +132,7 @@ def http_get(url: str, out_file: IO[bytes], proxies: Optional[Dict[str, str]] = 
     content_length = req.headers.get('Content-Length')
     total = int(content_length) if content_length is not None else None
     if req.status_code == 404:
-        raise PathError(f'Could not find at URL {url}. The given version may not exist.')
+        raise PathError(f'Could not find at URL {url}. The given version may not exist or is no longer available.')
     version = re.search(r'(\d+\.\d+)', url).group(1)
     progress = tqdm.tqdm(unit="B", unit_scale=True, total=total,
                          desc=f'Downloading LanguageTool {version}')
