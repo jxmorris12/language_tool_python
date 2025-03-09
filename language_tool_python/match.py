@@ -1,6 +1,6 @@
 import unicodedata
 from collections import OrderedDict
-from typing import Any, Dict, Tuple, Iterator, OrderedDict as OrderedDictType, List
+from typing import Any, Dict, Tuple, Iterator, OrderedDict as OrderedDictType, List, Optional
 from functools import total_ordering
 
 def get_match_ordered_dict() -> OrderedDictType[str, type]:
@@ -104,6 +104,8 @@ class Match:
     :type text: str
 
     Attributes:
+        PREVIOUS_MATCHES_TEXT (Optional[str]): The text of the previous match object.
+        FOUR_BYTES_POSITIONS (Optional[List[int]]): The positions of 4-byte encoded characters in the text, registered by the previous match object (kept for optimization purposes if the text is the same).
         ruleId (str): The ID of the rule that was violated.
         message (str): The message describing the error.
         replacements (list): A list of suggested replacements for the error.
@@ -131,6 +133,9 @@ class Match:
     }
     ```
     """
+
+    PREVIOUS_MATCHES_TEXT: Optional[str] = None
+    FOUR_BYTES_POSITIONS: Optional[List[int]] = None
     
     def __init__(self, attrib: Dict[str, Any], text: str) -> None:
         """
@@ -139,6 +144,11 @@ class Match:
         This method adjusts the positions of 4-byte encoded characters in the text
         to ensure the offsets of the matches are correct.
         """
+        if text is None:
+            raise ValueError("The text parameter must not be None")
+        elif not isinstance(text, str):
+            raise TypeError("The text parameter must be a string")
+        
         # Process rule.
         attrib['category'] = attrib['rule']['category']['id']
         attrib['ruleId'] = attrib['rule']['id']
@@ -157,10 +167,12 @@ class Match:
         for k, v in attrib.items():
             setattr(self, k, v)
         
+        if Match.PREVIOUS_MATCHES_TEXT != text:
+            Match.PREVIOUS_MATCHES_TEXT = text
+            Match.FOUR_BYTES_POSITIONS = four_byte_char_positions(text)
         # Get the positions of 4-byte encoded characters in the text because without 
         # carrying out this step, the offsets of the matches could be incorrect.
-        four_byte_positions = four_byte_char_positions(text)
-        self.offset -= sum(1 for pos in four_byte_positions if pos < self.offset)
+        self.offset -= sum(1 for pos in Match.FOUR_BYTES_POSITIONS if pos < self.offset)
 
     def __repr__(self) -> str:
         """
