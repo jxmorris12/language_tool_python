@@ -65,7 +65,8 @@ class PathError(LanguageToolError):
     """
     Exception raised for errors in the file path used in LanguageTool.
     This error is raised when there is an issue with the file path provided
-    to LanguageTool, such as the LanguageTool JAR file not being found.
+    to LanguageTool, such as the LanguageTool JAR file not being found,
+    or a download path not being a valid available file path.
     """
     pass
 
