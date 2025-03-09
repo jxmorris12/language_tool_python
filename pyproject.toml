@@ -1,6 +1,6 @@
 [project]
 name = "language_tool_python"
-version = "2.9.1"
+version = "2.9.2"
 requires-python = ">=3.9"
 description = "Checks grammar using LanguageTool."
 readme = { file = "README.md", content-type = "text/markdown" }
@@ -24,6 +24,9 @@ dev = [
     "pytest-cov",
     "pytest-runner"
 ]
+
+[project.scripts]
+language_tool_python = "language_tool_python.__main__:main"
 
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]

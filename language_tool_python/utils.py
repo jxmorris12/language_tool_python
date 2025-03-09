@@ -88,37 +88,9 @@ def parse_url(url_str: str) -> str:
     return urllib.parse.urlparse(url_str).geturl()
 
 
-def _4_bytes_encoded_positions(text: str) -> List[int]:
-    """
-    Identify positions of 4-byte encoded characters in a UTF-8 string.
-    This function scans through the input text and identifies the positions
-    of characters that are encoded with 4 bytes in UTF-8. These characters
-    are typically non-BMP (Basic Multilingual Plane) characters, such as
-    certain emoji and some rare Chinese, Japanese, and Korean characters.
-
-    :param text: The input string to be analyzed.
-    :type text: str
-    :return: A list of positions where 4-byte encoded characters are found.
-    :rtype: List[int]
-    """
-    positions = []
-    char_index = 0
-    for char in text:
-        if len(char.encode('utf-8')) == 4:
-            positions.append(char_index)
-            # Adding 1 to the index because 4 byte characters are
-            # 2 bytes in length in LanguageTool, instead of 1 byte in Python.
-            char_index += 1
-        char_index += 1
-    return positions
-
-
 def correct(text: str, matches: List[Match]) -> str:
     """
     Corrects the given text based on the provided matches.
-    This function adjusts the positions of 4-byte encoded characters in the text
-    to ensure the offsets of the matches are correct. It then applies the corrections
-    specified in the matches to the text.
     Only the first replacement for each match is applied to the text.
 
     :param text: The original text to be corrected.
@@ -128,10 +100,6 @@ def correct(text: str, matches: List[Match]) -> str:
     :return: The corrected text.
     :rtype: str
     """
-    # Get the positions of 4-byte encoded characters in the text because without 
-    # carrying out this step, the offsets of the matches could be incorrect.
-    for match in matches:
-        match.offset -= sum(1 for i in _4_bytes_encoded_positions(text) if i <= match.offset)
     ltext = list(text)
     matches = [match for match in matches if match.replacements]
     errors = [ltext[match.offset:match.offset + match.errorLength]
