@@ -1,3 +1,5 @@
+"""Utility functions for the LanguageTool library."""
+
 from typing import List, Tuple, Optional
 from shutil import which
 

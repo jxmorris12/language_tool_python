@@ -1,3 +1,5 @@
+"""LanguageTool server management module."""
+
 from typing import Dict, List, Optional, Any, Set
 
 import atexit
