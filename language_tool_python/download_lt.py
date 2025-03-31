@@ -9,6 +9,7 @@ import tempfile
 import tqdm
 from typing import IO, Dict, Optional, Tuple
 import zipfile
+from datetime import datetime
 
 from shutil import which
 from urllib.parse import urljoin
@@ -26,10 +27,13 @@ logger.setLevel(logging.INFO)
 
 
 # Get download host from environment or default.
-BASE_URL = os.environ.get('LTP_DOWNLOAD_HOST', 'https://www.languagetool.org/download/')
-FILENAME = 'LanguageTool-{version}.zip'
+BASE_URL_SNAPSHOT = os.environ.get('LTP_DOWNLOAD_HOST_SNAPSHOT', 'https://internal1.languagetool.org/snapshots/')
+FILENAME_SNAPSHOT = 'LanguageTool-{version}-snapshot.zip'
+BASE_URL_RELEASE = os.environ.get('LTP_DOWNLOAD_HOST_RELEASE', 'https://www.languagetool.org/download/')
+FILENAME_RELEASE = 'LanguageTool-{version}.zip'
 
-LTP_DOWNLOAD_VERSION = '6.5'
+LTP_DOWNLOAD_VERSION = 'latest'
+LT_SNAPSHOT_CURRENT_VERSION = '6.7-SNAPSHOT'
 
 JAVA_VERSION_REGEX = re.compile(
     r'^(?:java|openjdk) version "(?P<major1>\d+)(|\.(?P<major2>\d+)\.[^"]+)"',
@@ -65,16 +69,15 @@ def parse_java_version(version_text: str) -> Tuple[int, int]:
     return (major1, major2)
 
 
-def confirm_java_compatibility() -> bool:
+def confirm_java_compatibility(language_tool_version: Optional[str] = LTP_DOWNLOAD_VERSION) -> None:
     """
     Confirms if the installed Java version is compatible with language-tool-python.
-    This function checks if Java is installed and verifies that the major version is at least 8.
+    This function checks if Java is installed and verifies that the major version is at least 8 or 17 (depending on the LanguageTool version).
     It raises an error if Java is not installed or if the version is incompatible.
 
+    :param language_tool_version: The version of LanguageTool to check compatibility for.
     :raises ModuleNotFoundError: If no Java installation is detected.
-    :raises SystemError: If the detected Java version is less than 8.
-    :return: True if the Java version is compatible.
-    :rtype: bool
+    :raises SystemError: If the detected Java version is less than the required version.
     """
     
     java_path = which('java')
@@ -91,15 +94,12 @@ def confirm_java_compatibility() -> bool:
     major_version, minor_version = parse_java_version(output)
     # Some installs of java show the version number like `14.0.1`
     # and others show `1.14.0.1`
-    # (with a leading 1). We want to support both,
-    # as long as the major version is >= 8.
+    # (with a leading 1). We want to support both.
     # (See softwareengineering.stackexchange.com/questions/175075/why-is-java-version-1-x-referred-to-as-java-x)
-    if major_version == 1 and minor_version >= 8:
-        return True
-    elif major_version >= 8:
-        return True
-    else:
-        raise SystemError(f'Detected java {major_version}.{minor_version}. LanguageTool requires Java >= 8.')
+    if language_tool_version != 'latest' and (language_tool_version < '6.6' or datetime.strptime(language_tool_version, '%Y%m%d') < datetime.strptime('2025-03-27', '%Y-%m-%d')) and (major_version == 1 and minor_version < 8) or (major_version < 8):
+        raise SystemError(f'Detected java {major_version}.{minor_version}. LanguageTool requires Java >= 8 for version {language_tool_version}.')
+    elif (major_version == 1 and minor_version < 17) or (major_version < 17):
+        raise SystemError(f'Detected java {major_version}.{minor_version}. LanguageTool requires Java >= 17 for version {language_tool_version}.')
 
 
 def get_common_prefix(z: zipfile.ZipFile) -> Optional[str]:
@@ -135,7 +135,7 @@ def http_get(url: str, out_file: IO[bytes], proxies: Optional[Dict[str, str]] = 
     total = int(content_length) if content_length is not None else None
     if req.status_code == 404:
         raise PathError(f'Could not find at URL {url}. The given version may not exist or is no longer available.')
-    version = re.search(r'(\d+\.\d+)', url).group(1)
+    version = url.split('/')[-1].split('-')[1].replace('-snapshot', '').replace('.zip', '')
     progress = tqdm.tqdm(unit="B", unit_scale=True, total=total,
                          desc=f'Downloading LanguageTool {version}')
     for chunk in req.iter_content(chunk_size=1024):
@@ -196,7 +196,7 @@ def download_lt(language_tool_version: Optional[str] = LTP_DOWNLOAD_VERSION) -> 
     :raises AssertionError: If the download folder is not a directory.
     """
 
-    confirm_java_compatibility()
+    confirm_java_compatibility(language_tool_version)
 
     download_folder = get_language_tool_download_path()
 
@@ -213,9 +213,15 @@ def download_lt(language_tool_version: Optional[str] = LTP_DOWNLOAD_VERSION) -> 
 
     if language_tool_version:
         version = language_tool_version
-        filename = FILENAME.format(version=version)
-        language_tool_download_url = urljoin(BASE_URL, filename)
+        if re.match(r'^\d+\.\d+$', version):
+            filename = FILENAME_RELEASE.format(version=version)
+            language_tool_download_url = urljoin(BASE_URL_RELEASE, filename)
+        else:
+            filename = FILENAME_SNAPSHOT.format(version=version)
+            language_tool_download_url = urljoin(BASE_URL_SNAPSHOT, filename)
         dirname, _ = os.path.splitext(filename)
+        if version == "latest":
+            dirname = f"LanguageTool-{LT_SNAPSHOT_CURRENT_VERSION}"
         extract_path = os.path.join(download_folder, dirname)
 
         if extract_path in old_path_list:
