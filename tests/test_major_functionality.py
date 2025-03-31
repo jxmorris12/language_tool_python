@@ -265,6 +265,24 @@ def test_disabled_rule_in_config():
         matches = tool.check(text)
         assert len(matches) == 0
 
+def test_special_char_in_text():
+    import language_tool_python
+    tool = language_tool_python.LanguageTool('en-US')
+    text = "The sun was seting 🌅, casting a warm glow over the park. Birds chirpped softly 🐦 as the day slowly fade into night."
+    assert tool.correct(text) == "The sun was setting 🌅, casting a warm glow over the park. Birds chipped softly 🐦 as the day slowly fade into night."
+    tool.close()
+
+def test_install_inexistent_version():
+    import language_tool_python
+    with pytest.raises(LanguageToolError):
+        language_tool_python.LanguageTool(language_tool_download_version="0.0.0")
+    
+def test_inexistant_language():
+    import language_tool_python
+    with language_tool_python.LanguageTool("en-US") as tool:
+        with pytest.raises(ValueError):
+            language_tool_python.LanguageTag("xx-XX", tool._get_languages())
+
 
 def test_debug_mode():
     from language_tool_python.server import DEBUG_MODE
