@@ -200,10 +200,12 @@ def main() -> int:
 
                     # Messages that end with punctuation already include the
                     # suggestion.
-                    if replacement_text and not message.endswith(('.', '?')):
-                        message += '; suggestions: ' + replacement_text
+                    if replacement_text and not message.endswith('?'):
+                        message += ' Suggestions: ' + replacement_text
+                    
+                    line, column = match.get_line_and_column(text)
 
-                    print(f'{filename}: {rule_id}: {message}')
+                    print(f'{filename}:{line}:{column}: {rule_id}: {message}')
 
                     status = 2
         except LanguageToolError as exception:
