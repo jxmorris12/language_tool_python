@@ -73,6 +73,15 @@ class PathError(LanguageToolError):
     pass
 
 
+class RateLimitError(LanguageToolError):
+    """
+    Exception raised for errors related to rate limiting in the LanguageTool server.
+    This exception is a subclass of `LanguageToolError` and is used to indicate
+    issues such as exceeding the allowed number of requests to the public API without a key.
+    """
+    pass
+
+
 def parse_url(url_str: str) -> str:
     """
     Parse the given URL string and ensure it has a scheme.
