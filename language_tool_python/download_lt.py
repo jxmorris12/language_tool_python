@@ -92,14 +92,24 @@ def confirm_java_compatibility(language_tool_version: Optional[str] = LTP_DOWNLO
                                      universal_newlines=True)
 
     major_version, minor_version = parse_java_version(output)
+    version_date_cutoff = datetime.strptime('2025-03-27', '%Y-%m-%d')
+    is_old_version = (
+        language_tool_version != 'latest' and (
+            (re.match(r'^\d+\.\d+$', language_tool_version) and language_tool_version < '6.6') or 
+            (re.match(r'^\d{8}$', language_tool_version) and datetime.strptime(language_tool_version, '%Y%m%d') < version_date_cutoff)
+        )
+    )
+
     # Some installs of java show the version number like `14.0.1`
     # and others show `1.14.0.1`
     # (with a leading 1). We want to support both.
     # (See softwareengineering.stackexchange.com/questions/175075/why-is-java-version-1-x-referred-to-as-java-x)
-    if language_tool_version != 'latest' and (language_tool_version < '6.6' or datetime.strptime(language_tool_version, '%Y%m%d') < datetime.strptime('2025-03-27', '%Y-%m-%d')) and (major_version == 1 and minor_version < 8) or (major_version < 8):
-        raise SystemError(f'Detected java {major_version}.{minor_version}. LanguageTool requires Java >= 8 for version {language_tool_version}.')
-    elif (major_version == 1 and minor_version < 17) or (major_version < 17):
-        raise SystemError(f'Detected java {major_version}.{minor_version}. LanguageTool requires Java >= 17 for version {language_tool_version}.')
+    if is_old_version:
+        if (major_version == 1 and minor_version < 8) or (major_version != 1 and major_version < 8):
+            raise SystemError(f'Detected java {major_version}.{minor_version}. LanguageTool requires Java >= 8 for version {language_tool_version}.')
+    else:
+        if (major_version == 1 and minor_version < 17) or (major_version != 1 and major_version < 17):
+            raise SystemError(f'Detected java {major_version}.{minor_version}. LanguageTool requires Java >= 17 for version {language_tool_version}.')
 
 
 def get_common_prefix(z: zipfile.ZipFile) -> Optional[str]:
