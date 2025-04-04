@@ -1,3 +1,5 @@
+"""Utility functions for the LanguageTool library."""
+
 from typing import List, Tuple, Optional
 from shutil import which
 
@@ -67,6 +69,15 @@ class PathError(LanguageToolError):
     This error is raised when there is an issue with the file path provided
     to LanguageTool, such as the LanguageTool JAR file not being found,
     or a download path not being a valid available file path.
+    """
+    pass
+
+
+class RateLimitError(LanguageToolError):
+    """
+    Exception raised for errors related to rate limiting in the LanguageTool server.
+    This exception is a subclass of `LanguageToolError` and is used to indicate
+    issues such as exceeding the allowed number of requests to the public API without a key.
     """
     pass
 

@@ -1,3 +1,5 @@
+"""Module for configuring LanguageTool's local server."""
+
 from typing import Any, Dict
 
 import atexit

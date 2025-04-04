@@ -1,3 +1,5 @@
+"""LanguageTool API Match object representation and utility module."""
+
 import unicodedata
 from collections import OrderedDict
 from typing import Any, Dict, Tuple, Iterator, OrderedDict as OrderedDictType, List, Optional

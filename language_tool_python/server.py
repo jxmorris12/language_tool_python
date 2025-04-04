@@ -1,3 +1,5 @@
+"""LanguageTool server management module."""
+
 from typing import Dict, List, Optional, Any, Set
 
 import atexit
@@ -21,7 +23,7 @@ from .utils import (
     parse_url, get_locale_language,
     get_language_tool_directory, get_server_cmd,
     FAILSAFE_LANGUAGE, startupinfo,
-    LanguageToolError, ServerError, PathError,
+    LanguageToolError, ServerError, PathError, RateLimitError,
     kill_process_force
 )
 
@@ -483,6 +485,11 @@ class LanguageTool:
                             )
                             print(response)
                             print(response.content)
+                        if response.status_code == 426:
+                            raise RateLimitError(
+                                'You have exceeded the rate limit for the free '
+                                'LanguageTool API. Please try again later.'
+                            )
                         raise LanguageToolError(response.content.decode())
             except (IOError, http.client.HTTPException) as e:
                 if self._remote is False:
