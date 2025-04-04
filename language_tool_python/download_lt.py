@@ -76,6 +76,7 @@ def confirm_java_compatibility(language_tool_version: Optional[str] = LTP_DOWNLO
     It raises an error if Java is not installed or if the version is incompatible.
 
     :param language_tool_version: The version of LanguageTool to check compatibility for.
+    :type language_tool_version: Optional[str]
     :raises ModuleNotFoundError: If no Java installation is detected.
     :raises SystemError: If the detected Java version is less than the required version.
     """
