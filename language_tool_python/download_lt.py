@@ -7,7 +7,6 @@ import requests
 import subprocess
 import tempfile
 import tqdm
-import json
 from typing import IO, Dict, Optional, Tuple
 import zipfile
 from datetime import datetime
@@ -35,7 +34,6 @@ FILENAME_RELEASE = 'LanguageTool-{version}.zip'
 
 LTP_DOWNLOAD_VERSION = 'latest'
 LT_SNAPSHOT_CURRENT_VERSION = '6.7-SNAPSHOT'
-SNAPSHOT_MAP_FILE = "snapshots.json"
 
 JAVA_VERSION_REGEX = re.compile(
     r'^(?:java|openjdk) version "(?P<major1>\d+)(|\.(?P<major2>\d+)\.[^"]+)"',
@@ -206,6 +204,7 @@ def download_lt(language_tool_version: Optional[str] = LTP_DOWNLOAD_VERSION) -> 
                                   LTP_DOWNLOAD_VERSION is used.
     :type language_tool_version: Optional[str]
     :raises AssertionError: If the download folder is not a directory.
+    :raises ValueError: If the specified version format is invalid.
     """
 
     confirm_java_compatibility(language_tool_version)
@@ -228,12 +227,20 @@ def download_lt(language_tool_version: Optional[str] = LTP_DOWNLOAD_VERSION) -> 
         if re.match(r'^\d+\.\d+$', version):
             filename = FILENAME_RELEASE.format(version=version)
             language_tool_download_url = urljoin(BASE_URL_RELEASE, filename)
-            dirname, _ = os.path.splitext(filename)
-            extract_path = os.path.join(download_folder, dirname)
-            if extract_path in old_path_list:
-                return
-        elif version == 'latest':
+        elif version == "latest":
             filename = FILENAME_SNAPSHOT.format(version=version)
+            language_tool_download_url = urljoin(BASE_URL_SNAPSHOT, filename)
+        else:
+            raise ValueError(
+                f"You can only download a specific version of LanguageTool if it is "
+                f"formatted like 'x.y' (e.g. '5.4'). The version you provided is {version}."
+                f"You can also use 'latest' to download the latest snapshot of LanguageTool."
+            )
+        dirname, _ = os.path.splitext(filename)
+        dirname = dirname.replace('latest', LT_SNAPSHOT_CURRENT_VERSION)
+        if version == "latest":
             dirname = f"LanguageTool-{LT_SNAPSHOT_CURRENT_VERSION}"
+        extract_path = os.path.join(download_folder, dirname)
 
-        download_zip(language_tool_download_url, download_folder)
+        if extract_path not in old_path_list:
+            download_zip(language_tool_download_url, download_folder)

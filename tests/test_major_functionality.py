@@ -266,7 +266,7 @@ def test_special_char_in_text():
 def test_install_inexistent_version():
     import language_tool_python
     with pytest.raises(LanguageToolError):
-        language_tool_python.LanguageTool(language_tool_download_version="0.0.0")
+        language_tool_python.LanguageTool(language_tool_download_version="0.0")
     
 def test_inexistant_language():
     import language_tool_python
