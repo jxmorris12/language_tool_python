@@ -7,6 +7,7 @@ import requests
 import subprocess
 import tempfile
 import tqdm
+import json
 from typing import IO, Dict, Optional, Tuple
 import zipfile
 from datetime import datetime
@@ -34,6 +35,7 @@ FILENAME_RELEASE = 'LanguageTool-{version}.zip'
 
 LTP_DOWNLOAD_VERSION = 'latest'
 LT_SNAPSHOT_CURRENT_VERSION = '6.7-SNAPSHOT'
+SNAPSHOT_MAP_FILE = "snapshots.json"
 
 JAVA_VERSION_REGEX = re.compile(
     r'^(?:java|openjdk) version "(?P<major1>\d+)(|\.(?P<major2>\d+)\.[^"]+)"',
@@ -155,18 +157,18 @@ def http_get(url: str, out_file: IO[bytes], proxies: Optional[Dict[str, str]] = 
     progress.close()
 
 
-def unzip_file(temp_file: str, directory_to_extract_to: str) -> None:
+def unzip_file(temp_file_name: str, directory_to_extract_to: str) -> None:
     """
     Unzips a zip file to a specified directory.
 
-    :param temp_file: A temporary file object representing the zip file to be extracted.
-    :type temp_file: str
+    :param temp_file_name: A temporary file object representing the zip file to be extracted.
+    :type temp_file_name: str
     :param directory_to_extract_to: The directory where the contents of the zip file will be extracted.
     :type directory_to_extract_to: str
     """
     
-    logger.info(f'Unzipping {temp_file.name} to {directory_to_extract_to}.')
-    with zipfile.ZipFile(temp_file.name, 'r') as zip_ref:
+    logger.info(f'Unzipping {temp_file_name} to {directory_to_extract_to}.')
+    with zipfile.ZipFile(temp_file_name, 'r') as zip_ref:
         zip_ref.extractall(directory_to_extract_to)
 
 
@@ -185,7 +187,7 @@ def download_zip(url: str, directory: str) -> None:
     # Close the file so we can extract it.
     downloaded_file.close()
     # Extract zip file to path.
-    unzip_file(downloaded_file, directory)
+    unzip_file(downloaded_file.name, directory)
     # Remove the temporary file.
     os.remove(downloaded_file.name)
     # Tell the user the download path.
@@ -226,14 +228,12 @@ def download_lt(language_tool_version: Optional[str] = LTP_DOWNLOAD_VERSION) -> 
         if re.match(r'^\d+\.\d+$', version):
             filename = FILENAME_RELEASE.format(version=version)
             language_tool_download_url = urljoin(BASE_URL_RELEASE, filename)
-        else:
+            dirname, _ = os.path.splitext(filename)
+            extract_path = os.path.join(download_folder, dirname)
+            if extract_path in old_path_list:
+                return
+        elif version == 'latest':
             filename = FILENAME_SNAPSHOT.format(version=version)
-            language_tool_download_url = urljoin(BASE_URL_SNAPSHOT, filename)
-        dirname, _ = os.path.splitext(filename)
-        if version == "latest":
             dirname = f"LanguageTool-{LT_SNAPSHOT_CURRENT_VERSION}"
-        extract_path = os.path.join(download_folder, dirname)
 
-        if extract_path in old_path_list:
-            return
         download_zip(language_tool_download_url, download_folder)
