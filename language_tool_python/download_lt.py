@@ -80,7 +80,7 @@ def confirm_java_compatibility(language_tool_version: Optional[str] = LTP_DOWNLO
     :raises ModuleNotFoundError: If no Java installation is detected.
     :raises SystemError: If the detected Java version is less than the required version.
     """
-    
+
     java_path = which('java')
     if not java_path:
         raise ModuleNotFoundError(
@@ -122,7 +122,7 @@ def get_common_prefix(z: zipfile.ZipFile) -> Optional[str]:
     :return: The common prefix of all file names in the zip archive, or None if there is no common prefix.
     :rtype: Optional[str]
     """
-    
+
     name_list = z.namelist()
     if name_list and all(n.startswith(name_list[0]) for n in name_list[1:]):
         return name_list[0]
@@ -197,11 +197,11 @@ def download_lt(language_tool_version: Optional[str] = LTP_DOWNLOAD_VERSION) -> 
     """
     Downloads and extracts the specified version of LanguageTool.
     This function checks for Java compatibility, creates the necessary download
-    directory if it does not exist, and downloads the specified version of 
+    directory if it does not exist, and downloads the specified version of
     LanguageTool if it is not already present.
-    
-    :param language_tool_version: The version of LanguageTool to download. If not 
-                                  specified, the default version defined by 
+
+    :param language_tool_version: The version of LanguageTool to download. If not
+                                  specified, the default version defined by
                                   LTP_DOWNLOAD_VERSION is used.
     :type language_tool_version: Optional[str]
     :raises AssertionError: If the download folder is not a directory.
