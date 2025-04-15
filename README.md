@@ -4,7 +4,7 @@
 
 ![Test with PyTest](https://github.com/jxmorris12/language_tool_python/workflows/Test%20with%20PyTest/badge.svg)
 
-Current LanguageTool version: **6.5**
+Current LanguageTool version: **6.7-SNAPSHOT**
 
 This is a Python wrapper for [LanguageTool](https://languagetool.org). LanguageTool is open-source grammar tool, also known as the spellchecker for OpenOffice. This library allows you to make to detect grammar errors and spelling mistakes through a Python script or through a command-line interface.
 
@@ -261,7 +261,7 @@ The default download path is `~/.cache/language_tool_python/`. The LanguageTool 
 ## Prerequisites
 
 - [Python 3.9+](https://www.python.org)
-- [LanguageTool](https://www.languagetool.org) (Java 8.0 or higher)
+- [LanguageTool](https://www.languagetool.org) (Java 8.0 or higher for version <= 6.5, Java 17.0 or higher for version >= 6.6)
 
 The installation process should take care of downloading LanguageTool (it may
 take a few minutes). Otherwise, you can manually download
