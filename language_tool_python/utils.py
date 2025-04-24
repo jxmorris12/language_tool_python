@@ -1,3 +1,5 @@
+"""Utility functions for the LanguageTool library."""
+
 from typing import List, Tuple, Optional
 from shutil import which
 
@@ -71,6 +73,15 @@ class PathError(LanguageToolError):
     pass
 
 
+class RateLimitError(LanguageToolError):
+    """
+    Exception raised for errors related to rate limiting in the LanguageTool server.
+    This exception is a subclass of `LanguageToolError` and is used to indicate
+    issues such as exceeding the allowed number of requests to the public API without a key.
+    """
+    pass
+
+
 def parse_url(url_str: str) -> str:
     """
     Parse the given URL string and ensure it has a scheme.
@@ -120,6 +131,7 @@ def correct(text: str, matches: List[Match]) -> str:
             return str()
     else:
         return None
+
 
 def get_language_tool_download_path() -> str:
     """
