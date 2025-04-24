@@ -112,7 +112,7 @@ def correct(text: str, matches: List[Match]) -> str:
     :rtype: str
     """
     ltext = list(text)
-    if len(matches):
+    if len(matches):			# some suggestions available, we'll use first/best
         matches = [match for match in matches if match.replacements]
         if matches:
             errors = [ltext[match.offset:match.offset + match.errorLength]
@@ -127,9 +127,9 @@ def correct(text: str, matches: List[Match]) -> str:
                 ltext[frompos:topos] = list(repl)
                 correct_offset += len(repl) - len(errors[n])
             return ''.join(ltext)
-        else:
+        else:				# no suggestions for given language, i.e. gibberish submit
             return str()
-    else:
+    else:				# Correct string submit
         return None
 
 
