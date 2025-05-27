@@ -8,7 +8,7 @@ import locale
 import os
 import subprocess
 import urllib.parse
-import urllib.request
+from enum import Enum
 import psutil
 
 from .config_file import LanguageToolConfig
@@ -99,6 +99,32 @@ def parse_url(url_str: str) -> str:
     return urllib.parse.urlparse(url_str).geturl()
 
 
+class TextStatus(Enum):
+    CORRECT = "correct"
+    FAULTY = "faulty"
+    GARBAGE = "garbage"
+
+
+def classify_matches(matches: List[Match]) -> TextStatus:
+    """
+    Classify the matches (result of a check on a text) into one of three categories:
+    CORRECT, FAULTY, or GARBAGE.
+    This function checks the status of the matches and returns a corresponding
+    `TextStatus` value.
+
+    :param matches: A list of Match objects to be classified.
+    :type matches: List[Match]
+    :return: The classification of the matches as a `TextStatus` value.
+    :rtype: TextStatus
+    """
+    if not len(matches):
+        return TextStatus.CORRECT
+    matches = [match for match in matches if match.replacements]
+    if not len(matches):
+        return TextStatus.GARBAGE
+    return TextStatus.FAULTY
+
+
 def correct(text: str, matches: List[Match]) -> str:
     """
     Corrects the given text based on the provided matches.
@@ -112,25 +138,19 @@ def correct(text: str, matches: List[Match]) -> str:
     :rtype: str
     """
     ltext = list(text)
-    if len(matches):			# some suggestions available, we'll use first/best
-        matches = [match for match in matches if match.replacements]
-        if matches:
-            errors = [ltext[match.offset:match.offset + match.errorLength]
-                      for match in matches]
-            correct_offset = 0
-            for n, match in enumerate(matches):
-                frompos, topos = (correct_offset + match.offset,
-                                  correct_offset + match.offset + match.errorLength)
-                if ltext[frompos:topos] != errors[n]:
-                    continue
-                repl = match.replacements[0]
-                ltext[frompos:topos] = list(repl)
-                correct_offset += len(repl) - len(errors[n])
-            return ''.join(ltext)
-        else:				# no suggestions for given language, i.e. gibberish submit
-            return str()
-    else:				# Correct string submit
-        return None
+    matches = [match for match in matches if match.replacements]
+    errors = [ltext[match.offset:match.offset + match.errorLength]
+              for match in matches]
+    correct_offset = 0
+    for n, match in enumerate(matches):
+        frompos, topos = (correct_offset + match.offset,
+                          correct_offset + match.offset + match.errorLength)
+        if ltext[frompos:topos] != errors[n]:
+            continue
+        repl = match.replacements[0]
+        ltext[frompos:topos] = list(repl)
+        correct_offset += len(repl) - len(errors[n])
+    return ''.join(ltext)
 
 
 def get_language_tool_download_path() -> str:
