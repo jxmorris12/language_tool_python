@@ -8,7 +8,7 @@ import locale
 import os
 import subprocess
 import urllib.parse
-import urllib.request
+from enum import Enum
 import psutil
 
 from .config_file import LanguageToolConfig
@@ -97,6 +97,32 @@ def parse_url(url_str: str) -> str:
         url_str = 'http://' + url_str
 
     return urllib.parse.urlparse(url_str).geturl()
+
+
+class TextStatus(Enum):
+    CORRECT = "correct"
+    FAULTY = "faulty"
+    GARBAGE = "garbage"
+
+
+def classify_matches(matches: List[Match]) -> TextStatus:
+    """
+    Classify the matches (result of a check on a text) into one of three categories:
+    CORRECT, FAULTY, or GARBAGE.
+    This function checks the status of the matches and returns a corresponding
+    `TextStatus` value.
+
+    :param matches: A list of Match objects to be classified.
+    :type matches: List[Match]
+    :return: The classification of the matches as a `TextStatus` value.
+    :rtype: TextStatus
+    """
+    if not len(matches):
+        return TextStatus.CORRECT
+    matches = [match for match in matches if match.replacements]
+    if not len(matches):
+        return TextStatus.GARBAGE
+    return TextStatus.FAULTY
 
 
 def correct(text: str, matches: List[Match]) -> str:
