@@ -71,6 +71,25 @@ If you want to apply a particular suggestion from a `Match`, use `Match.select_r
 'There is a book on the table.'
 ```
 
+### Determine whether a text is grammatically correct
+
+If you want to determine whether a text is grammatically correct, you can use the `classify_matches` function from `language_tool_python.utils`. It will return a `TextStatus` enum value indicating whether the text is correct, faulty, or garbage. Here is an example:
+
+```python
+>>> import language_tool_python
+>>> from language_tool_python.utils import classify_matches
+>>> tool = language_tool_python.LanguageTool('en-US')
+>>> matches = tool.check('This is a cat.')
+>>> matches_1 = tool.check('This is a cats.')
+>>> matches_2 = tool.check('fabafbafzabfabfz')
+>>> classify_matches(matches)
+<TextStatus.CORRECT: 'correct'>
+>>> classify_matches(matches_1)
+<TextStatus.FAULTY: 'faulty'>
+>>> classify_matches(matches_2)
+<TextStatus.GARBAGE: 'garbage'>
+```
+
 ## Example usage
 
 From the interpreter:
