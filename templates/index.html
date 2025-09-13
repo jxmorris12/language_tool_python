@@ -91,6 +91,19 @@
     <!-- Tooltip for hover-over details, remains hidden until needed -->
     <div id="tooltip" class="hidden"></div>
 
+    <!-- Custom Right-Click Context Menu -->
+    <div id="context-menu" class="hidden">
+        <div id="thesaurus-wheel">
+            <strong class="context-menu-header">Thesaurus</strong>
+            <div id="thesaurus-results" class="context-menu-content"></div>
+        </div>
+        <div class="context-menu-divider"></div>
+        <div id="dictionary">
+            <strong class="context-menu-header">Dictionary</strong>
+            <div id="dictionary-results" class="context-menu-content"></div>
+        </div>
+    </div>
+
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>

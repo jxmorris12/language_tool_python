@@ -3,6 +3,8 @@ from flask_cors import CORS
 import language_tool_python
 import os
 import threading
+import nltk
+from nltk.corpus import wordnet
 
 app = Flask(__name__)
 CORS(app)
@@ -10,6 +12,17 @@ CORS(app)
 # --- Global Server State ---
 tool = None
 tool_lock = threading.Lock() # To prevent race conditions during server restarts
+
+def download_nltk_data():
+    """Downloads required NLTK data models if not already present."""
+    required_packages = ['wordnet', 'punkt', 'averaged_perceptron_tagger']
+    for package in required_packages:
+        try:
+            nltk.data.find(f'tokenizers/{package}' if package == 'punkt' else f'corpora/{package}')
+        except LookupError:
+            print(f"NLTK data package '{package}' not found. Downloading...")
+            nltk.download(package, quiet=True)
+            print(f"'{package}' downloaded.")
 
 def start_lt_server():
     """Initializes or restarts the LanguageTool server."""
@@ -21,15 +34,15 @@ def start_lt_server():
             print("INFO: The app will try to use the default cached server if available.")
 
         new_tool = language_tool_python.LanguageTool('en-US')
-        new_tool.picky = True  # Enable stricter, more comprehensive checking
+        new_tool.picky = True
         tool = new_tool
         print("Local LanguageTool server initialized successfully in Picky mode.")
     except Exception as e:
         print(f"FATAL: Failed to initialize local LanguageTool server: {e}")
-        print("FATAL: Please ensure Java is installed and the LTP_JAR_DIR_PATH environment variable is set correctly.")
-        tool = None # Ensure tool is None on failure
+        tool = None
 
-# --- Initial Server Startup ---
+# --- Initial Server & Data Startup ---
+download_nltk_data()
 start_lt_server()
 
 
@@ -38,27 +51,49 @@ def index():
     """Serves the main HTML page for the text editor."""
     return render_template('index.html')
 
+@app.route('/word_tools', methods=['POST'])
+def word_tools():
+    """Provides synonyms and definitions for a given word."""
+    data = request.get_json()
+    word = data.get('word', '').lower()
+    if not word:
+        return jsonify({"error": "No word provided."}), 400
+
+    synonyms = set()
+    definitions = []
+
+    synsets = wordnet.synsets(word)
+    if synsets:
+        for syn in synsets:
+            # Add definition
+            definitions.append(f"({syn.pos()}) {syn.definition()}")
+            # Add synonyms
+            for lemma in syn.lemmas():
+                syn_word = lemma.name().replace('_', ' ')
+                if syn_word != word:
+                    synonyms.add(syn_word)
+
+    return jsonify({
+        "word": word,
+        "synonyms": sorted(list(synonyms)),
+        "definitions": definitions
+    })
+
+
 @app.route('/check', methods=['POST'])
 def check_text():
     """Handles grammar check requests with a self-healing mechanism."""
     with tool_lock:
-        # Self-healing: Check if the server is alive, restart if not.
-        # The `_server` attribute is internal, but necessary for this check.
         if tool is None or not tool._server_is_alive():
             print("Server process not detected. Attempting to restart...")
             if tool:
-                tool.close() # Attempt to clean up the old instance
+                tool.close()
             start_lt_server()
 
         if not tool:
-            error_message = (
-                "LanguageTool server is not running and could not be restarted. "
-                "Please check the server logs. Ensure Java is installed and the "
-                "LTP_JAR_DIR_PATH environment variable is set correctly."
-            )
+            error_message = "LanguageTool server is not running and could not be restarted."
             return jsonify({"error": error_message}), 503
 
-    # Proceed with the check using the (potentially new) tool instance
     data = request.get_json()
     text = data.get('text', '')
     language = data.get('language', 'en-US')
@@ -67,16 +102,19 @@ def check_text():
         tool.language = language
         matches = tool.check(text)
     except Exception as e:
-        return jsonify({"error": "An unexpected error occurred while checking grammar.", "details": str(e)}), 500
+        return jsonify({"error": "An unexpected error occurred during grammar check.", "details": str(e)}), 500
 
-    # --- Analytics and Response Formatting ---
     def get_error_type(category: str) -> str:
         if category in ['TYPOS']: return 'Spelling'
         if category in ['GRAMMAR', 'CASING', 'CAPITALIZATION', 'PUNCTUATION', 'CONFUSED_WORDS', 'SEMANTICS', 'SYNTAX']: return 'Grammar'
         if category in ['STYLE', 'REDUNDANCY', 'TYPOGRAPHY', 'CLARITY', 'MISC']: return 'Style'
         return category.title()
 
-    results = [{'type': get_error_type(m.category), **m.__dict__} for m in matches]
+    results = []
+    for m in matches:
+        match_dict = {k: v for k, v in m.__dict__.items() if not k.startswith('_')}
+        match_dict['type'] = get_error_type(m.category)
+        results.append(match_dict)
 
     def calculate_analytics(text: str, current_results: list) -> dict:
         word_count = len(text.strip().split())

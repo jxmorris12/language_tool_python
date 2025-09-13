@@ -15,6 +15,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const languageSwitch = document.getElementById('language-switch');
     const fontSelect = document.getElementById('font-select');
 
+    // Context Menu Elements
+    const contextMenu = document.getElementById('context-menu');
+    const thesaurusResultsEl = document.getElementById('thesaurus-results');
+    const dictionaryResultsEl = document.getElementById('dictionary-results');
+
     // --- State Variables ---
     let debounceTimer;
     let lastMatches = [];
@@ -31,7 +36,6 @@ document.addEventListener('DOMContentLoaded', () => {
         clearTimeout(debounceTimer);
         const currentText = editor.innerText;
         updateWordCount(currentText);
-
         debounceTimer = setTimeout(() => {
             const finalText = editor.innerText;
             if (finalText.trim().length > 0) {
@@ -41,7 +45,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }, 800);
     };
-
     editor.addEventListener('input', handleInput);
     editor.addEventListener('paste', handleInput);
 
@@ -59,7 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
         wordCountEl.textContent = `Words: ${words.length}`;
     }
 
-    // --- API Communication & Main Rendering Call ---
+    // --- API Communication ---
     async function checkGrammar(text) {
         if (text.trim() === '') return;
         try {
@@ -68,16 +71,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ text: text, language: currentLanguage }),
             });
-
             if (!response.ok) {
                 const errorData = await response.json();
                 errorList.innerHTML = `<p class="placeholder-text error-message">API Error: ${errorData.error}</p>`;
                 return;
             }
-
             const data = await response.json();
             lastMatches = data.matches || [];
-
             updateAnalyticsPanel(data.analytics);
             applyHighlights(lastMatches, text);
         } catch (error) {
@@ -86,7 +86,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- Analytics Panel & Score Logic ---
+    async function fetchWordTools(word) {
+        try {
+            const response = await fetch('/word_tools', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ word: word }),
+            });
+            if (!response.ok) return;
+            const data = await response.json();
+            populateContextMenu(data);
+        } catch (error) {
+            console.error('Word tools fetch error:', error);
+        }
+    }
+
+    // --- UI Rendering ---
     function updateAnalyticsPanel(analytics) {
         if (!analytics) return;
         overallScoreEl.textContent = analytics.overallScore;
@@ -95,14 +110,10 @@ document.addEventListener('DOMContentLoaded', () => {
         styleBarEl.style.width = `${analytics.styleScore}%`;
     }
 
-    // --- Highlighting and Sidebar Logic ---
     function applyHighlights(matches, text) {
         displayErrorsInSidebar();
-
         if (!matches) return;
-
         let cursorPosition = saveCursorPosition();
-
         matches.sort((a, b) => a.offset - b.offset);
         let newHtml = '';
         let lastIndex = 0;
@@ -114,71 +125,66 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         newHtml += escapeHtml(text.substring(lastIndex));
         editor.innerHTML = newHtml.replace(/\n/g, '<br>');
-
         restoreCursorPosition(cursorPosition);
     }
 
     function displayErrorsInSidebar() {
         errorList.innerHTML = '';
-        const filteredMatches = lastMatches.filter(match =>
-            currentFilter === 'All' || match.type === currentFilter
-        );
-
+        const filteredMatches = lastMatches.filter(match => currentFilter === 'All' || match.type === currentFilter);
         if (filteredMatches.length === 0) {
-            errorList.innerHTML = `<p class="placeholder-text">${currentFilter === 'All' ? 'No errors detected. Good job!' : `No ${currentFilter} errors.`}</p>`;
+            errorList.innerHTML = `<p class="placeholder-text">${currentFilter === 'All' ? 'No errors detected.' : `No ${currentFilter} errors.`}</p>`;
             return;
         }
-
         filteredMatches.forEach(match => {
             const card = document.createElement('div');
             card.className = 'error-card';
             card.dataset.offset = match.offset;
             card.dataset.type = match.type;
+            card.dataset.ruleId = match.ruleId; // Store ruleId for the link
 
             const suggestionsHTML = match.replacements.slice(0, 3).map(rep =>
-                `<button class="suggestion-btn"
-                         data-offset="${match.offset}"
-                         data-error-length="${match.errorLength}"
-                         data-replacement-text="${escapeHtml(rep)}">
-                    ${escapeHtml(rep)}
-                </button>`
+                `<button class="suggestion-btn" data-offset="${match.offset}" data-error-length="${match.errorLength}" data-replacement-text="${escapeHtml(rep)}">${escapeHtml(rep)}</button>`
             ).join('');
 
+            const learnMoreUrl = `https://community.languagetool.org/rule/show/${match.ruleId}?lang=${currentLanguage.split('-')[0]}`;
+
             card.innerHTML = `
-                <div class="error-card-header type-${match.type.toLowerCase()}">${match.type}</div>
+                <div class="error-card-header type-${match.type.toLowerCase()}">
+                    <span>${match.type}</span>
+                    <a href="${learnMoreUrl}" target="_blank" class="learn-more-link" title="Learn more about this rule">?</a>
+                </div>
                 <div class="error-card-body">
                     <p>${escapeHtml(match.message)}</p>
                     <div class="suggestions-container">
                         ${suggestionsHTML || 'No suggestions.'}
                     </div>
-                </div>
-            `;
+                </div>`;
             errorList.appendChild(card);
         });
+    }
+
+    function populateContextMenu(data) {
+        thesaurusResultsEl.innerHTML = data.synonyms.slice(0, 10).map(s => `<span class="synonym">${escapeHtml(s)}</span>`).join('') || 'No synonyms found.';
+        dictionaryResultsEl.innerHTML = data.definitions.length > 0 ? `<ul>${data.definitions.slice(0, 3).map(d => `<li>${escapeHtml(d)}</li>`).join('')}</ul>` : 'No definition found.';
     }
 
     function applyCorrection(offset, errorLength, replacementText) {
         const text = editor.innerText;
         const newText = text.substring(0, offset) + replacementText + text.substring(offset + errorLength);
-
-        // Save cursor position relative to the change
         const oldCursorPos = saveCursorPosition();
         let newCursorPos = oldCursorPos;
         if (oldCursorPos > offset) {
             newCursorPos += replacementText.length - errorLength;
         }
-
-        editor.innerText = newText; // Set as plain text to avoid HTML injection
+        editor.innerText = newText;
         restoreCursorPosition(newCursorPos);
-
-        // Trigger a new check immediately
         handleInput();
     }
 
-    // --- Event Listeners for Interaction ---
+    // --- Event Listeners ---
     languageSwitch.addEventListener('click', (event) => {
-        const target = event.target;
-        if (target.classList.contains('lang-btn')) {
+        const target = event.target.closest('.lang-btn');
+        if (target) {
             languageSwitch.querySelector('.active').classList.remove('active');
             target.classList.add('active');
             currentLanguage = target.dataset.lang;
@@ -191,8 +197,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     filterControls.addEventListener('click', (event) => {
-        const target = event.target;
-        if (target.classList.contains('filter-btn')) {
+        const target = event.target.closest('.filter-btn');
+        if (target) {
             filterControls.querySelector('.active').classList.remove('active');
             target.classList.add('active');
             currentFilter = target.dataset.filter;
@@ -201,9 +207,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     errorList.addEventListener('click', (event) => {
-        const card = event.target.closest('.error-card');
         const suggestionBtn = event.target.closest('.suggestion-btn');
-
+        const card = event.target.closest('.error-card');
         if (suggestionBtn) {
             const { offset, errorLength, replacementText } = suggestionBtn.dataset;
             applyCorrection(parseInt(offset), parseInt(errorLength), replacementText);
@@ -217,6 +222,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 setTimeout(() => { errorSpan.style.backgroundColor = ''; }, 500);
             }
         }
+    });
+
+    editor.addEventListener('contextmenu', (event) => {
+        event.preventDefault();
+        const selection = window.getSelection();
+        let word = selection.toString().trim();
+        if (word.length > 0) {
+            fetchWordTools(word);
+            contextMenu.style.top = `${event.clientY}px`;
+            contextMenu.style.left = `${event.clientX}px`;
+            contextMenu.classList.remove('hidden');
+        }
+    });
+
+    window.addEventListener('click', () => {
+        contextMenu.classList.add('hidden');
     });
 
     // --- Cursor Position Handling ---
@@ -242,7 +263,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const range = document.createRange();
                 const sel = window.getSelection();
                 try {
-                    range.setStart(node, position - charCount);
+                    range.setStart(node, Math.min(position - charCount, nodeLength));
                     range.collapse(true);
                     sel.removeAllRanges();
                     sel.addRange(range);

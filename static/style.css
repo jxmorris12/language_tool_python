@@ -309,6 +309,29 @@ body {
     border-top-left-radius: 8px;
     border-top-right-radius: 8px;
     text-transform: uppercase;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.learn-more-link {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--secondary-text-color);
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 0.8rem;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.learn-more-link:hover {
+    background-color: var(--accent-color);
+    color: #ffffff;
 }
 
 .error-card-body {
@@ -363,4 +386,65 @@ body {
 
 .hidden {
     display: none;
+}
+
+/* --- Custom Context Menu --- */
+#context-menu {
+    position: absolute;
+    z-index: 1000;
+    width: 250px;
+    background-color: #2c2c34;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 5px 25px rgba(0, 0, 0, 0.3);
+    padding: 0.5rem 0;
+}
+
+.context-menu-header {
+    display: block;
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--secondary-text-color);
+    text-transform: uppercase;
+}
+
+.context-menu-content {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.context-menu-divider {
+    height: 1px;
+    background-color: var(--border-color);
+    margin: 0.5rem 0;
+}
+
+#thesaurus-results {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.synonym {
+    padding: 0.25rem 0.6rem;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.synonym:hover {
+    background-color: var(--accent-color);
+}
+
+#dictionary-results ul {
+    margin: 0;
+    padding-left: 1.2rem;
+}
+
+#dictionary-results li {
+    margin-bottom: 0.5rem;
 }
