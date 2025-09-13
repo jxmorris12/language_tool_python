@@ -17,3 +17,9 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+
+# NLTK Data
+/nltk_data/
+
+# Log files
+*.log

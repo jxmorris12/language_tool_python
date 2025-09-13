@@ -14,14 +14,24 @@ tool = None
 tool_lock = threading.Lock() # To prevent race conditions during server restarts
 
 def download_nltk_data():
-    """Downloads required NLTK data models if not already present."""
+    """
+    Downloads required NLTK data models to a local project folder
+    to prevent re-downloading on every server restart.
+    """
+    local_nltk_dir = os.path.join(os.path.dirname(__file__), 'nltk_data')
+    os.makedirs(local_nltk_dir, exist_ok=True)
+
+    if local_nltk_dir not in nltk.data.path:
+        nltk.data.path.append(local_nltk_dir)
+
     required_packages = ['wordnet', 'punkt', 'averaged_perceptron_tagger']
     for package in required_packages:
         try:
-            nltk.data.find(f'tokenizers/{package}' if package == 'punkt' else f'corpora/{package}')
+            package_path = f'tokenizers/{package}' if package == 'punkt' else f'corpora/{package}'
+            nltk.data.find(package_path)
         except LookupError:
-            print(f"NLTK data package '{package}' not found. Downloading...")
-            nltk.download(package, quiet=True)
+            print(f"NLTK data package '{package}' not found. Downloading to '{local_nltk_dir}'...")
+            nltk.download(package, download_dir=local_nltk_dir, quiet=True)
             print(f"'{package}' downloaded.")
 
 def start_lt_server():
@@ -65,9 +75,7 @@ def word_tools():
     synsets = wordnet.synsets(word)
     if synsets:
         for syn in synsets:
-            # Add definition
             definitions.append(f"({syn.pos()}) {syn.definition()}")
-            # Add synonyms
             for lemma in syn.lemmas():
                 syn_word = lemma.name().replace('_', ' ')
                 if syn_word != word:
@@ -100,46 +108,20 @@ def check_text():
 
     try:
         tool.language = language
+        # Set user-defined controls for this specific check
+        tool.disabled_rules = set(data.get('disabled_rules', []))
+        tool.disabled_categories = set(data.get('disabled_categories', []))
         matches = tool.check(text)
     except Exception as e:
         return jsonify({"error": "An unexpected error occurred during grammar check.", "details": str(e)}), 500
 
-    def get_error_type(category: str) -> str:
-        if category in ['TYPOS']: return 'Spelling'
-        if category in ['GRAMMAR', 'CASING', 'CAPITALIZATION', 'PUNCTUATION', 'CONFUSED_WORDS', 'SEMANTICS', 'SYNTAX']: return 'Grammar'
-        if category in ['STYLE', 'REDUNDANCY', 'TYPOGRAPHY', 'CLARITY', 'MISC']: return 'Style'
-        return category.title()
-
+    # Convert Match objects to a list of dictionaries to be JSON serializable
     results = []
     for m in matches:
         match_dict = {k: v for k, v in m.__dict__.items() if not k.startswith('_')}
-        match_dict['type'] = get_error_type(m.category)
         results.append(match_dict)
 
-    def calculate_analytics(text: str, current_results: list) -> dict:
-        word_count = len(text.strip().split())
-        if word_count == 0:
-            return {"wordCount": 0, "overallScore": 100, "correctnessScore": 100, "clarityScore": 100, "styleScore": 100}
-
-        errors_per_100_words = (len(current_results) / word_count) * 100
-        overall_score = max(0, 100 - round(errors_per_100_words * 2))
-
-        correctness_errors = sum(1 for r in current_results if r['type'] in ['Spelling', 'Grammar'])
-        clarity_errors = sum(1 for r in current_results if r['type'] == 'Clarity')
-        style_errors = sum(1 for r in current_results if r['type'] == 'Style')
-
-        correctness_score = max(0, 100 - round(((correctness_errors / word_count) * 100) * 5))
-        clarity_score = max(0, 100 - round(((clarity_errors / word_count) * 100) * 5))
-        style_score = max(0, 100 - round(((style_errors / word_count) * 100) * 5))
-
-        return {
-            "wordCount": word_count, "overallScore": overall_score, "correctnessScore": correctness_score,
-            "clarityScore": clarity_score, "styleScore": style_score,
-        }
-
-    analytics = calculate_analytics(text, results)
-
-    return jsonify({"matches": results, "analytics": analytics})
+    return jsonify(results)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5001, debug=True)

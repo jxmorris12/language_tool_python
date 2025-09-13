@@ -3,28 +3,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const editor = document.getElementById('editor');
     const errorList = document.getElementById('error-list');
     const wordCountEl = document.getElementById('word-count');
-
-    // Analytics Panel Elements
-    const overallScoreEl = document.getElementById('overall-score');
-    const correctnessBarEl = document.getElementById('correctness-bar');
-    const clarityBarEl = document.getElementById('clarity-bar');
-    const styleBarEl = document.getElementById('style-bar');
-
-    // Controls
-    const filterControls = document.getElementById('filter-controls');
     const languageSwitch = document.getElementById('language-switch');
     const fontSelect = document.getElementById('font-select');
-
-    // Context Menu Elements
     const contextMenu = document.getElementById('context-menu');
     const thesaurusResultsEl = document.getElementById('thesaurus-results');
     const dictionaryResultsEl = document.getElementById('dictionary-results');
+    const settingsBtn = document.getElementById('settings-btn');
+    const settingsModalOverlay = document.getElementById('settings-modal-overlay');
+    const closeSettingsBtn = document.getElementById('close-settings-btn');
+    const categoryToggles = document.getElementById('category-toggles');
 
     // --- State Variables ---
     let debounceTimer;
     let lastMatches = [];
-    let currentFilter = 'All';
     let currentLanguage = 'en-US';
+    const disabledRules = new Set();
+    const disabledCategories = new Set();
+    const availableCategories = ['Spelling', 'Grammar', 'Style', 'Typography', 'Clarity', 'Redundancy', 'Misc'];
 
     // --- Utility to escape HTML ---
     function escapeHtml(unsafe) {
@@ -37,9 +32,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const currentText = editor.innerText;
         updateWordCount(currentText);
         debounceTimer = setTimeout(() => {
-            const finalText = editor.innerText;
-            if (finalText.trim().length > 0) {
-                checkGrammar(finalText);
+            if (currentText.trim().length > 0) {
+                checkGrammar(currentText);
             } else {
                 resetUI();
             }
@@ -53,7 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
         lastMatches = [];
         editor.innerHTML = '';
         errorList.innerHTML = '<p class="placeholder-text">Start typing to see suggestions.</p>';
-        updateAnalyticsPanel({ wordCount: 0, overallScore: 100, correctnessScore: 100, clarityScore: 100, styleScore: 100 });
+        wordCountEl.textContent = 'Words: 0';
     }
 
     // --- Word Count ---
@@ -69,16 +63,20 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch('/check', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: text, language: currentLanguage }),
+                body: JSON.stringify({
+                    text: text,
+                    language: currentLanguage,
+                    disabled_rules: Array.from(disabledRules),
+                    disabled_categories: Array.from(disabledCategories)
+                }),
             });
             if (!response.ok) {
                 const errorData = await response.json();
                 errorList.innerHTML = `<p class="placeholder-text error-message">API Error: ${errorData.error}</p>`;
                 return;
             }
-            const data = await response.json();
-            lastMatches = data.matches || [];
-            updateAnalyticsPanel(data.analytics);
+            const matches = await response.json();
+            lastMatches = matches || [];
             applyHighlights(lastMatches, text);
         } catch (error) {
             console.error('Network or fetch error:', error);
@@ -102,16 +100,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- UI Rendering ---
-    function updateAnalyticsPanel(analytics) {
-        if (!analytics) return;
-        overallScoreEl.textContent = analytics.overallScore;
-        correctnessBarEl.style.width = `${analytics.correctnessScore}%`;
-        clarityBarEl.style.width = `${analytics.clarityScore}%`;
-        styleBarEl.style.width = `${analytics.styleScore}%`;
-    }
-
     function applyHighlights(matches, text) {
-        displayErrorsInSidebar();
+        displayErrorsInSidebar(matches);
         if (!matches) return;
         let cursorPosition = saveCursorPosition();
         matches.sort((a, b) => a.offset - b.offset);
@@ -128,36 +118,31 @@ document.addEventListener('DOMContentLoaded', () => {
         restoreCursorPosition(cursorPosition);
     }
 
-    function displayErrorsInSidebar() {
+    function displayErrorsInSidebar(matches) {
         errorList.innerHTML = '';
-        const filteredMatches = lastMatches.filter(match => currentFilter === 'All' || match.type === currentFilter);
-        if (filteredMatches.length === 0) {
-            errorList.innerHTML = `<p class="placeholder-text">${currentFilter === 'All' ? 'No errors detected.' : `No ${currentFilter} errors.`}</p>`;
+        if (!matches || matches.length === 0) {
+            errorList.innerHTML = '<p class="placeholder-text">No errors detected. Good job!</p>';
             return;
         }
-        filteredMatches.forEach(match => {
+        matches.forEach(match => {
             const card = document.createElement('div');
             card.className = 'error-card';
             card.dataset.offset = match.offset;
-            card.dataset.type = match.type;
-            card.dataset.ruleId = match.ruleId; // Store ruleId for the link
-
-            const suggestionsHTML = match.replacements.slice(0, 3).map(rep =>
-                `<button class="suggestion-btn" data-offset="${match.offset}" data-error-length="${match.errorLength}" data-replacement-text="${escapeHtml(rep)}">${escapeHtml(rep)}</button>`
-            ).join('');
-
+            card.dataset.ruleId = match.ruleId;
+            const category = match.category; // Using raw category for potential disabling
             const learnMoreUrl = `https://community.languagetool.org/rule/show/${match.ruleId}?lang=${currentLanguage.split('-')[0]}`;
 
             card.innerHTML = `
-                <div class="error-card-header type-${match.type.toLowerCase()}">
-                    <span>${match.type}</span>
-                    <a href="${learnMoreUrl}" target="_blank" class="learn-more-link" title="Learn more about this rule">?</a>
+                <div class="error-card-header">
+                    <span>${escapeHtml(category)}</span>
+                    <div class="card-controls">
+                        <a href="${learnMoreUrl}" target="_blank" class="learn-more-link" title="Learn more about this rule">?</a>
+                        <button class="ignore-rule-btn" title="Ignore this rule">&times;</button>
+                    </div>
                 </div>
                 <div class="error-card-body">
                     <p>${escapeHtml(match.message)}</p>
-                    <div class="suggestions-container">
-                        ${suggestionsHTML || 'No suggestions.'}
-                    </div>
+                    <div class="rule-id-container">Rule: <code>${match.ruleId}</code></div>
                 </div>`;
             errorList.appendChild(card);
         });
@@ -168,20 +153,26 @@ document.addEventListener('DOMContentLoaded', () => {
         dictionaryResultsEl.innerHTML = data.definitions.length > 0 ? `<ul>${data.definitions.slice(0, 3).map(d => `<li>${escapeHtml(d)}</li>`).join('')}</ul>` : 'No definition found.';
     }
 
-    function applyCorrection(offset, errorLength, replacementText) {
-        const text = editor.innerText;
-        const newText = text.substring(0, offset) + replacementText + text.substring(offset + errorLength);
-        const oldCursorPos = saveCursorPosition();
-        let newCursorPos = oldCursorPos;
-        if (oldCursorPos > offset) {
-            newCursorPos += replacementText.length - errorLength;
-        }
-        editor.innerText = newText;
-        restoreCursorPosition(newCursorPos);
-        handleInput();
-    }
-
     // --- Event Listeners ---
+    settingsBtn.addEventListener('click', () => settingsModalOverlay.classList.remove('hidden'));
+    closeSettingsBtn.addEventListener('click', () => settingsModalOverlay.classList.add('hidden'));
+    settingsModalOverlay.addEventListener('click', (event) => {
+        if (event.target === settingsModalOverlay) {
+            settingsModalOverlay.classList.add('hidden');
+        }
+    });
+
+    categoryToggles.addEventListener('change', (event) => {
+        const checkbox = event.target;
+        const category = checkbox.dataset.category;
+        if (checkbox.checked) {
+            disabledCategories.delete(category);
+        } else {
+            disabledCategories.add(category);
+        }
+        checkGrammar(editor.innerText);
+    });
+
     languageSwitch.addEventListener('click', (event) => {
         const target = event.target.closest('.lang-btn');
         if (target) {
@@ -196,36 +187,28 @@ document.addEventListener('DOMContentLoaded', () => {
         editor.style.fontFamily = event.target.value;
     });
 
-    filterControls.addEventListener('click', (event) => {
-        const target = event.target.closest('.filter-btn');
-        if (target) {
-            filterControls.querySelector('.active').classList.remove('active');
-            target.classList.add('active');
-            currentFilter = target.dataset.filter;
-            displayErrorsInSidebar();
-        }
-    });
-
     errorList.addEventListener('click', (event) => {
-        const suggestionBtn = event.target.closest('.suggestion-btn');
+        const ignoreBtn = event.target.closest('.ignore-rule-btn');
         const card = event.target.closest('.error-card');
-        if (suggestionBtn) {
-            const { offset, errorLength, replacementText } = suggestionBtn.dataset;
-            applyCorrection(parseInt(offset), parseInt(errorLength), replacementText);
+
+        if (ignoreBtn) {
+            const ruleId = card.dataset.ruleId;
+            if (ruleId) {
+                disabledRules.add(ruleId);
+                checkGrammar(editor.innerText);
+            }
         } else if (card) {
             const offset = card.dataset.offset;
             const errorSpan = editor.querySelector(`.grammar-error[data-offset="${offset}"]`);
             if (errorSpan) {
                 errorSpan.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                errorSpan.style.transition = 'background-color 0.1s ease';
-                errorSpan.style.backgroundColor = 'rgba(254, 107, 107, 0.5)';
-                setTimeout(() => { errorSpan.style.backgroundColor = ''; }, 500);
             }
         }
     });
 
     editor.addEventListener('contextmenu', (event) => {
         event.preventDefault();
+        hideContextMenu();
         const selection = window.getSelection();
         let word = selection.toString().trim();
         if (word.length > 0) {
@@ -236,9 +219,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    window.addEventListener('click', () => {
+    function hideContextMenu() {
         contextMenu.classList.add('hidden');
-    });
+    }
+    window.addEventListener('click', hideContextMenu);
+    editor.addEventListener('scroll', hideContextMenu);
+
 
     // --- Cursor Position Handling ---
     function saveCursorPosition() {
@@ -275,6 +261,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Initial State ---
-    resetUI();
-    editor.focus();
+    function initialize() {
+        categoryToggles.innerHTML = availableCategories.map(cat => `
+            <div class="category-toggle">
+                <input type="checkbox" id="toggle-${cat}" data-category="${cat.toUpperCase()}" checked>
+                <label for="toggle-${cat}">${cat}</label>
+            </div>
+        `).join('');
+        resetUI();
+        editor.focus();
+    }
+
+    initialize();
 });
