@@ -48,9 +48,16 @@ def check_text():
     if not data or 'text' not in data:
         return jsonify({"error": "No text provided."}), 400
 
-    text = data.get('text')
+    text = data.get('text', '')
+    language = data.get('language', 'en-US') # Default to en-US
 
     try:
+        # Set the language for this specific check
+        # This is safe because Flask handles requests in threads, but our `tool` object is global.
+        # For a production app, we would use a more robust solution like passing the tool
+        # instance or creating one per request if they were lightweight.
+        # For this library, changing the language on the single instance is the intended use.
+        tool.language = language
         matches = tool.check(text)
     except Exception as e:
         # Catch other potential errors during checking

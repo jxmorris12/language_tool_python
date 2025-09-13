@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Lora:ital,wght@0,400;0,700;1,400&family=Source+Code+Pro:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
@@ -29,6 +29,19 @@
             </div>
             <footer id="status-bar">
                 <div id="word-count">Words: 0</div>
+                <div class="status-bar-divider"></div>
+                <div id="language-switch">
+                    <button class="lang-btn active" data-lang="en-US" title="Switch to American English">US</button>
+                    <button class="lang-btn" data-lang="en-GB" title="Switch to British English">UK</button>
+                </div>
+                <div class="status-bar-divider"></div>
+                <div id="font-selector">
+                    <select id="font-select" title="Change editor font">
+                        <option value="'Inter', sans-serif">Inter</option>
+                        <option value="'Lora', serif">Lora</option>
+                        <option value="'Source Code Pro', monospace">Source Code Pro</option>
+                    </select>
+                </div>
             </footer>
         </main>
 

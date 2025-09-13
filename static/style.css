@@ -112,8 +112,58 @@ body {
     padding: 0.5rem 1rem;
     font-size: 0.85rem;
     color: var(--secondary-text-color);
-    text-align: right;
     flex-shrink: 0;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 1rem;
+}
+
+.status-bar-divider {
+    height: 20px;
+    width: 1px;
+    background-color: var(--border-color);
+}
+
+#language-switch {
+    display: flex;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.lang-btn {
+    padding: 0.25rem 0.75rem;
+    background-color: transparent;
+    border: none;
+    color: var(--secondary-text-color);
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.lang-btn.active {
+    background-color: var(--accent-color);
+    color: #ffffff;
+}
+
+#font-select {
+    background-color: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--secondary-text-color);
+    border-radius: 6px;
+    padding: 0.25rem 0.5rem;
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238a93a2' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
+    background-size: 1em;
+    padding-right: 2rem; /* Make space for the arrow */
+}
+
+#font-select:hover {
+    border-color: #4a4a52;
 }
 
 /* --- Error Highlighting & Tooltip (from previous step, still relevant) --- */
@@ -272,6 +322,29 @@ body {
 
 .error-card-body strong {
     color: var(--secondary-text-color);
+}
+
+.suggestions-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+
+.suggestion-btn {
+    padding: 0.25rem 0.6rem;
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--border-color);
+    color: var(--primary-text-color);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+    font-size: 0.85rem;
+}
+
+.suggestion-btn:hover {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
 }
 
 /* Color coding for error types */
