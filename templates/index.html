@@ -35,7 +35,39 @@
         <!-- Right Sidebar for error listing -->
         <aside id="right-sidebar" class="sidebar">
             <div class="sidebar-header">
-                <h3>Suggestions</h3>
+                <h3>Writing Assistant</h3>
+            </div>
+            <div id="analytics-panel">
+                <div class="score-widget">
+                    <div class="score-title">Overall Score</div>
+                    <div id="overall-score" class="score-value">100</div>
+                </div>
+                <div class="sub-scores">
+                    <div class="sub-score-item">
+                        <span>Correctness</span>
+                        <div class="progress-bar-container">
+                            <div id="correctness-bar" class="progress-bar"></div>
+                        </div>
+                    </div>
+                    <div class="sub-score-item">
+                        <span>Clarity</span>
+                        <div class="progress-bar-container">
+                            <div id="clarity-bar" class="progress-bar"></div>
+                        </div>
+                    </div>
+                    <div class="sub-score-item">
+                        <span>Style</span>
+                        <div class="progress-bar-container">
+                            <div id="style-bar" class="progress-bar"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="filter-controls">
+                <button class="filter-btn active" data-filter="All">All</button>
+                <button class="filter-btn" data-filter="Grammar">Grammar</button>
+                <button class="filter-btn" data-filter="Style">Style</button>
+                <button class="filter-btn" data-filter="Spelling">Spelling</button>
             </div>
             <div id="error-list" class="sidebar-content">
                 <!-- Errors will be dynamically inserted here by script.js -->

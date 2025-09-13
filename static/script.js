@@ -1,37 +1,52 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- DOM Element References ---
     const editor = document.getElementById('editor');
-    const tooltip = document.getElementById('tooltip');
     const errorList = document.getElementById('error-list');
     const wordCountEl = document.getElementById('word-count');
 
-    let debounceTimer;
+    // Analytics Panel Elements
+    const overallScoreEl = document.getElementById('overall-score');
+    const correctnessBarEl = document.getElementById('correctness-bar');
+    const clarityBarEl = document.getElementById('clarity-bar');
+    const styleBarEl = document.getElementById('style-bar');
 
-    // --- Debouncing and Input Handling ---
+    // Filter Controls
+    const filterControls = document.getElementById('filter-controls');
+
+    let debounceTimer;
+    let lastMatches = []; // Store the last set of matches for filtering
+    let currentFilter = 'All'; // Default filter
+
+    // --- Utility to escape HTML ---
+    function escapeHtml(unsafe) {
+        return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    // --- Input Handling ---
     const handleInput = () => {
         clearTimeout(debounceTimer);
         const text = editor.innerText;
-        updateWordCount(text);
 
         debounceTimer = setTimeout(() => {
             if (text.trim().length > 0) {
                 checkGrammar(text);
             } else {
-                clearHighlights();
-                errorList.innerHTML = '<p class="placeholder-text">No errors detected.</p>';
+                resetUI();
             }
-        }, 1000); // 1-second delay
+        }, 1000);
     };
 
     editor.addEventListener('input', handleInput);
 
-    // --- Word Count ---
-    function updateWordCount(text) {
-        const words = text.trim().split(/\s+/).filter(word => word.length > 0);
-        wordCountEl.textContent = `Words: ${words.length}`;
+    // --- Reset UI State ---
+    function resetUI() {
+        lastMatches = [];
+        editor.innerHTML = '';
+        errorList.innerHTML = '<p class="placeholder-text">Start typing to see suggestions.</p>';
+        updateAnalyticsPanel({ wordCount: 0, overallScore: 100, correctnessScore: 100, clarityScore: 100, styleScore: 100 });
     }
 
-    // --- API Communication ---
+    // --- API Communication & Main Rendering Call ---
     async function checkGrammar(text) {
         try {
             const response = await fetch('/check', {
@@ -47,58 +62,57 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            const matches = await response.json();
-            applyHighlights(matches);
-            displayErrorsInSidebar(matches);
+            const data = await response.json();
+            lastMatches = data.matches || [];
+
+            updateAnalyticsPanel(data.analytics);
+            displayErrorsInSidebar(); // Renders based on lastMatches and currentFilter
+            applyHighlights(lastMatches, text);
         } catch (error) {
             console.error('Network or fetch error:', error);
             errorList.innerHTML = '<p class="placeholder-text error-message">Could not connect to server.</p>';
         }
     }
 
-    // --- Highlighting Logic ---
-    function clearHighlights() {
-        const errors = editor.querySelectorAll('.grammar-error');
-        errors.forEach(errorSpan => {
-            const parent = errorSpan.parentNode;
-            while (errorSpan.firstChild) {
-                parent.insertBefore(errorSpan.firstChild, errorSpan);
-            }
-            parent.removeChild(errorSpan);
-        });
-        editor.normalize();
+    // --- Analytics Panel & Score Logic ---
+    function updateAnalyticsPanel(analytics) {
+        if (!analytics) return;
+        wordCountEl.textContent = `Words: ${analytics.wordCount}`;
+        overallScoreEl.textContent = analytics.overallScore;
+        correctnessBarEl.style.width = `${analytics.correctnessScore}%`;
+        clarityBarEl.style.width = `${analytics.clarityScore}%`;
+        styleBarEl.style.width = `${analytics.styleScore}%`;
     }
 
-    function applyHighlights(matches) {
+    // --- Highlighting Logic ---
+    function applyHighlights(matches, text) {
+        if (!matches) return;
+
         const selection = window.getSelection();
         const anchorNode = selection.anchorNode;
         const anchorOffset = selection.anchorOffset;
 
-        clearHighlights();
-        if (matches.length === 0) return;
-
-        matches.sort((a, b) => b.offset - a.offset);
-
+        // Rebuild HTML to apply highlights
+        matches.sort((a, b) => a.offset - b.offset);
+        let newHtml = '';
+        let lastIndex = 0;
         matches.forEach(match => {
-            const range = findTextRange(editor, match.offset, match.errorLength);
-            if (range) {
-                const span = document.createElement('span');
-                span.className = 'grammar-error';
-                span.dataset.message = match.message;
-                span.dataset.replacements = match.replacements.join(', ');
-                span.dataset.offset = match.offset; // Store offset for click-to-highlight
-                try {
-                    range.surroundContents(span);
-                } catch (e) {
-                    console.error('Could not surround contents for match:', match, e);
-                }
-            }
+            newHtml += escapeHtml(text.substring(lastIndex, match.offset));
+            const errorText = escapeHtml(text.substring(match.offset, match.offset + match.errorLength));
+            const message = escapeHtml(match.message);
+            newHtml += `<span class="grammar-error" data-message="${message}" data-offset="${match.offset}">${errorText}</span>`;
+            lastIndex = match.offset + match.errorLength;
         });
+        newHtml += escapeHtml(text.substring(lastIndex));
+        editor.innerHTML = newHtml.replace(/\n/g, '<br>');
 
+        // Restore cursor position (best effort)
+        // This is complex and may not work perfectly after innerHTML change.
         if (anchorNode) {
             try {
                 const newRange = document.createRange();
-                newRange.setStart(anchorNode, anchorOffset);
+                // This part is simplified and might not be accurate
+                newRange.setStart(editor.firstChild || editor, 0);
                 newRange.collapse(true);
                 selection.removeAllRanges();
                 selection.addRange(newRange);
@@ -106,55 +120,45 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function findTextRange(root, start, length) {
-        const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
-        let charCount = 0;
-        let startNode, endNode, startOffset, endOffset;
-        while (walker.nextNode()) {
-            const node = walker.currentNode;
-            const nodeLength = node.nodeValue.length;
-            if (charCount <= start && charCount + nodeLength > start) {
-                startNode = node;
-                startOffset = start - charCount;
-            }
-            if (charCount < start + length && charCount + nodeLength >= start + length) {
-                endNode = node;
-                endOffset = start + length - charCount;
-                break;
-            }
-            charCount += nodeLength;
-        }
-        if (startNode && endNode) {
-            const range = document.createRange();
-            range.setStart(startNode, startOffset);
-            range.setEnd(endNode, endOffset);
-            return range;
-        }
-        return null;
-    }
+    // --- Sidebar Logic ---
+    function displayErrorsInSidebar() {
+        errorList.innerHTML = '';
+        const filteredMatches = lastMatches.filter(match =>
+            currentFilter === 'All' || match.type === currentFilter
+        );
 
-    // --- Sidebar and Tooltip Logic ---
-    function displayErrorsInSidebar(matches) {
-        errorList.innerHTML = ''; // Clear previous errors
-        if (matches.length === 0) {
-            errorList.innerHTML = '<p class="placeholder-text">No errors detected. Good job!</p>';
+        if (filteredMatches.length === 0) {
+            const message = currentFilter === 'All' ? 'No errors detected. Good job!' : `No ${currentFilter} errors.`;
+            errorList.innerHTML = `<p class="placeholder-text">${message}</p>`;
             return;
         }
-        matches.sort((a, b) => a.offset - b.offset); // Sort by position in text
-        matches.forEach(match => {
+
+        filteredMatches.forEach(match => {
             const card = document.createElement('div');
             card.className = 'error-card';
             card.dataset.offset = match.offset;
+            card.dataset.type = match.type;
             card.innerHTML = `
                 <div class="error-card-header type-${match.type.toLowerCase()}">${match.type}</div>
                 <div class="error-card-body">
-                    <p>${match.message}</p>
-                    ${match.replacements.length > 0 ? `<strong>Suggestion:</strong> <em>${match.replacements[0]}</em>` : ''}
+                    <p>${escapeHtml(match.message)}</p>
+                    ${match.replacements.length > 0 ? `<strong>Suggestion:</strong> <em>${escapeHtml(match.replacements[0])}</em>` : ''}
                 </div>
             `;
             errorList.appendChild(card);
         });
     }
+
+    // --- Event Listeners for Interaction ---
+    filterControls.addEventListener('click', (event) => {
+        const target = event.target;
+        if (target.classList.contains('filter-btn')) {
+            filterControls.querySelector('.active').classList.remove('active');
+            target.classList.add('active');
+            currentFilter = target.dataset.filter;
+            displayErrorsInSidebar(); // Re-render the list with the new filter
+        }
+    });
 
     errorList.addEventListener('click', (event) => {
         const card = event.target.closest('.error-card');
@@ -163,36 +167,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const errorSpan = editor.querySelector(`.grammar-error[data-offset="${offset}"]`);
             if (errorSpan) {
                 errorSpan.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                // Flash highlight
                 errorSpan.style.transition = 'background-color 0.1s ease';
                 errorSpan.style.backgroundColor = 'rgba(254, 107, 107, 0.5)';
-                setTimeout(() => {
-                    errorSpan.style.backgroundColor = '';
-                }, 500);
+                setTimeout(() => { errorSpan.style.backgroundColor = ''; }, 500);
             }
         }
     });
 
-    // Tooltip logic remains the same
-    editor.addEventListener('mouseover', (event) => {
-        const target = event.target;
-        if (target.classList.contains('grammar-error')) {
-            tooltip.innerHTML = `<strong>${target.dataset.message}</strong><br>Suggestions: <em>${target.dataset.replacements || 'none'}</em>`;
-            const rect = target.getBoundingClientRect();
-            tooltip.style.left = `${rect.left}px`;
-            tooltip.style.top = `${rect.bottom + 5}px`;
-            tooltip.classList.remove('hidden');
-            tooltip.classList.add('visible');
-        }
-    });
-    editor.addEventListener('mouseout', (event) => {
-        if (event.target.classList.contains('grammar-error')) {
-            tooltip.classList.remove('visible');
-        }
-    });
-
     // --- Initial State ---
+    resetUI();
     editor.focus();
-    updateWordCount('');
-    errorList.innerHTML = '<p class="placeholder-text">Start typing to see suggestions.</p>';
 });

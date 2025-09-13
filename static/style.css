@@ -151,6 +151,91 @@ body {
     transform: translateY(0);
 }
 
+/* --- Analytics Panel --- */
+#analytics-panel {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.score-widget {
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.score-title {
+    font-size: 0.9rem;
+    color: var(--secondary-text-color);
+    margin-bottom: 0.25rem;
+}
+
+.score-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.sub-scores {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.sub-score-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+}
+
+.progress-bar-container {
+    width: 60%;
+    height: 8px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+.progress-bar {
+    height: 100%;
+    width: 100%; /* Default to full */
+    border-radius: 4px;
+    transition: width 0.5s ease-in-out;
+}
+
+#correctness-bar { background-color: var(--accent-color); }
+#clarity-bar { background-color: #6ab7ff; }
+#style-bar { background-color: #5ce0a3; }
+
+
+/* --- Filter Controls --- */
+#filter-controls {
+    padding: 0.75rem 1rem;
+    display: flex;
+    gap: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.filter-btn {
+    flex-grow: 1;
+    padding: 0.5rem;
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+    color: var(--secondary-text-color);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.filter-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.filter-btn.active {
+    background-color: var(--accent-color);
+    color: #ffffff;
+    border-color: var(--accent-color);
+}
+
+
 /* --- Error List Sidebar --- */
 .error-card {
     background-color: rgba(255, 255, 255, 0.03);

@@ -90,7 +90,39 @@ def check_text():
         } for match in matches
     ]
 
-    return jsonify(results)
+    # --- Analytics Calculation ---
+    def calculate_analytics(text: str, matches: list) -> dict:
+        """Calculates various scores and metrics based on the text and matches."""
+        word_count = len(text.strip().split())
+        if word_count == 0:
+            return {
+                "wordCount": 0, "overallScore": 100, "correctnessScore": 100,
+                "clarityScore": 100, "styleScore": 100
+            }
+
+        errors_per_100_words = (len(matches) / word_count) * 100
+        overall_score = max(0, 100 - round(errors_per_100_words * 2)) # Penalize 2 points per error per 100 words
+
+        # Sub-score calculation
+        correctness_errors = sum(1 for m in results if m['type'] in ['Spelling', 'Grammar'])
+        clarity_errors = sum(1 for m in results if m['type'] in ['Clarity'])
+        style_errors = sum(1 for m in results if m['type'] in ['Style'])
+
+        correctness_score = max(0, 100 - round(((correctness_errors / word_count) * 100) * 5))
+        clarity_score = max(0, 100 - round(((clarity_errors / word_count) * 100) * 5))
+        style_score = max(0, 100 - round(((style_errors / word_count) * 100) * 5))
+
+        return {
+            "wordCount": word_count,
+            "overallScore": overall_score,
+            "correctnessScore": correctness_score,
+            "clarityScore": clarity_score,
+            "styleScore": style_score,
+        }
+
+    analytics = calculate_analytics(text, matches)
+
+    return jsonify({"matches": results, "analytics": analytics})
 
 if __name__ == '__main__':
     # Running on port 5001 to avoid potential conflicts.
