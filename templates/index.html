@@ -3,23 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Grammar Teacher</title>
+    <title>Offline Writing Assistant</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="main-container">
-        <header>
-            <h1>Grammar Teacher</h1>
-            <p>Your personal assistant for clear and correct writing.</p>
-        </header>
-        <div id="editor-container">
-            <div id="editor" contenteditable="true" spellcheck="false"></div>
-        </div>
-        <div id="tooltip" class="hidden"></div>
+
+    <div class="app-container">
+        <!-- Left Sidebar for future project/chapter navigation -->
+        <aside id="left-sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <h3>Projects</h3>
+            </div>
+            <div class="sidebar-content">
+                <p class="placeholder-text">Chapter navigation will appear here.</p>
+            </div>
+        </aside>
+
+        <!-- Main content area with editor -->
+        <main id="editor-pane">
+            <div id="editor-container">
+                <div id="editor" contenteditable="true" spellcheck="false"></div>
+            </div>
+            <footer id="status-bar">
+                <div id="word-count">Words: 0</div>
+            </footer>
+        </main>
+
+        <!-- Right Sidebar for error listing -->
+        <aside id="right-sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <h3>Suggestions</h3>
+            </div>
+            <div id="error-list" class="sidebar-content">
+                <!-- Errors will be dynamically inserted here by script.js -->
+            </div>
+        </aside>
     </div>
+
+    <!-- Tooltip for hover-over details, remains hidden until needed -->
+    <div id="tooltip" class="hidden"></div>
+
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>

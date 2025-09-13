@@ -1,18 +1,33 @@
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import language_tool_python
+import os
 
 app = Flask(__name__)
 CORS(app) # Enable CORS for all routes
 
-# Use the LanguageTool Public API. This avoids the large local download.
+# --- Offline Mode Setup ---
+# The application will now use the local LanguageTool server.
+# The user must set the LTP_JAR_DIR_PATH environment variable
+# to the location of the unzipped LanguageTool server files.
+tool = None
 try:
-    # We can specify a language, e.g., 'en-US'
-    tool = language_tool_python.LanguageToolPublicAPI('en-US')
-    print("Successfully connected to LanguageTool Public API.")
+    # Check if the environment variable is set.
+    # The library itself will use this path.
+    if 'LTP_JAR_DIR_PATH' not in os.environ:
+        print("INFO: LTP_JAR_DIR_PATH environment variable not set.")
+        print("INFO: The app will try to use the default cached server if available.")
+        # We can let it proceed, it will either find a cached version or fail,
+        # which is better than crashing the whole app on startup.
+
+    print("Initializing local LanguageTool server...")
+    tool = language_tool_python.LanguageTool('en-US')
+    print("Local LanguageTool server initialized successfully.")
+
 except Exception as e:
-    print(f"Error initializing LanguageToolPublicAPI: {e}")
-    tool = None
+    print(f"FATAL: Failed to initialize local LanguageTool server: {e}")
+    print("FATAL: Please ensure Java is installed and the LTP_JAR_DIR_PATH environment variable is set correctly.")
+    # The tool will remain None, and the API will return an error.
 
 @app.route('/')
 def index():
@@ -22,7 +37,12 @@ def index():
 @app.route('/check', methods=['POST'])
 def check_text():
     if not tool:
-        return jsonify({"error": "LanguageTool API is not available."}), 500
+        error_message = (
+            "LanguageTool server is not running. "
+            "Please check the server logs. Ensure Java is installed and the "
+            "LTP_JAR_DIR_PATH environment variable is set to your LanguageTool folder."
+        )
+        return jsonify({"error": error_message}), 503 # Service Unavailable
 
     data = request.get_json()
     if not data or 'text' not in data:
@@ -32,24 +52,41 @@ def check_text():
 
     try:
         matches = tool.check(text)
-    except language_tool_python.utils.RateLimitError:
-        # Return a specific error for rate limiting
-        return jsonify({"error": "Rate limit exceeded. Please wait a moment before trying again."}), 429
     except Exception as e:
-        # Return a generic error for other issues
+        # Catch other potential errors during checking
         return jsonify({"error": "An unexpected error occurred while checking grammar.", "details": str(e)}), 500
+
+    # --- Helper function to categorize errors ---
+    def get_error_type(category: str) -> str:
+        """Maps raw LanguageTool categories to user-friendly types."""
+        # This mapping can be expanded based on the full list of LT categories
+        if category in ['TYPOS']:
+            return 'Spelling'
+        elif category in [
+            'GRAMMAR', 'CASING', 'CAPITALIZATION', 'PUNCTUATION',
+            'CONFUSED_WORDS', 'SEMANTICS', 'SYNTAX'
+        ]:
+            return 'Grammar'
+        elif category in [
+            'STYLE', 'REDUNDANCY', 'TYPOGRAPHY', 'CLARITY', 'MISC'
+        ]:
+            return 'Style'
+        else:
+            # For any other categories, we can see them as they come up
+            return category.title()
 
     # Convert Match objects to a list of dictionaries to be JSON serializable
     results = [
         {
-            'offset': match.offset,
-            'errorLength': match.errorLength,
-            'category': match.category,
-            'ruleId': match.ruleId,
+            'type': get_error_type(match.category),
             'message': match.message,
             'replacements': match.replacements,
+            'offset': match.offset,
+            'errorLength': match.errorLength,
             'context': match.context,
             'sentence': match.sentence,
+            'category': match.category,
+            'ruleId': match.ruleId
         } for match in matches
     ]
 

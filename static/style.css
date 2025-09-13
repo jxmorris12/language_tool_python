@@ -1,14 +1,17 @@
-/* --- Basic Reset & Global Styles --- */
+/* --- Global Styles & Variables --- */
 :root {
     --background-color: #1a1a1d;
+    --editor-pane-bg: #1f1f23;
+    --sidebar-bg: #161618;
     --primary-text-color: #e0e0e0;
-    --secondary-text-color: #95a3b6;
-    --editor-bg-color: rgba(44, 44, 52, 0.5);
-    --editor-border-color: rgba(255, 255, 255, 0.1);
-    --error-highlight-bg: rgba(254, 107, 107, 0.2);
-    --error-highlight-underline: #fe6b6b;
-    --tooltip-bg: #2c2c34;
+    --secondary-text-color: #8a93a2;
+    --border-color: #303036;
+    --accent-color: #fe6b6b;
     --font-family: 'Inter', sans-serif;
+}
+
+* {
+    box-sizing: border-box;
 }
 
 body {
@@ -16,84 +19,118 @@ body {
     background-color: var(--background-color);
     color: var(--primary-text-color);
     margin: 0;
-    padding: 2rem;
+    font-size: 16px;
+}
+
+/* --- Main App Layout --- */
+.app-container {
+    display: grid;
+    grid-template-columns: 250px 1fr 300px; /* Left Sidebar | Main Editor | Right Sidebar */
+    height: 100vh;
+    width: 100vw;
+}
+
+/* --- Sidebar Styles (Left & Right) --- */
+.sidebar {
+    background-color: var(--sidebar-bg);
+    border-left: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-color);
     display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    min-height: 100vh;
-    background-image: radial-gradient(circle at 1% 1%, #2e2e38, rgba(46, 46, 56, 0) 50%),
-                      radial-gradient(circle at 99% 99%, #3a3a44, rgba(58, 58, 68, 0) 50%);
+    flex-direction: column;
+    height: 100%;
 }
 
-/* --- Main Layout & Header --- */
-.main-container {
-    width: 100%;
-    max-width: 800px;
-    text-align: center;
-    padding-top: 5vh;
+#left-sidebar {
+    border-right: none;
 }
 
-header h1 {
-    font-size: 2.8rem;
-    font-weight: 700;
-    color: #ffffff;
-    margin-bottom: 0.5rem;
+#right-sidebar {
+    border-left: none;
 }
 
-header p {
+.sidebar-header {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+.sidebar-header h3 {
+    margin: 0;
     font-size: 1.1rem;
+    color: #ffffff;
+}
+
+.sidebar-content {
+    padding: 1rem;
+    overflow-y: auto;
+    flex-grow: 1;
+}
+
+.placeholder-text {
     color: var(--secondary-text-color);
-    margin-bottom: 3.5rem;
+    font-style: italic;
+    font-size: 0.9rem;
 }
 
-/* --- Glassmorphic Editor --- */
+.placeholder-text.error-message {
+    color: var(--accent-color);
+}
+
+/* --- Main Editor Pane --- */
+#editor-pane {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background-color: var(--editor-pane-bg);
+}
+
 #editor-container {
-    background: var(--editor-bg-color);
-    border-radius: 16px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid var(--editor-border-color);
-    padding: 1.5rem 2rem;
-    text-align: left;
-    transition: box-shadow 0.3s ease;
-}
-
-#editor-container:focus-within {
-    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.3), 0 0 0 1px var(--editor-border-color);
+    flex-grow: 1;
+    padding: 2rem 3rem;
+    overflow-y: auto;
 }
 
 #editor {
-    min-height: 350px;
+    height: 100%;
     outline: none;
-    font-size: 1rem;
-    line-height: 1.7;
+    font-size: 1.1rem;
+    line-height: 1.8;
     color: var(--primary-text-color);
-    caret-color: var(--error-highlight-underline);
+    caret-color: var(--accent-color);
 }
 
 #editor:empty:before {
-    content: 'Start writing here. Errors will be highlighted as you type.';
+    content: 'Start writing your masterpiece...';
     color: var(--secondary-text-color);
     pointer-events: none;
-    opacity: 0.6;
+    opacity: 0.5;
 }
 
-/* --- Highlighting & Tooltip --- */
+/* --- Status Bar & Word Count --- */
+#status-bar {
+    border-top: 1px solid var(--border-color);
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    color: var(--secondary-text-color);
+    text-align: right;
+    flex-shrink: 0;
+}
+
+/* --- Error Highlighting & Tooltip (from previous step, still relevant) --- */
 .grammar-error {
-    background-color: var(--error-highlight-bg);
-    border-bottom: 2px dotted var(--error-highlight-underline);
+    background-color: rgba(254, 107, 107, 0.15);
+    border-bottom: 2px dotted var(--accent-color);
     cursor: pointer;
     transition: background-color 0.3s ease;
 }
 
 .grammar-error:hover {
-    background-color: rgba(254, 107, 107, 0.3);
+    background-color: rgba(254, 107, 107, 0.25);
 }
 
 #tooltip {
     position: absolute;
-    background-color: var(--tooltip-bg);
+    background-color: #2c2c34;
     color: var(--primary-text-color);
     padding: 12px 16px;
     border-radius: 8px;
@@ -101,17 +138,69 @@ header p {
     font-size: 0.9rem;
     z-index: 1000;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
-    border: 1px solid var(--editor-border-color);
+    border: 1px solid var(--border-color);
     line-height: 1.5;
     opacity: 0;
     transform: translateY(10px);
     transition: opacity 0.2s ease, transform 0.2s ease;
-    pointer-events: none; /* Important */
+    pointer-events: none;
 }
 
 #tooltip.visible {
     opacity: 1;
     transform: translateY(0);
+}
+
+/* --- Error List Sidebar --- */
+.error-card {
+    background-color: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.error-card:hover {
+    background-color: rgba(255, 255, 255, 0.07);
+    border-color: #4a4a52;
+}
+
+.error-card-header {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    border-bottom: 1px solid var(--border-color);
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    text-transform: uppercase;
+}
+
+.error-card-body {
+    padding: 0.75rem;
+    font-size: 0.9rem;
+}
+
+.error-card-body p {
+    margin: 0 0 0.5rem 0;
+}
+
+.error-card-body strong {
+    color: var(--secondary-text-color);
+}
+
+/* Color coding for error types */
+.type-grammar {
+    background-color: rgba(254, 107, 107, 0.1);
+    color: #ff8a8a;
+}
+.type-style {
+    background-color: rgba(77, 171, 247, 0.1);
+    color: #6ab7ff;
+}
+.type-spelling {
+    background-color: rgba(255, 204, 0, 0.1);
+    color: #ffdd57;
 }
 
 .hidden {
