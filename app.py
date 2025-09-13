@@ -2,32 +2,36 @@ from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import language_tool_python
 import os
+import threading
 
 app = Flask(__name__)
-CORS(app) # Enable CORS for all routes
+CORS(app)
 
-# --- Offline Mode Setup ---
-# The application will now use the local LanguageTool server.
-# The user must set the LTP_JAR_DIR_PATH environment variable
-# to the location of the unzipped LanguageTool server files.
+# --- Global Server State ---
 tool = None
-try:
-    # Check if the environment variable is set.
-    # The library itself will use this path.
-    if 'LTP_JAR_DIR_PATH' not in os.environ:
-        print("INFO: LTP_JAR_DIR_PATH environment variable not set.")
-        print("INFO: The app will try to use the default cached server if available.")
-        # We can let it proceed, it will either find a cached version or fail,
-        # which is better than crashing the whole app on startup.
+tool_lock = threading.Lock() # To prevent race conditions during server restarts
 
+def start_lt_server():
+    """Initializes or restarts the LanguageTool server."""
+    global tool
     print("Initializing local LanguageTool server...")
-    tool = language_tool_python.LanguageTool('en-US')
-    print("Local LanguageTool server initialized successfully.")
+    try:
+        if 'LTP_JAR_DIR_PATH' not in os.environ:
+            print("INFO: LTP_JAR_DIR_PATH environment variable not set.")
+            print("INFO: The app will try to use the default cached server if available.")
 
-except Exception as e:
-    print(f"FATAL: Failed to initialize local LanguageTool server: {e}")
-    print("FATAL: Please ensure Java is installed and the LTP_JAR_DIR_PATH environment variable is set correctly.")
-    # The tool will remain None, and the API will return an error.
+        new_tool = language_tool_python.LanguageTool('en-US')
+        new_tool.picky = True  # Enable stricter, more comprehensive checking
+        tool = new_tool
+        print("Local LanguageTool server initialized successfully in Picky mode.")
+    except Exception as e:
+        print(f"FATAL: Failed to initialize local LanguageTool server: {e}")
+        print("FATAL: Please ensure Java is installed and the LTP_JAR_DIR_PATH environment variable is set correctly.")
+        tool = None # Ensure tool is None on failure
+
+# --- Initial Server Startup ---
+start_lt_server()
+
 
 @app.route('/')
 def index():
@@ -36,102 +40,68 @@ def index():
 
 @app.route('/check', methods=['POST'])
 def check_text():
-    if not tool:
-        error_message = (
-            "LanguageTool server is not running. "
-            "Please check the server logs. Ensure Java is installed and the "
-            "LTP_JAR_DIR_PATH environment variable is set to your LanguageTool folder."
-        )
-        return jsonify({"error": error_message}), 503 # Service Unavailable
+    """Handles grammar check requests with a self-healing mechanism."""
+    with tool_lock:
+        # Self-healing: Check if the server is alive, restart if not.
+        # The `_server` attribute is internal, but necessary for this check.
+        if tool is None or not tool._server_is_alive():
+            print("Server process not detected. Attempting to restart...")
+            if tool:
+                tool.close() # Attempt to clean up the old instance
+            start_lt_server()
 
+        if not tool:
+            error_message = (
+                "LanguageTool server is not running and could not be restarted. "
+                "Please check the server logs. Ensure Java is installed and the "
+                "LTP_JAR_DIR_PATH environment variable is set correctly."
+            )
+            return jsonify({"error": error_message}), 503
+
+    # Proceed with the check using the (potentially new) tool instance
     data = request.get_json()
-    if not data or 'text' not in data:
-        return jsonify({"error": "No text provided."}), 400
-
     text = data.get('text', '')
-    language = data.get('language', 'en-US') # Default to en-US
+    language = data.get('language', 'en-US')
 
     try:
-        # Set the language for this specific check
-        # This is safe because Flask handles requests in threads, but our `tool` object is global.
-        # For a production app, we would use a more robust solution like passing the tool
-        # instance or creating one per request if they were lightweight.
-        # For this library, changing the language on the single instance is the intended use.
         tool.language = language
         matches = tool.check(text)
     except Exception as e:
-        # Catch other potential errors during checking
         return jsonify({"error": "An unexpected error occurred while checking grammar.", "details": str(e)}), 500
 
-    # --- Helper function to categorize errors ---
+    # --- Analytics and Response Formatting ---
     def get_error_type(category: str) -> str:
-        """Maps raw LanguageTool categories to user-friendly types."""
-        # This mapping can be expanded based on the full list of LT categories
-        if category in ['TYPOS']:
-            return 'Spelling'
-        elif category in [
-            'GRAMMAR', 'CASING', 'CAPITALIZATION', 'PUNCTUATION',
-            'CONFUSED_WORDS', 'SEMANTICS', 'SYNTAX'
-        ]:
-            return 'Grammar'
-        elif category in [
-            'STYLE', 'REDUNDANCY', 'TYPOGRAPHY', 'CLARITY', 'MISC'
-        ]:
-            return 'Style'
-        else:
-            # For any other categories, we can see them as they come up
-            return category.title()
+        if category in ['TYPOS']: return 'Spelling'
+        if category in ['GRAMMAR', 'CASING', 'CAPITALIZATION', 'PUNCTUATION', 'CONFUSED_WORDS', 'SEMANTICS', 'SYNTAX']: return 'Grammar'
+        if category in ['STYLE', 'REDUNDANCY', 'TYPOGRAPHY', 'CLARITY', 'MISC']: return 'Style'
+        return category.title()
 
-    # Convert Match objects to a list of dictionaries to be JSON serializable
-    results = [
-        {
-            'type': get_error_type(match.category),
-            'message': match.message,
-            'replacements': match.replacements,
-            'offset': match.offset,
-            'errorLength': match.errorLength,
-            'context': match.context,
-            'sentence': match.sentence,
-            'category': match.category,
-            'ruleId': match.ruleId
-        } for match in matches
-    ]
+    results = [{'type': get_error_type(m.category), **m.__dict__} for m in matches]
 
-    # --- Analytics Calculation ---
-    def calculate_analytics(text: str, matches: list) -> dict:
-        """Calculates various scores and metrics based on the text and matches."""
+    def calculate_analytics(text: str, current_results: list) -> dict:
         word_count = len(text.strip().split())
         if word_count == 0:
-            return {
-                "wordCount": 0, "overallScore": 100, "correctnessScore": 100,
-                "clarityScore": 100, "styleScore": 100
-            }
+            return {"wordCount": 0, "overallScore": 100, "correctnessScore": 100, "clarityScore": 100, "styleScore": 100}
 
-        errors_per_100_words = (len(matches) / word_count) * 100
-        overall_score = max(0, 100 - round(errors_per_100_words * 2)) # Penalize 2 points per error per 100 words
+        errors_per_100_words = (len(current_results) / word_count) * 100
+        overall_score = max(0, 100 - round(errors_per_100_words * 2))
 
-        # Sub-score calculation
-        correctness_errors = sum(1 for m in results if m['type'] in ['Spelling', 'Grammar'])
-        clarity_errors = sum(1 for m in results if m['type'] in ['Clarity'])
-        style_errors = sum(1 for m in results if m['type'] in ['Style'])
+        correctness_errors = sum(1 for r in current_results if r['type'] in ['Spelling', 'Grammar'])
+        clarity_errors = sum(1 for r in current_results if r['type'] == 'Clarity')
+        style_errors = sum(1 for r in current_results if r['type'] == 'Style')
 
         correctness_score = max(0, 100 - round(((correctness_errors / word_count) * 100) * 5))
         clarity_score = max(0, 100 - round(((clarity_errors / word_count) * 100) * 5))
         style_score = max(0, 100 - round(((style_errors / word_count) * 100) * 5))
 
         return {
-            "wordCount": word_count,
-            "overallScore": overall_score,
-            "correctnessScore": correctness_score,
-            "clarityScore": clarity_score,
-            "styleScore": style_score,
+            "wordCount": word_count, "overallScore": overall_score, "correctnessScore": correctness_score,
+            "clarityScore": clarity_score, "styleScore": style_score,
         }
 
-    analytics = calculate_analytics(text, matches)
+    analytics = calculate_analytics(text, results)
 
     return jsonify({"matches": results, "analytics": analytics})
 
 if __name__ == '__main__':
-    # Running on port 5001 to avoid potential conflicts.
-    # Host '0.0.0.0' makes it accessible from the network.
     app.run(host='0.0.0.0', port=5001, debug=True)
