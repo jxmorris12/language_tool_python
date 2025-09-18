@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
-import language_tool_python
+import typerfect
 import os
 import threading
 import nltk
@@ -43,7 +43,7 @@ def start_lt_server():
             print("INFO: LTP_JAR_DIR_PATH environment variable not set.")
             print("INFO: The app will try to use the default cached server if available.")
 
-        new_tool = language_tool_python.LanguageTool('en-US')
+        new_tool = typerfect.LanguageTool('en-US')
         new_tool.picky = True
         tool = new_tool
         print("Local LanguageTool server initialized successfully in Picky mode.")

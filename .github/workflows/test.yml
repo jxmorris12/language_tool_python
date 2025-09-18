@@ -49,10 +49,10 @@ jobs:
         source venv/bin/activate
         pip list
 
-    - name: Import language_tool_python
+    - name: Import typerfect
       run: |
         source venv/bin/activate
-        printf "import language_tool_python\n" | python
+        printf "import typerfect\n" | python
 
     - name: Test with pytest
       run: |

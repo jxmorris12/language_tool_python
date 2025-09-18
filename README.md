@@ -1,297 +1,69 @@
-# `language_tool_python`: a grammar checker for Python 📝
+# TYPERFECT: Your Private, Offline Grammar and Style Checker
 
-![language tool python on pypi](https://badge.fury.io/py/language-tool-python.svg)
+![TYPERFECT Logo](static/logo.svg) <!-- Placeholder for the new logo -->
 
-![Test with PyTest](https://github.com/jxmorris12/language_tool_python/workflows/Test%20with%20PyTest/badge.svg)
+**TYPERFECT is a free, open-source, and completely offline writing assistant that helps you craft clear, error-free text with absolute confidence in your privacy.**
 
-Current LanguageTool version: **6.7-SNAPSHOT**
+In an age where every keystroke can be logged and analyzed, TYPERFECT offers a powerful alternative to cloud-based grammar checkers like Grammarly and ProWritingAid. Your text is processed locally on your machine, and nothing is ever sent to the cloud. Your work remains your own.
 
-This is a Python wrapper for [LanguageTool](https://languagetool.org). LanguageTool is open-source grammar tool, also known as the spellchecker for OpenOffice. This library allows you to make to detect grammar errors and spelling mistakes through a Python script or through a command-line interface.
+## Key Features
 
-## Local and Remote Servers
+*   **Comprehensive Grammar & Style Checking:** Powered by the incredible open-source LanguageTool engine, TYPERFECT catches thousands of errors, from simple spelling mistakes to complex grammatical and stylistic issues.
+*   **Completely Offline:** No internet connection? No problem. TYPERFECT works anywhere, anytime.
+*   **100% Private:** We believe in privacy by design. TYPERFECT does not collect any data, period. Your writing never leaves your computer.
+*   **Distraction-Free Interface:** A clean, minimalist user interface helps you focus on what matters most: your writing.
+*   **Open Source:** TYPERFECT is free to use, and its source code is open for anyone to inspect, modify, and improve. We believe in the power of community.
+*   **Multi-Language Support:** Check your writing in a wide variety of languages.
 
-By default, `language_tool_python` will download a LanguageTool server `.jar` and run that in the background to detect grammar errors locally. However, LanguageTool also offers a [Public HTTP Proofreading API](https://dev.languagetool.org/public-http-api) that is supported as well. Follow the link for rate limiting details. (Running locally won't have the same restrictions.)
+## Why Choose TYPERFECT?
 
-### Using `language_tool_python` locally
+| Feature              | TYPERFECT                               | Cloud-Based Services (e.g., Grammarly) |
+| -------------------- | --------------------------------------- | -------------------------------------- |
+| **Price**            | **Free & Open Source**                  | Freemium or Paid Subscription          |
+| **Privacy**          | **100% Private (Offline)**              | Your data is sent to their servers     |
+| **Internet Required**| No                                      | Yes                                    |
+| **Transparency**     | Full (Open Source)                      | Closed Source                          |
 
-Local server is the default setting. To use this, just initialize a LanguageTool object:
+If you value your privacy and want a powerful, free tool to improve your writing, TYPERFECT is the perfect choice for you.
 
-```python
-import language_tool_python
-tool = language_tool_python.LanguageTool('en-US')  # use a local server (automatically set up), language English
-```
+## Installation & Usage
 
-### Using `language_tool_python` with the public LanguageTool remote server
+Getting started with TYPERFECT is easy.
 
-There is also a built-in class for querying LanguageTool's public servers. Initialize it like this:
+1.  **Clone the repository:**
+    ```bash
+    git clone <your-repo-url>
+    cd <your-repo-directory>
+    ```
 
-```python
-import language_tool_python
-tool = language_tool_python.LanguageToolPublicAPI('es') # use the public API, language Spanish
-```
+2.  **Create a virtual environment (recommended):**
+    ```bash
+    python -m venv venv
+    source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
+    ```
 
-### Using `language_tool_python` with the another remote server
+3.  **Install the dependencies:**
+    ```bash
+    pip install -r requirements.txt
+    ```
 
-Finally, you're able to pass in your own remote server as an argument to the `LanguageTool` class:
+4.  **Run the application:**
+    ```bash
+    python app.py
+    ```
+    The first time you run the application, it will download the necessary LanguageTool engine (about 250MB). This may take a few minutes.
 
-```python
-import language_tool_python
-tool = language_tool_python.LanguageTool('ca-ES', remote_server='https://language-tool-api.mywebsite.net')  # use a remote server API, language Catalan
-```
+5.  **Open TYPERFECT in your browser:**
+    Navigate to `http://127.0.0.1:5001`
 
-### Apply a custom list of matches with `utils.correct`
+## Contributing
 
-If you want to decide which `Match` objects to apply to your text, use `tool.check` (to generate the list of matches) in conjunction with `language_tool_python.utils.correct` (to apply the list of matches to text). Here is an example of generating, filtering, and applying a list of matches. In this case, spell-checking suggestions for uppercase words are ignored:
+TYPERFECT is an open-source project, and we welcome contributions from the community! Whether you're a developer, a designer, or a language enthusiast, there are many ways to help. Check out our `CONTRIBUTING.md` file (to be created) for more information.
 
-```python
->>> s = "Department of medicine Colombia University closed on August 1 Milinda Samuelli"
->>> is_bad_rule = lambda rule: rule.message == 'Possible spelling mistake found.' and len(rule.replacements) and rule.replacements[0][0].isupper()
->>> import language_tool_python
->>> tool = language_tool_python.LanguageTool('en-US')
->>> matches = tool.check(s)
->>> matches = [rule for rule in matches if not is_bad_rule(rule)]
->>> language_tool_python.utils.correct(s, matches)
-'Department of medicine Colombia University closed on August 1 Melinda Sam'
-```
+## License
 
-### Apply a specific suggestion of a match with `Match.select_replacement` and `utils.correct`
+This project is licensed under the terms of the MIT License. See the `LICENSE` file for more details.
 
-If you want to apply a particular suggestion from a `Match`, use `Match.select_replacement` (to select a replacement with its index) in conjunction with `language_tool_python.utils.correct` (to apply selected replacements from the `Match` list to the text). Here is an example of generating, selecting replacements, and applying the list of matches. In this case, the third replacement (book) is selected.
+---
 
-```python
->>> import language_tool_python
->>> s = "There is a bok on the table." 
->>> tool = language_tool_python.LanguageTool('en-US')
->>> matches = tool.check(s)
->>> matches
-[Match({'ruleId': 'MORFOLOGIK_RULE_EN_US', 'message': 'Possible spelling mistake found.', 'replacements': ['BOK', 'OK', 'book', 'box'], 'offsetInContext': 11, 'context': 'There is a bok on the table.', 'offset': 11, 'errorLength': 3, 'category': 'TYPOS', 'ruleIssueType': 'misspelling', 'sentence': 'There is a bok on the table.'})]
->>> matches[0].select_replacement(2) 
->>> patched_text = language_tool_python.utils.correct(s, matches)    
->>> patched_text
-'There is a book on the table.'
-```
-
-### Determine whether a text is grammatically correct
-
-If you want to determine whether a text is grammatically correct, you can use the `classify_matches` function from `language_tool_python.utils`. It will return a `TextStatus` enum value indicating whether the text is correct, faulty, or garbage. Here is an example:
-
-```python
->>> import language_tool_python
->>> from language_tool_python.utils import classify_matches
->>> tool = language_tool_python.LanguageTool('en-US')
->>> matches = tool.check('This is a cat.')
->>> matches_1 = tool.check('This is a cats.')
->>> matches_2 = tool.check('fabafbafzabfabfz')
->>> classify_matches(matches)
-<TextStatus.CORRECT: 'correct'>
->>> classify_matches(matches_1)
-<TextStatus.FAULTY: 'faulty'>
->>> classify_matches(matches_2)
-<TextStatus.GARBAGE: 'garbage'>
-```
-
-## Example usage
-
-From the interpreter:
-
-```python
->>> import language_tool_python
->>> tool = language_tool_python.LanguageTool('en-US')
->>> text = 'A sentence with a error in the Hitchhiker’s Guide tot he Galaxy'
->>> matches = tool.check(text)
->>> len(matches)
-2
-...
->>> tool.close() # Call `close()` to shut off the server when you're done.
-```
-
-Check out some ``Match`` object attributes:
-
-```python
->>> matches[0].ruleId, matches[0].replacements # ('EN_A_VS_AN', ['an'])
-('EN_A_VS_AN', ['an'])
->>> matches[1].ruleId, matches[1].replacements
-('TOT_HE', ['to the'])
-```
-
-Print a ``Match`` object:
-
-```python
->>> print(matches[1])
-Line 1, column 51, Rule ID: TOT_HE[1]
-Message: Did you mean 'to the'?
-Suggestion: to the
-...
-```
-
-Automatically apply suggestions to the text:
-
-```python
->>> tool.correct(text)
-'A sentence with an error in the Hitchhiker’s Guide to the Galaxy'
-```
-
-From the command line:
-
-```bash
-$ echo 'This are bad.' > example.txt
-$ language_tool_python example.txt
-example.txt:1:1: THIS_NNS[3]: Did you mean 'these'?
-```
-
-## Closing LanguageTool
-
-`language_tool_python` runs a LanguageTool Java server in the background. It will shut the server off when garbage collected, for example when a created `language_tool_python.LanguageTool` object goes out of scope. However, if garbage collection takes awhile, the process might not get deleted right away. If you're seeing lots of processes get spawned and not get deleted, you can explicitly close them:
-
-
-```python
-import language_tool_python
-tool = language_tool_python.LanguageToolPublicAPI('de-DE') # starts a process
-# do stuff with `tool`
-tool.close() # explicitly shut off the LanguageTool
-```
-
-You can also use a context manager (`with .. as`) to explicitly control when the server is started and stopped:
-
-```python
-import language_tool_python
-
-with language_tool_python.LanguageToolPublicAPI('de-DE') as tool:
-  # do stuff with `tool`
-# no need to call `close() as it will happen at the end of the with statement
-```
-
-## Client-Server Model
-
-You can run LanguageTool on one host and connect to it from another.  This is useful in some distributed scenarios. Here's a simple example:
-
-#### server
-
-```python
->>> import language_tool_python
->>> tool = language_tool_python.LanguageTool('en-US', host='0.0.0.0')
->>> tool._url
-'http://0.0.0.0:8081/v2/'
-```
-
-#### client
-```python
->>> import language_tool_python
->>> lang_tool = language_tool_python.LanguageTool('en-US', remote_server='http://0.0.0.0:8081')
->>>
->>>
->>> lang_tool.check('helo darknes my old frend')
-[Match({'ruleId': 'UPPERCASE_SENTENCE_START', 'message': 'This sentence does not start with an uppercase letter.', 'replacements': ['Helo'], 'offsetInContext': 0, 'context': 'helo darknes my old frend', 'offset': 0, 'errorLength': 4, 'category': 'CASING', 'ruleIssueType': 'typographical', 'sentence': 'helo darknes my old frend'}), Match({'ruleId': 'MORFOLOGIK_RULE_EN_US', 'message': 'Possible spelling mistake found.', 'replacements': ['darkness', 'darkens', 'darkies'], 'offsetInContext': 5, 'context': 'helo darknes my old frend', 'offset': 5, 'errorLength': 7, 'category': 'TYPOS', 'ruleIssueType': 'misspelling', 'sentence': 'helo darknes my old frend'}), Match({'ruleId': 'MORFOLOGIK_RULE_EN_US', 'message': 'Possible spelling mistake found.', 'replacements': ['friend', 'trend', 'Fred', 'freed', 'Freud', 'Friend', 'fend', 'fiend', 'frond', 'rend', 'fr end'], 'offsetInContext': 20, 'context': 'helo darknes my old frend', 'offset': 20, 'errorLength': 5, 'category': 'TYPOS', 'ruleIssueType': 'misspelling', 'sentence': 'helo darknes my old frend'})]
->>>
-```
-
-## Configuration
-
-LanguageTool offers lots of built-in configuration options.
-
-### Example: Enabling caching
-Here's an example of using the configuration options to enable caching. Some users have reported that this helps performance a lot.
-```python
-import language_tool_python
-tool = language_tool_python.LanguageTool('en-US', config={ 'cacheSize': 1000, 'pipelineCaching': True })
-```
-
-
-### Example: Setting maximum text length
-
-Here's an example showing how to configure LanguageTool to set a maximum length on grammar-checked text. Will throw an error (which propagates to Python as a `language_tool_python.LanguageToolError`) if text is too long.
-```python
-import language_tool_python
-tool = language_tool_python.LanguageTool('en-US', config={ 'maxTextLength': 100 })
-```
-
-### Full list of configuration options
-
-Here's a full list of configuration options. See the LanguageTool [HTTPServerConfig](https://languagetool.org/development/api/org/languagetool/server/HTTPServerConfig.html) documentation for details.
-
-```
-'maxTextLength' - maximum text length, longer texts will cause an error (optional)
-'maxTextHardLength' - maximum text length, applies even to users with a special secret 'token' parameter (optional)
-'maxCheckTimeMillis' - maximum time in milliseconds allowed per check (optional)
-'maxErrorsPerWordRate' - checking will stop with error if there are more rules matches per word (optional)
-'maxSpellingSuggestions' - only this many spelling errors will have suggestions for performance reasons (optional,
-                          affects Hunspell-based languages only)
-'maxCheckThreads' - maximum number of threads working in parallel (optional)
-'cacheSize' - size of internal cache in number of sentences (optional, default: 0)
-'cacheTTLSeconds' - how many seconds sentences are kept in cache (optional, default: 300 if 'cacheSize' is set)
-'requestLimit' - maximum number of requests per requestLimitPeriodInSeconds (optional)
-'requestLimitInBytes' - maximum aggregated size of requests per requestLimitPeriodInSeconds (optional)
-'timeoutRequestLimit' - maximum number of timeout request (optional)
-'requestLimitPeriodInSeconds' - time period to which requestLimit and timeoutRequestLimit applies (optional)
-'languageModel' - a directory with '1grams', '2grams', '3grams' sub directories per language which contain a Lucene index
-                  each with ngram occurrence counts; activates the confusion rule if supported (optional)
-'fasttextModel' - a model file for better language detection (optional), see
-                  https://fasttext.cc/docs/en/language-identification.html
-'fasttextBinary' - compiled fasttext executable for language detection (optional), see
-                  https://fasttext.cc/docs/en/support.html
-'maxWorkQueueSize' - reject request if request queue gets larger than this (optional)
-'rulesFile' - a file containing rules configuration, such as .languagetool.cfg (optional)
-'blockedReferrers' - a comma-separated list of HTTP referrers (and 'Origin' headers) that are blocked and will not be served (optional)
-'premiumOnly' - activate only the premium rules (optional)
-'disabledRuleIds' - a comma-separated list of rule ids that are turned off for this server (optional)
-'pipelineCaching' - set to 'true' to enable caching of internal pipelines to improve performance
-'maxPipelinePoolSize' - cache size if 'pipelineCaching' is set
-'pipelineExpireTimeInSeconds' - time after which pipeline cache items expire
-'pipelinePrewarming' - set to 'true' to fill pipeline cache on start (can slow down start a lot)
-```
-
-## Installation
-
-To install via pip:
-
-```bash
-$ pip install --upgrade language_tool_python
-```
-
-### What rules does LanguageTool have?
-
-Searching for a specific rule to enable or disable? Curious the breadth of rules LanguageTool applies? This page contains a massive list of all 5,000+ grammatical rules that are programmed into LanguageTool: https://community.languagetool.org/rule/list?lang=en&offset=30&max=10
-
-### Customizing Download URL or Path
-
-If LanguageTool is already installed on your system, you can defined the following environment variable:
-```bash
-$ export LTP_JAR_DIR_PATH = /path/to/the/language/tool/jar/files
-```
-
-Overwise, `language_tool_python` can download LanguageTool for you automatically.
-
-To overwrite the host part of URL that is used to download LanguageTool-{version}.zip:
-
-```bash
-$ export LTP_DOWNLOAD_HOST = [alternate URL]
-```
-
-This can be used to downgrade to an older version, for example, or to download from a mirror.
-
-And to choose the specific folder to download the server to:
-
-```bash
-$ export LTP_PATH = /path/to/save/language/tool
-```
-
-The default download path is `~/.cache/language_tool_python/`. The LanguageTool server is about 200 MB, so take that into account when choosing your download folder. (Or, if you you can't spare the disk space, use a remote URL!)
-
-## Prerequisites
-
-- [Python 3.9+](https://www.python.org)
-- [LanguageTool](https://www.languagetool.org) (Java 8.0 or higher for version <= 6.5, Java 17.0 or higher for version >= 6.6)
-
-The installation process should take care of downloading LanguageTool (it may
-take a few minutes). Otherwise, you can manually download
-[LanguageTool-stable.zip](https://www.languagetool.org/download/LanguageTool-stable.zip) and unzip it
-into where the ``language_tool_python`` package resides.
-
-### LanguageTool Version
-
-LanguageTool versions under 6.0 are no longer downloadable from the LanguageTool website. If you need to use an older version, you can download it from the [LanguageTool GitHub tags page](https://github.com/languagetool-org/languagetool/tags) and build it yourself.
-
-### Acknowledgements
-
-This is a fork of https://github.com/myint/language-check/ that produces more easily parsable
-results from the command-line.
+*TYPERFECT is powered by the open-source [LanguageTool](https://languagetool.org) engine.*

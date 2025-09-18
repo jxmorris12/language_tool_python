@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="40" viewBox="0 0 200 40">
+  <style>
+    .logo-text {
+      font-family: 'Inter', sans-serif;
+      font-size: 24px;
+      font-weight: 700;
+      fill: #e0e0e0;
+      text-anchor: middle;
+      dominant-baseline: middle;
+    }
+  </style>
+  <text x="50%" y="50%" class="logo-text">TYPERFECT</text>
+</svg>

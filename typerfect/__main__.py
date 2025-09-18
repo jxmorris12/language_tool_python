@@ -12,7 +12,7 @@ from .server import LanguageTool
 from .utils import LanguageToolError
 
 try:
-    __version__ = version("language_tool_python")
+    __version__ = version("typerfect")
 except PackageNotFoundError: # If the package is not installed in the environment, read the version from pyproject.toml
     with open("pyproject.toml", "rb") as f:
         __version__ = toml.loads(f.read().decode('utf-8'))["project"]["version"]
@@ -27,7 +27,7 @@ def parse_args() -> argparse.Namespace:
     """
     parser = argparse.ArgumentParser(
         description=__doc__.strip() if __doc__ else None,
-        prog='language_tool_python')
+        prog='typerfect')
     parser.add_argument('files', nargs='+',
                         help='plain text file or "-" for stdin')
     parser.add_argument('-c', '--encoding',

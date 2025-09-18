@@ -3,23 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Offline Writing Assistant</title>
+    <title>TYPERFECT</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Lora:ital,wght@0,400;0,700;1,400&family=Source+Code+Pro:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
+    <header id="top-bar">
+        <div class="logo-container">
+            <img src="{{ url_for('static', filename='logo.svg') }}" alt="TYPERFECT Logo" class="logo">
+        </div>
+        <div class="top-bar-actions">
+            <button id="load-btn" class="action-btn">Load</button>
+            <button id="save-btn" class="action-btn">Save</button>
+            <button id="snapshots-btn" class="action-btn">Snapshots</button>
+        </div>
+    </header>
 
     <div class="app-container">
         <!-- Left Sidebar -->
         <aside id="left-sidebar" class="sidebar">
-            <div class="sidebar-header">
-                <h3>Projects</h3>
-                <button id="settings-btn" class="icon-btn" title="Settings">⚙️</button>
+            <div class="sidebar-action-bar">
+                <button id="new-file-btn" class="action-btn">New File</button>
             </div>
-            <div class="sidebar-content">
-                <p class="placeholder-text">Future-use area.</p>
+            <div id="project-pane" class="sidebar-content">
+                <!-- File tabs will be dynamically inserted here -->
+            </div>
+            <div class="sidebar-footer">
+                <button id="settings-btn" class="icon-btn" title="Settings">⚙️</button>
             </div>
         </aside>
 
@@ -58,10 +70,11 @@
     </div>
 
     <!-- Hidden Elements -->
+    <input type="file" id="file-input" class="hidden" accept=".txt,.md">
     <div id="tooltip" class="hidden"></div>
 
     <!-- Settings Modal -->
-    <div id="settings-modal-overlay" class="hidden">
+    <div id="settings-modal-overlay">
         <div id="settings-modal">
             <div class="modal-header">
                 <h2>Settings</h2>
@@ -71,6 +84,12 @@
                 <h3>Disable Suggestion Categories</h3>
                 <div id="category-toggles">
                     <!-- Checkboxes will be dynamically inserted here by script.js -->
+                </div>
+                <hr class="modal-divider">
+                <h3>Automatic Snapshots</h3>
+                <div class="setting-item">
+                    <label for="snapshot-threshold-input">Create snapshot after new words:</label>
+                    <input type="number" id="snapshot-threshold-input" min="10" max="1000" step="10">
                 </div>
             </div>
         </div>
@@ -85,6 +104,57 @@
         <div id="dictionary">
             <strong class="context-menu-header">Dictionary</strong>
             <div id="dictionary-results" class="context-menu-content"></div>
+        </div>
+    </div>
+
+    <!-- Snapshots Modal -->
+    <div id="snapshots-overlay">
+        <div id="snapshots-modal">
+            <div class="modal-header">
+                <h2>Version History</h2>
+                <button id="close-snapshots-btn" class="icon-btn">&times;</button>
+            </div>
+            <div id="snapshots-list" class="modal-body">
+                <!-- Snapshots will be dynamically inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Error Details Modal -->
+    <div id="error-details-overlay">
+        <div id="error-details-modal">
+            <div class="modal-header">
+                <h2 id="error-details-title">Error Details</h2>
+                <button id="close-error-details-btn" class="icon-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="error-detail-section">
+                    <strong>Message:</strong>
+                    <p id="error-details-message"></p>
+                </div>
+                <div class="error-detail-section">
+                    <strong>In Sentence:</strong>
+                    <p id="error-details-sentence" class="context-text"></p>
+                </div>
+                <div class="error-detail-section">
+                    <strong>Replacements:</strong>
+                    <div id="error-details-replacements" class="suggestions-container"></div>
+                </div>
+                <div class="error-detail-section-grid">
+                    <div>
+                        <strong>Category:</strong>
+                        <p id="error-details-category"></p>
+                    </div>
+                    <div>
+                        <strong>Issue Type:</strong>
+                        <p id="error-details-issue-type"></p>
+                    </div>
+                </div>
+                 <div class="error-detail-section">
+                    <strong>Rule ID:</strong>
+                    <p><code><a id="error-details-rule-id" href="#" target="_blank"></a></code></p>
+                </div>
+            </div>
         </div>
     </div>
 

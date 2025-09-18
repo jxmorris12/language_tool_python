@@ -20,14 +20,51 @@ body {
     color: var(--primary-text-color);
     margin: 0;
     font-size: 16px;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100vw;
 }
+
+/* --- Top Bar --- */
+#top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background-color: var(--sidebar-bg);
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+.top-bar-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.action-btn {
+    padding: 0.4rem 0.8rem;
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--border-color);
+    color: var(--primary-text-color);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+    font-size: 0.9rem;
+}
+
+.action-btn:hover {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+}
+
 
 /* --- Main App Layout --- */
 .app-container {
     display: grid;
     grid-template-columns: 250px 1fr 300px; /* Left Sidebar | Main Editor | Right Sidebar */
-    height: 100vh;
-    width: 100vw;
+    flex-grow: 1; /* Make the app container take up the remaining height */
+    overflow: hidden; /* Prevent double scrollbars */
 }
 
 /* --- Sidebar Styles (Left & Right) --- */
@@ -48,6 +85,68 @@ body {
     border-left: none;
 }
 
+.sidebar-action-bar {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+.sidebar-action-bar .action-btn {
+    width: 100%;
+}
+
+#project-pane {
+    padding: 0.5rem; /* Tighter padding for the tab list */
+}
+
+.file-tab {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    margin-bottom: 0.25rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.file-tab:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.file-tab.active {
+    background-color: var(--accent-color);
+    color: #ffffff;
+}
+
+.file-tab.active .close-tab-btn {
+    color: #ffffff;
+}
+
+.close-tab-btn {
+    background: none;
+    border: none;
+    color: var(--secondary-text-color);
+    font-size: 1.2rem;
+    line-height: 1;
+    padding: 0 0.25rem;
+    cursor: pointer;
+    border-radius: 4px;
+    visibility: hidden; /* Hidden by default */
+}
+
+.file-tab:hover .close-tab-btn,
+.file-tab.active .close-tab-btn {
+    visibility: visible; /* Show on hover and when active */
+}
+
+.close-tab-btn:hover {
+    background-color: rgba(0, 0, 0, 0.2);
+}
+
 .sidebar-header {
     padding: 1rem;
     border-bottom: 1px solid var(--border-color);
@@ -60,10 +159,63 @@ body {
     color: #ffffff;
 }
 
+.logo-container {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden; /* Hide particles that go outside the container */
+}
+
+.logo {
+    height: 30px; /* Control size of the SVG */
+    z-index: 2; /* Make sure logo is on top of particles */
+}
+
+/* Simple Particle Animation */
+.logo-container::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1px;
+    height: 1px;
+    background: transparent;
+    box-shadow:
+        -20px -20px 2px rgba(254, 107, 107, 0.5), /* Example particles */
+        20px 20px 1px rgba(255, 255, 255, 0.3),
+        0px 50px 1px rgba(254, 107, 107, 0.4),
+        50px 0px 2px rgba(255, 255, 255, 0.2),
+        100px 100px 1px rgba(254, 107, 107, 0.6),
+        -50px 50px 2px rgba(255, 255, 255, 0.3),
+        /* Add more particles for a denser effect */
+        80px -30px 1px rgba(254, 107, 107, 0.5),
+        -90px -10px 2px rgba(255, 255, 255, 0.2);
+    animation: particle-animation 20s linear infinite;
+    z-index: 1;
+}
+
+@keyframes particle-animation {
+    from {
+        transform: translate(0, 0);
+    }
+    to {
+        transform: translate(-100px, -100px); /* Move particles up and to the left */
+    }
+}
+
 .sidebar-content {
     padding: 1rem;
     overflow-y: auto;
     flex-grow: 1;
+}
+
+.sidebar-footer {
+    padding: 1rem;
+    border-top: 1px solid var(--border-color);
+    flex-shrink: 0;
+    display: flex;
+    justify-content: flex-end;
 }
 
 .placeholder-text {
@@ -229,33 +381,38 @@ body {
     align-items: center;
 }
 
-.learn-more-link {
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background-color: rgba(255, 255, 255, 0.1);
-    color: var(--secondary-text-color);
-    text-decoration: none;
-    font-weight: 700;
-    font-size: 0.8rem;
-    transition: background-color 0.2s ease, color 0.2s ease;
-}
-
-.learn-more-link:hover {
-    background-color: var(--accent-color);
-    color: #ffffff;
-}
-
 .error-card-body {
     padding: 0.75rem;
     font-size: 0.9rem;
 }
 
 .error-card-body p {
-    margin: 0 0 0.5rem 0;
+    margin: 0;
+}
+
+.error-card-footer {
+    padding: 0.75rem;
+    border-top: 1px solid var(--border-color);
+    font-size: 0.8rem;
+    background-color: rgba(255, 255, 255, 0.02);
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+
+.learn-more-link {
+    color: var(--secondary-text-color);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.learn-more-link:hover {
+    color: var(--accent-color);
+    text-decoration: underline;
+}
+
+.learn-more-link strong {
+    color: var(--primary-text-color);
+    font-weight: 500;
 }
 
 .suggestions-container {
@@ -279,19 +436,6 @@ body {
 .suggestion-btn:hover {
     background-color: var(--accent-color);
     border-color: var(--accent-color);
-}
-
-.rule-id-container {
-    margin-top: 0.75rem;
-    font-size: 0.8rem;
-    color: var(--secondary-text-color);
-    text-align: right;
-}
-
-.rule-id-container code {
-    background-color: rgba(255, 255, 255, 0.1);
-    padding: 0.1rem 0.3rem;
-    border-radius: 4px;
 }
 
 /* Color coding for error types */
@@ -373,6 +517,32 @@ body {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 1rem;
+}
+
+.modal-divider {
+    border: none;
+    border-top: 1px solid var(--border-color);
+    margin: 1.5rem 0;
+}
+
+.setting-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.setting-item label {
+    color: var(--primary-text-color);
+}
+
+.setting-item input[type="number"] {
+    background-color: var(--background-color);
+    border: 1px solid var(--border-color);
+    color: var(--primary-text-color);
+    border-radius: 6px;
+    padding: 0.4rem 0.6rem;
+    width: 80px; /* Fixed width for number input */
+    text-align: center;
 }
 
 .category-toggle {
@@ -462,4 +632,139 @@ body {
 
 #dictionary-results li {
     margin-bottom: 0.5rem;
+}
+
+/* --- Error Details Modal --- */
+#error-details-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    z-index: 2000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#error-details-modal {
+    width: 100%;
+    max-width: 600px;
+    background-color: var(--sidebar-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+}
+
+.error-detail-section {
+    margin-bottom: 1.25rem;
+}
+.error-detail-section:last-child {
+    margin-bottom: 0;
+}
+
+.error-detail-section strong {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--secondary-text-color);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+}
+
+.error-detail-section p {
+    margin: 0;
+    line-height: 1.6;
+}
+
+.error-detail-section-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.25rem;
+}
+
+.context-text {
+    background-color: rgba(255, 255, 255, 0.05);
+    padding: 0.75rem;
+    border-radius: 6px;
+    font-style: italic;
+}
+
+#error-details-replacements .suggestion-btn {
+    cursor: default; /* These are not clickable */
+}
+
+#error-details-replacements .suggestion-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: var(--border-color);
+}
+
+#error-details-rule-id {
+    color: var(--accent-color);
+    text-decoration: none;
+}
+#error-details-rule-id:hover {
+    text-decoration: underline;
+}
+
+/* --- Snapshots Modal --- */
+#snapshots-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    z-index: 2000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#snapshots-modal {
+    width: 100%;
+    max-width: 700px; /* Wider for history view */
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--sidebar-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+}
+
+#snapshots-list {
+    overflow-y: auto;
+}
+
+.snapshot-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.snapshot-item:last-child {
+    border-bottom: none;
+}
+
+.snapshot-info .snapshot-name {
+    font-weight: 500;
+    color: var(--primary-text-color);
+}
+
+.snapshot-info .snapshot-date {
+    font-size: 0.85rem;
+    color: var(--secondary-text-color);
+    margin-top: 0.25rem;
+}
+
+.snapshot-actions .action-btn {
+    background-color: transparent;
 }

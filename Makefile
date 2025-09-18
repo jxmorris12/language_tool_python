@@ -1,9 +1,9 @@
 check:
 	pycodestyle \
-		--exclude ./language_tool_python/LanguageTool-* \
+		--exclude ./typerfect/LanguageTool-* \
 		--ignore=E402,W504 \
-		./language_tool_python \
-		./language_tool_python/ \
+		./typerfect \
+		./typerfect/ \
 		$(wildcard *.py)
 	pylint \
 		--rcfile=/dev/null \
@@ -12,7 +12,7 @@ check:
 		--disable=no-member \
 		--disable=no-name-in-module \
 		--disable=raising-bad-type \
-		./language_tool_python \
-		$(wildcard ./language_tool_python/*.py) \
+		./typerfect \
+		$(wildcard ./typerfect/*.py) \
 		$(wildcard *.py)
 	python extract_long_description.py | rstcheck -
