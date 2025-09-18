@@ -21,7 +21,6 @@ from .utils import (
 )
 
 # Create logger for this file.
-logging.basicConfig(format='%(message)s')
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
