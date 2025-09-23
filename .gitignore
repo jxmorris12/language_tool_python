@@ -7,8 +7,8 @@
 __pycache__/
 build/
 dist/
-typerfect/LanguageTool-*/
-typerfect-*/
+language_tool_python/LanguageTool-*/
+language_tool_python-*/
 pytest-cache-files-*/
 .env
 .venv

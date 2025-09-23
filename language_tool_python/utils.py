@@ -240,8 +240,6 @@ def get_server_cmd(
     if config is not None:
         cmd += ['--config', config.path]
 
-    cmd += ['--verbose']
-
     return cmd
 
 

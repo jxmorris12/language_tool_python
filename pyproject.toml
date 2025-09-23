@@ -1,14 +1,14 @@
 [project]
-name = "typerfect"
-version = "1.0.0"
+name = "language_tool_python"
+version = "2.9.4"
 requires-python = ">=3.9"
-description = "A private, offline, open-source grammar and style checker."
+description = "Checks grammar using LanguageTool."
 readme = { file = "README.md", content-type = "text/markdown" }
 license = { file = "LICENSE" }
 authors = [
     { name = "Jack Morris", email = "jxmorris12@gmail.com" }
 ]
-urls = { Repository = "https://github.com/user/typerfect.git" }
+urls = { Repository = "https://github.com/jxmorris12/language_tool_python.git" }
 
 dependencies = [
     "requests",
@@ -26,11 +26,11 @@ dev = [
 ]
 
 [project.scripts]
-typerfect = "typerfect.__main__:main"
+language_tool_python = "language_tool_python.__main__:main"
 
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["typerfect"]
+packages = ["language_tool_python"]

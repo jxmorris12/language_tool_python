@@ -4,15 +4,15 @@ import time
 
 import pytest
 
-from typerfect.utils import LanguageToolError, RateLimitError
+from language_tool_python.utils import LanguageToolError, RateLimitError
 
 
 # THESE TESTS ARE SUPPOSED TO BE RUN WITH 6.7-SNAPSHOT VERSION OF LT SERVER
 
 
 def test_langtool_load():
-    import typerfect
-    with typerfect.LanguageTool("en-US") as tool:
+    import language_tool_python
+    with language_tool_python.LanguageTool("en-US") as tool:
         matches = tool.check('ain\'t nothin but a thang')
 
         expected_matches = [
@@ -53,7 +53,7 @@ def test_langtool_load():
 
         assert len(matches) == len(expected_matches)
         for match_i, match in enumerate(matches):
-            assert isinstance(match, typerfect.Match)
+            assert isinstance(match, language_tool_python.Match)
             for key in [
                 'ruleId', 'message', 'offsetInContext',
                 'context', 'offset', 'errorLength', 'category', 'ruleIssueType',
@@ -72,8 +72,8 @@ def test_langtool_load():
 
 
 def test_process_starts_and_stops_in_context_manager():
-    import typerfect
-    with typerfect.LanguageTool("en-US") as tool:
+    import language_tool_python
+    with language_tool_python.LanguageTool("en-US") as tool:
         proc: subprocess.Popen = tool._server
         # Make sure process is running before killing language tool object.
         assert proc.poll() is None, "tool._server not running after creation"
@@ -82,8 +82,8 @@ def test_process_starts_and_stops_in_context_manager():
 
 
 def test_process_starts_and_stops_on_close():
-    import typerfect
-    tool = typerfect.LanguageTool("en-US")
+    import language_tool_python
+    tool = language_tool_python.LanguageTool("en-US")
     proc: subprocess.Popen = tool._server
     # Make sure process is running before killing language tool object.
     assert proc.poll() is None, "tool._server not running after creation"
@@ -95,16 +95,16 @@ def test_process_starts_and_stops_on_close():
 
 
 def test_local_client_server_connection():
-    import typerfect
-    with typerfect.LanguageTool('en-US', host='127.0.0.1') as tool1:
+    import language_tool_python
+    with language_tool_python.LanguageTool('en-US', host='127.0.0.1') as tool1:
         url = 'http://{}:{}/'.format(tool1._host, tool1._port)
-        with typerfect.LanguageTool('en-US', remote_server=url) as tool2:
+        with language_tool_python.LanguageTool('en-US', remote_server=url) as tool2:
             assert len(tool2.check('helo darknes my old frend'))
 
 
 def test_config_text_length():
-    import typerfect
-    with typerfect.LanguageTool('en-US', config={'maxTextLength': 12 }) as tool:
+    import language_tool_python
+    with language_tool_python.LanguageTool('en-US', config={'maxTextLength': 12 }) as tool:
         # With this config file, checking text with >12 characters should raise an error.
         error_msg = re.escape("Error: Your text exceeds the limit of 12 characters (it's 27 characters). Please submit a shorter text.")
         with pytest.raises(LanguageToolError, match=error_msg):
@@ -115,8 +115,8 @@ def test_config_text_length():
 
 
 def test_config_caching():
-    import typerfect
-    with typerfect.LanguageTool('en-US', config={'cacheSize': 1000, 'pipelineCaching': True}) as tool:
+    import language_tool_python
+    with language_tool_python.LanguageTool('en-US', config={'cacheSize': 1000, 'pipelineCaching': True}) as tool:
         s = 'hello darkness my old frend'
         t1 = time.time()
         tool.check(s)
@@ -132,8 +132,8 @@ def test_config_caching():
 
 
 def test_langtool_languages():
-    import typerfect
-    with typerfect.LanguageTool("en-US") as tool:
+    import language_tool_python
+    with language_tool_python.LanguageTool("en-US") as tool:
         assert tool._get_languages().issuperset(
             {
                 'es-AR', 'ast-ES', 'fa', 'ar', 'ja', 'pl', 'en-ZA', 'sl', 'be-BY',
@@ -152,8 +152,8 @@ def test_langtool_languages():
 
 
 def test_match():
-    import typerfect
-    with typerfect.LanguageTool('en-US') as tool:
+    import language_tool_python
+    with language_tool_python.LanguageTool('en-US') as tool:
         text = u'A sentence with a error in the Hitchhiker’s Guide tot he Galaxy'
         matches = tool.check(text)
         assert len(matches) == 2
@@ -167,21 +167,21 @@ def test_match():
 
 
 def test_uk_typo():
-    import typerfect
-    with typerfect.LanguageTool("en-UK") as tool:
+    import language_tool_python
+    with language_tool_python.LanguageTool("en-UK") as tool:
         sentence1 = "If you think this sentence is fine then, your wrong."
         results1 = tool.check(sentence1)
         assert len(results1) == 1
-        assert typerfect.utils.correct(sentence1, results1) == "If you think this sentence is fine then, you're wrong."
+        assert language_tool_python.utils.correct(sentence1, results1) == "If you think this sentence is fine then, you're wrong."
 
         results2 = tool.check("You're mum is called Emily, is that right?")
         assert len(results2) == 0
 
 
 def test_remote_es():
-    import typerfect
+    import language_tool_python
     try:
-        with typerfect.LanguageToolPublicAPI('es') as tool:
+        with language_tool_python.LanguageToolPublicAPI('es') as tool:
             es_text = 'Escriba un texto aquí. LanguageTool le ayudará a afrentar algunas dificultades propias de la escritura. Se a hecho un esfuerzo para detectar errores tipográficos, ortograficos y incluso gramaticales. También algunos errores de estilo, a grosso modo.'
             matches = tool.check(es_text)
             assert str(matches) == """[Match({'ruleId': 'AFRENTAR_DIFICULTADES', 'message': 'Confusión entre «afrontar» y «afrentar».', 'replacements': ['afrontar'], 'offsetInContext': 43, 'context': '...n texto aquí. LanguageTool le ayudará a afrentar algunas dificultades propias de la escr...', 'offset': 49, 'errorLength': 8, 'category': 'INCORRECT_EXPRESSIONS', 'ruleIssueType': 'grammar', 'sentence': 'LanguageTool le ayudará a afrentar algunas dificultades propias de la escritura.'}), Match({'ruleId': 'PRON_HABER_PARTICIPIO', 'message': 'El v. ‘haber’ se escribe con hache.', 'replacements': ['ha'], 'offsetInContext': 43, 'context': '...ificultades propias de la escritura. Se a hecho un esfuerzo para detectar errores...', 'offset': 107, 'errorLength': 1, 'category': 'MISSPELLING', 'ruleIssueType': 'misspelling', 'sentence': 'Se a hecho un esfuerzo para detectar errores tipográficos, ortograficos y incluso gramaticales.'}), Match({'ruleId': 'MORFOLOGIK_RULE_ES', 'message': 'Se ha encontrado un posible error ortográfico.', 'replacements': ['ortográficos', 'ortográficas', 'ortográfico', 'orográficos', 'ortografiaos', 'ortografíeos'], 'offsetInContext': 43, 'context': '...rzo para detectar errores tipográficos, ortograficos y incluso gramaticales. También algunos...', 'offset': 163, 'errorLength': 12, 'category': 'TYPOS', 'ruleIssueType': 'misspelling', 'sentence': 'Se a hecho un esfuerzo para detectar errores tipográficos, ortograficos y incluso gramaticales.'}), Match({'ruleId': 'Y_E_O_U', 'message': 'Cuando precede a palabras que comienzan por ‘i’, la conjunción ‘y’ se transforma en ‘e’.', 'replacements': ['e'], 'offsetInContext': 43, 'context': '...ctar errores tipográficos, ortograficos y incluso gramaticales. También algunos e...', 'offset': 176, 'errorLength': 1, 'category': 'GRAMMAR', 'ruleIssueType': 'grammar', 'sentence': 'Se a hecho un esfuerzo para detectar errores tipográficos, ortograficos y incluso gramaticales.'}), Match({'ruleId': 'GROSSO_MODO', 'message': 'Esta expresión latina se usa sin preposición.', 'replacements': ['grosso modo'], 'offsetInContext': 43, 'context': '...les. También algunos errores de estilo, a grosso modo.', 'offset': 235, 'errorLength': 13, 'category': 'GRAMMAR', 'ruleIssueType': 'grammar', 'sentence': 'También algunos errores de estilo, a grosso modo.'})]"""
@@ -191,8 +191,8 @@ def test_remote_es():
 
 
 def test_correct_en_us():
-    import typerfect
-    with typerfect.LanguageTool('en-US') as tool:
+    import language_tool_python
+    with language_tool_python.LanguageTool('en-US') as tool:
         matches = tool.check('cz of this brand is awsome,,i love this brand very much')
         assert len(matches) == 4
 
@@ -200,12 +200,12 @@ def test_correct_en_us():
 
 
 def test_spellcheck_en_gb():
-    import typerfect
+    import language_tool_python
 
     s = 'Wat is wrong with the spll chker'
 
     # Correct a sentence with spell-checking
-    with typerfect.LanguageTool('en-GB') as tool:
+    with language_tool_python.LanguageTool('en-GB') as tool:
         assert tool.correct(s) == "Was is wrong with the sell cheer"
 
         # Correct a sentence without spell-checking
@@ -216,8 +216,8 @@ def test_spellcheck_en_gb():
 def test_session_only_new_spellings():
     import os
     import hashlib
-    import typerfect
-    library_path = typerfect.utils.get_language_tool_directory()
+    import language_tool_python
+    library_path = language_tool_python.utils.get_language_tool_directory()
     spelling_file_path = os.path.join(
         library_path, "org/languagetool/resource/en/hunspell/spelling.txt"
     )
@@ -226,7 +226,7 @@ def test_session_only_new_spellings():
     initial_checksum = hashlib.sha256(initial_spelling_file_contents.encode())
 
     new_spellings = ["word1", "word2", "word3"]
-    with typerfect.LanguageTool(
+    with language_tool_python.LanguageTool(
         'en-US', newSpellings=new_spellings, new_spellings_persist=False
     ) as tool:
         tool.enabled_rules_only = True
@@ -248,33 +248,33 @@ def test_session_only_new_spellings():
 
 
 def test_disabled_rule_in_config():
-    import typerfect
+    import language_tool_python
     GRAMMAR_TOOL_CONFIG = {
         'disabledRuleIds': ['MORFOLOGIK_RULE_EN_US']
     }
-    with typerfect.LanguageTool('en-US', config=GRAMMAR_TOOL_CONFIG) as tool:
+    with language_tool_python.LanguageTool('en-US', config=GRAMMAR_TOOL_CONFIG) as tool:
         text = "He realised that the organization was in jeopardy."
         matches = tool.check(text)
         assert len(matches) == 0
 
 def test_special_char_in_text():
-    import typerfect
-    with typerfect.LanguageTool('en-US') as tool:
+    import language_tool_python
+    with language_tool_python.LanguageTool('en-US') as tool:
         text = "The sun was seting 🌅, casting a warm glow over the park. Birds chirpped softly 🐦 as the day slowly fade into night."
         assert tool.correct(text) == "The sun was setting 🌅, casting a warm glow over the park. Birds chipped softly 🐦 as the day slowly fade into night."
 
 def test_install_inexistent_version():
-    import typerfect
+    import language_tool_python
     with pytest.raises(LanguageToolError):
-        typerfect.LanguageTool(language_tool_download_version="0.0")
+        language_tool_python.LanguageTool(language_tool_download_version="0.0")
     
 def test_inexistant_language():
-    import typerfect
-    with typerfect.LanguageTool("en-US") as tool:
+    import language_tool_python
+    with language_tool_python.LanguageTool("en-US") as tool:
         with pytest.raises(ValueError):
-            typerfect.LanguageTag("xx-XX", tool._get_languages())
+            language_tool_python.LanguageTag("xx-XX", tool._get_languages())
 
 
 def test_debug_mode():
-    from typerfect.server import DEBUG_MODE
+    from language_tool_python.server import DEBUG_MODE
     assert DEBUG_MODE is False

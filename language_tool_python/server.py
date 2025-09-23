@@ -365,7 +365,7 @@ class LanguageTool:
             raise FileNotFoundError(
                 f"Failed to find the spellings file at {spelling_file_path}\n "
                 "Please file an issue at "
-                "https://github.com/user/typerfect/issues")
+                "https://github.com/jxmorris12/language_tool_python/issues")
         return spelling_file_path
 
     def _register_spellings(self) -> None:
