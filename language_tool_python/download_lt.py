@@ -32,7 +32,7 @@ BASE_URL_RELEASE = os.environ.get('LTP_DOWNLOAD_HOST_RELEASE', 'https://www.lang
 FILENAME_RELEASE = 'LanguageTool-{version}.zip'
 
 LTP_DOWNLOAD_VERSION = 'latest'
-LT_SNAPSHOT_CURRENT_VERSION = '6.7-SNAPSHOT'
+LT_SNAPSHOT_CURRENT_VERSION = '6.8-SNAPSHOT'
 
 JAVA_VERSION_REGEX = re.compile(
     r'^(?:java|openjdk) version "(?P<major1>\d+)(|\.(?P<major2>\d+)\.[^"]+)"',
