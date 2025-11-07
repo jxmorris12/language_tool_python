@@ -14,7 +14,7 @@ If a screenshot is helpful to illustrate the changes, please include it here.
 ## How has this been tested?
 Describe how the changes were tested, including any unit tests, integration tests, or manual testing performed.
 
-## Ressources
+## Resources
 If applicable, include links to any relevant documentation, articles, or resources that provide additional context for the changes made in this pull request.
 
 ## Types of changes
