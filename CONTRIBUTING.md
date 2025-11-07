@@ -6,7 +6,7 @@ Thank you for thinking of making a contribution!
 
 ### 0. Before you begin
 
-If this is your first time contributing to an opensource project, [start by reading this guide](https://opensource.guide/how-to-contribute/#how-to-submit-a-contribution).
+If this is your first time contributing to an open source project, [start by reading this guide](https://opensource.guide/how-to-contribute/#how-to-submit-a-contribution).
 
 Please note that any contribution you make will be licensed under [the project's license](https://github.com/jxmorris12/language_tool_python/blob/master/LICENSE).
 
