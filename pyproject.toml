@@ -8,6 +8,9 @@ license = { file = "LICENSE" }
 authors = [
     { name = "Jack Morris", email = "jxmorris12@gmail.com" }
 ]
+maintainers = [
+    { name = "mdevolde", email = "martin.devolder2@gmail.com" }
+]
 urls = { Repository = "https://github.com/jxmorris12/language_tool_python.git" }
 
 dependencies = [
