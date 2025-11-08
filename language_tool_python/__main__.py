@@ -13,9 +13,9 @@ from .utils import LanguageToolError
 
 try:
     __version__ = version("language_tool_python")
-except PackageNotFoundError: # If the package is not installed in the environment, read the version from pyproject.toml
+except PackageNotFoundError:  # If the package is not installed in the environment, read the version from pyproject.toml
     with open("pyproject.toml", "rb") as f:
-        __version__ = toml.loads(f.read().decode('utf-8'))["project"]["version"]
+        __version__ = toml.loads(f.read().decode("utf-8"))["project"]["version"]
 
 
 def parse_args() -> argparse.Namespace:
@@ -26,51 +26,83 @@ def parse_args() -> argparse.Namespace:
     :rtype: argparse.Namespace
     """
     parser = argparse.ArgumentParser(
-        description=__doc__.strip() if __doc__ else None,
-        prog='language_tool_python')
-    parser.add_argument('files', nargs='+',
-                        help='plain text file or "-" for stdin')
-    parser.add_argument('-c', '--encoding',
-                        help='input encoding')
-    parser.add_argument('-l', '--language', metavar='CODE',
-                        help='language code of the input or "auto"')
-    parser.add_argument('-m', '--mother-tongue', metavar='CODE',
-                        help='language code of your first language')
-    parser.add_argument('-d', '--disable', metavar='RULES', type=get_rules,
-                        action=RulesAction, default=set(),
-                        help='list of rule IDs to be disabled')
-    parser.add_argument('-e', '--enable', metavar='RULES', type=get_rules,
-                        action=RulesAction, default=set(),
-                        help='list of rule IDs to be enabled')
-    parser.add_argument('--enabled-only', action='store_true',
-                        help='disable all rules except those specified in '
-                             '--enable')
-    parser.add_argument('-p', '--picky', action='store_true',
-                        help='If set, additional rules will be activated.')
+        description=__doc__.strip() if __doc__ else None, prog="language_tool_python"
+    )
+    parser.add_argument("files", nargs="+", help='plain text file or "-" for stdin')
+    parser.add_argument("-c", "--encoding", help="input encoding")
     parser.add_argument(
-        '--version', action='version',
-        version=f'%(prog)s {__version__}',
-        help='show version')
-    parser.add_argument('-a', '--apply', action='store_true',
-                        help='automatically apply suggestions if available')
-    parser.add_argument('-s', '--spell-check-off', dest='spell_check',
-                        action='store_false',
-                        help='disable spell-checking rules')
-    parser.add_argument('--ignore-lines',
-                        help='ignore lines that match this regular expression')
-    parser.add_argument('--remote-host',
-                        help='hostname of the remote LanguageTool server')
-    parser.add_argument('--remote-port',
-                        help='port of the remote LanguageTool server')
+        "-l", "--language", metavar="CODE", help='language code of the input or "auto"'
+    )
+    parser.add_argument(
+        "-m",
+        "--mother-tongue",
+        metavar="CODE",
+        help="language code of your first language",
+    )
+    parser.add_argument(
+        "-d",
+        "--disable",
+        metavar="RULES",
+        type=get_rules,
+        action=RulesAction,
+        default=set(),
+        help="list of rule IDs to be disabled",
+    )
+    parser.add_argument(
+        "-e",
+        "--enable",
+        metavar="RULES",
+        type=get_rules,
+        action=RulesAction,
+        default=set(),
+        help="list of rule IDs to be enabled",
+    )
+    parser.add_argument(
+        "--enabled-only",
+        action="store_true",
+        help="disable all rules except those specified in --enable",
+    )
+    parser.add_argument(
+        "-p",
+        "--picky",
+        action="store_true",
+        help="If set, additional rules will be activated.",
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {__version__}",
+        help="show version",
+    )
+    parser.add_argument(
+        "-a",
+        "--apply",
+        action="store_true",
+        help="automatically apply suggestions if available",
+    )
+    parser.add_argument(
+        "-s",
+        "--spell-check-off",
+        dest="spell_check",
+        action="store_false",
+        help="disable spell-checking rules",
+    )
+    parser.add_argument(
+        "--ignore-lines", help="ignore lines that match this regular expression"
+    )
+    parser.add_argument(
+        "--remote-host", help="hostname of the remote LanguageTool server"
+    )
+    parser.add_argument("--remote-port", help="port of the remote LanguageTool server")
 
     args = parser.parse_args()
 
     if args.enabled_only:
         if args.disable:
-            parser.error('--enabled-only cannot be used with --disable')
+            parser.error("--enabled-only cannot be used with --disable")
 
         if not args.enable:
-            parser.error('--enabled-only requires --enable')
+            parser.error("--enabled-only requires --enable")
 
     return args
 
@@ -85,7 +117,14 @@ class RulesAction(argparse.Action):
     Attributes:
         dest (str): the destination attribute to update
     """
-    def __call__(self, parser: argparse.ArgumentParser, namespace: Any, values: Any, option_string: Optional[str] = None):
+
+    def __call__(
+        self,
+        parser: argparse.ArgumentParser,
+        namespace: Any,
+        values: Any,
+        option_string: Optional[str] = None,
+    ):
         """
         This method is called when the action is triggered. It updates the set of rules
         in the namespace with the provided values. The method is invoked automatically
@@ -115,7 +154,9 @@ def get_rules(rules: str) -> Set[str]:
     return {rule.upper() for rule in re.findall(r"[\w\-]+", rules)}
 
 
-def get_text(filename: Union[str, int], encoding: Optional[str], ignore: Optional[str]) -> str:
+def get_text(
+    filename: Union[str, int], encoding: Optional[str], ignore: Optional[str]
+) -> str:
     """
     Read the content of a file and return it as a string, optionally ignoring lines that match a regular expression.
 
@@ -129,8 +170,10 @@ def get_text(filename: Union[str, int], encoding: Optional[str], ignore: Optiona
     :rtype: str
     """
     with open(filename, encoding=encoding) as f:
-        text = ''.join('\n' if (ignore and re.match(ignore, line)) else line
-                       for line in f.readlines())
+        text = "".join(
+            "\n" if (ignore and re.match(ignore, line)) else line
+            for line in f.readlines()
+        )
     return text
 
 
@@ -149,20 +192,21 @@ def main() -> int:
         if len(args.files) > 1:
             print(filename, file=sys.stderr)
 
-        if filename == '-':
+        if filename == "-":
             filename = sys.stdin.fileno()
             encoding = args.encoding or (
-                sys.stdin.encoding if sys.stdin.isatty()
+                sys.stdin.encoding
+                if sys.stdin.isatty()
                 else locale.getpreferredencoding()
             )
         else:
-            encoding = args.encoding or 'utf-8'
+            encoding = args.encoding or "utf-8"
 
         remote_server = None
         if args.remote_host is not None:
             remote_server = args.remote_host
             if args.remote_port is not None:
-                remote_server += f':{args.remote_port}'
+                remote_server += f":{args.remote_port}"
         lang_tool = LanguageTool(
             language=args.language,
             motherTongue=args.mother_tongue,
@@ -172,7 +216,7 @@ def main() -> int:
         try:
             text = get_text(filename, encoding, ignore=args.ignore_lines)
         except UnicodeError as exception:
-            print(f'{filename}: {exception}', file=sys.stderr)
+            print(f"{filename}: {exception}", file=sys.stderr)
             continue
 
         if not args.spell_check:
@@ -192,24 +236,24 @@ def main() -> int:
                 for match in lang_tool.check(text):
                     rule_id = match.ruleId
 
-                    replacement_text = ', '.join(
-                        f"'{word}'"
-                        for word in match.replacements).strip()
+                    replacement_text = ", ".join(
+                        f"'{word}'" for word in match.replacements
+                    ).strip()
 
                     message = match.message
 
                     # Messages that end with punctuation already include the
                     # suggestion.
-                    if replacement_text and not message.endswith('?'):
-                        message += ' Suggestions: ' + replacement_text
-                    
+                    if replacement_text and not message.endswith("?"):
+                        message += " Suggestions: " + replacement_text
+
                     line, column = match.get_line_and_column(text)
 
-                    print(f'{filename}:{line}:{column}: {rule_id}: {message}')
+                    print(f"{filename}:{line}:{column}: {rule_id}: {message}")
 
                     status = 2
         except LanguageToolError as exception:
-            print(f'{filename}: {exception}', file=sys.stderr)
+            print(f"{filename}: {exception}", file=sys.stderr)
             continue
 
     return status

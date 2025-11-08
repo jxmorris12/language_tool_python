@@ -1,11 +1,11 @@
 """LanguageTool API for Python."""
 
 __all__ = [
-    'LanguageTool',
-    'LanguageToolPublicAPI',
-    'LanguageTag',
-    'Match',
-    'utils',
+    "LanguageTool",
+    "LanguageToolPublicAPI",
+    "LanguageTag",
+    "Match",
+    "utils",
 ]
 
 from .language_tag import LanguageTag
