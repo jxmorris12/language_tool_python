@@ -76,13 +76,10 @@ class LanguageToolConfig:
         :return: Path to the temporary file.
         :rtype: str
         """
-        tmp_file = tempfile.NamedTemporaryFile(delete=False)
-
-        # Write key=value entries as lines in temporary file.
-        for key, value in self.config.items():
-            next_line = f"{key}={value}\n"
-            tmp_file.write(next_line.encode())
-        tmp_file.close()
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, encoding="utf-8") as tmp_file:
+            # Write key=value entries as lines in temporary file.
+            for key, value in self.config.items():
+                tmp_file.write(f"{key}={value}\n")
 
         # Remove file when program exits.
         atexit.register(lambda: os.unlink(tmp_file.name))

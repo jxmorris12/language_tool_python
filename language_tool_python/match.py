@@ -185,7 +185,7 @@ class Match:
         for k, v in attrib.items():
             setattr(self, k, v)
 
-        if Match.PREVIOUS_MATCHES_TEXT != text:
+        if text != Match.PREVIOUS_MATCHES_TEXT:
             Match.PREVIOUS_MATCHES_TEXT = text
             Match.FOUR_BYTES_POSITIONS = four_byte_char_positions(text)
         # Get the positions of 4-byte encoded characters in the text because without

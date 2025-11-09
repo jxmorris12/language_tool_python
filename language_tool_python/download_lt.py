@@ -208,15 +208,14 @@ def download_zip(url: str, directory: str) -> None:
     :param directory: The directory where the ZIP file should be extracted.
     :type directory: str
     """
-    # Download file.
-    downloaded_file = tempfile.NamedTemporaryFile(suffix=".zip", delete=False)
-    http_get(url, downloaded_file)
-    # Close the file so we can extract it.
-    downloaded_file.close()
+    # Download file using a context manager.
+    with tempfile.NamedTemporaryFile(suffix=".zip", delete=False) as downloaded_file:
+        http_get(url, downloaded_file)
+    temp_name = downloaded_file.name
     # Extract zip file to path.
-    unzip_file(downloaded_file.name, directory)
+    unzip_file(temp_name, directory)
     # Remove the temporary file.
-    os.remove(downloaded_file.name)
+    os.remove(temp_name)
     # Tell the user the download path.
     logger.info(f"Downloaded {url} to {directory}.")
 

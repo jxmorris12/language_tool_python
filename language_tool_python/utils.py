@@ -1,5 +1,6 @@
 """Utility functions for the LanguageTool library."""
 
+import contextlib
 import glob
 import locale
 import os
@@ -319,11 +320,7 @@ def kill_process_force(
     except psutil.NoSuchProcess:
         return
     for child in proc.children(recursive=True):
-        try:
+        with contextlib.suppress(psutil.NoSuchProcess):
             child.kill()
-        except psutil.NoSuchProcess:
-            pass
-    try:
+    with contextlib.suppress(psutil.NoSuchProcess):
         proc.kill()
-    except psutil.NoSuchProcess:
-        pass

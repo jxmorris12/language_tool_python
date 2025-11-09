@@ -391,9 +391,8 @@ def test_install_inexistent_version():
 def test_inexistant_language():
     import language_tool_python
 
-    with language_tool_python.LanguageTool("en-US") as tool:
-        with pytest.raises(ValueError):
-            language_tool_python.LanguageTag("xx-XX", tool._get_languages())
+    with language_tool_python.LanguageTool("en-US") as tool, pytest.raises(ValueError):
+        language_tool_python.LanguageTag("xx-XX", tool._get_languages())
 
 
 def test_debug_mode():
