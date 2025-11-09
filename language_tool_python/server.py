@@ -373,13 +373,13 @@ class LanguageTool:
         """
         library_path = get_language_tool_directory()
         spelling_file_path = os.path.join(
-            library_path, "org/languagetool/resource/en/hunspell/spelling.txt"
+            library_path, "org/languagetool/resource/en/hunspell/spelling.txt",
         )
         if not os.path.exists(spelling_file_path):
             raise FileNotFoundError(
                 f"Failed to find the spellings file at {spelling_file_path}\n "
                 "Please file an issue at "
-                "https://github.com/jxmorris12/language_tool_python/issues"
+                "https://github.com/jxmorris12/language_tool_python/issues",
             )
         return spelling_file_path
 
@@ -427,7 +427,7 @@ class LanguageTool:
             updated_lines[-1] = updated_lines[-1].strip()
 
         with open(
-            spelling_file_path, "w", encoding="utf-8", newline="\n"
+            spelling_file_path, "w", encoding="utf-8", newline="\n",
         ) as spellings_file:
             spellings_file.writelines(updated_lines)
 
@@ -474,7 +474,7 @@ class LanguageTool:
         self._remote = True
 
     def _query_server(
-        self, url: str, params: Optional[Dict[str, str]] = None, num_tries: int = 2
+        self, url: str, params: Optional[Dict[str, str]] = None, num_tries: int = 2,
     ) -> Any:
         """
         Query the server with the given URL and parameters.
@@ -494,7 +494,7 @@ class LanguageTool:
         for n in range(num_tries):
             try:
                 with requests.get(
-                    url, params=params, timeout=self._TIMEOUT
+                    url, params=params, timeout=self._TIMEOUT,
                 ) as response:
                     try:
                         return response.json()
@@ -502,14 +502,14 @@ class LanguageTool:
                         if DEBUG_MODE:
                             print(
                                 f"URL {url} and params {params} "
-                                f"returned invalid JSON response: {e}"
+                                f"returned invalid JSON response: {e}",
                             )
                             print(response)
                             print(response.content)
                         if response.status_code == 426:
                             raise RateLimitError(
                                 "You have exceeded the rate limit for the free "
-                                "LanguageTool API. Please try again later."
+                                "LanguageTool API. Please try again later.",
                             ) from e
                         raise LanguageToolError(response.content.decode()) from e
             except (IOError, http.client.HTTPException) as e:
@@ -596,7 +596,7 @@ class LanguageTool:
                     port = int(match.group(1))
                     if port != self._port:
                         raise LanguageToolError(
-                            f"requested port {self._port}, but got {port}"
+                            f"requested port {self._port}, but got {port}",
                         )
                     break
             if not match:
@@ -610,7 +610,7 @@ class LanguageTool:
 
         if self._server:
             self._consumer_thread = threading.Thread(
-                target=lambda: self._consume(self._server.stdout)
+                target=lambda: self._consume(self._server.stdout),
             )
             self._consumer_thread.daemon = True
             self._consumer_thread.start()

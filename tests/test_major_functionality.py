@@ -132,11 +132,11 @@ def test_config_text_length():
     import language_tool_python
 
     with language_tool_python.LanguageTool(
-        "en-US", config={"maxTextLength": 12}
+        "en-US", config={"maxTextLength": 12},
     ) as tool:
         # With this config file, checking text with >12 characters should raise an error.
         error_msg = re.escape(
-            "Error: Your text exceeds the limit of 12 characters (it's 27 characters). Please submit a shorter text."
+            "Error: Your text exceeds the limit of 12 characters (it's 27 characters). Please submit a shorter text.",
         )
         with pytest.raises(LanguageToolError, match=error_msg):
             tool.check("Hello darkness my old frend")
@@ -149,7 +149,7 @@ def test_config_caching():
     import language_tool_python
 
     with language_tool_python.LanguageTool(
-        "en-US", config={"cacheSize": 1000, "pipelineCaching": True}
+        "en-US", config={"cacheSize": 1000, "pipelineCaching": True},
     ) as tool:
         s = "hello darkness my old frend"
         t1 = time.time()
@@ -247,7 +247,7 @@ def test_langtool_languages():
                 "nl-BE",
                 "en-CA",
                 "tl-PH",
-            }
+            },
         )
 
 
@@ -334,7 +334,7 @@ def test_session_only_new_spellings():
 
     library_path = language_tool_python.utils.get_language_tool_directory()
     spelling_file_path = os.path.join(
-        library_path, "org/languagetool/resource/en/hunspell/spelling.txt"
+        library_path, "org/languagetool/resource/en/hunspell/spelling.txt",
     )
     with open(spelling_file_path, "r") as spelling_file:
         initial_spelling_file_contents = spelling_file.read()
@@ -342,7 +342,7 @@ def test_session_only_new_spellings():
 
     new_spellings = ["word1", "word2", "word3"]
     with language_tool_python.LanguageTool(
-        "en-US", newSpellings=new_spellings, new_spellings_persist=False
+        "en-US", newSpellings=new_spellings, new_spellings_persist=False,
     ) as tool:
         tool.enabled_rules_only = True
         tool.enabled_rules = {"MORFOLOGIK_RULE_EN_US"}

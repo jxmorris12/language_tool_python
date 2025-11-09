@@ -49,7 +49,7 @@ def get_match_ordered_dict() -> OrderedDictType[str, type]:
             ("category", str),
             ("ruleIssueType", str),
             ("sentence", str),
-        ]
+        ],
     )
 
 
@@ -270,7 +270,7 @@ class Match:
         )
         if context_without_additions not in original_text.replace("\n", " "):
             raise ValueError(
-                "The original text does not match the context of the error"
+                "The original text does not match the context of the error",
             )
         line = original_text.count("\n", 0, self.offset)
         column = self.offset - original_text.rfind("\n", 0, self.offset)
@@ -290,7 +290,7 @@ class Match:
             raise ValueError("This Match has no suggestions")
         if index < 0 or index >= len(self.replacements):
             raise ValueError(
-                f"This Match's suggestions are numbered from 0 to {len(self.replacements) - 1}"
+                f"This Match's suggestions are numbered from 0 to {len(self.replacements) - 1}",
             )
         self.replacements = [self.replacements[index]]
 
@@ -366,5 +366,5 @@ class Match:
         """
         if name not in get_match_ordered_dict():
             raise AttributeError(
-                f"{self.__class__.__name__!r} object has no attribute {name!r}"
+                f"{self.__class__.__name__!r} object has no attribute {name!r}",
             )

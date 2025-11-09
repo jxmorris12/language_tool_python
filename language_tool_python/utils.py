@@ -213,7 +213,7 @@ def get_language_tool_directory() -> str:
     download_folder = get_language_tool_download_path()
     if not os.path.isdir(download_folder):
         raise NotADirectoryError(
-            f"LanguageTool directory path is not a valid directory {download_folder}."
+            f"LanguageTool directory path is not a valid directory {download_folder}.",
         )
     language_tool_path_list = find_existing_language_tool_downloads(download_folder)
 
@@ -225,7 +225,7 @@ def get_language_tool_directory() -> str:
 
 
 def get_server_cmd(
-    port: Optional[int] = None, config: Optional[LanguageToolConfig] = None
+    port: Optional[int] = None, config: Optional[LanguageToolConfig] = None,
 ) -> List[str]:
     """
     Generate the command to start the LanguageTool HTTP server.
@@ -269,7 +269,7 @@ def get_jar_info() -> Tuple[str, str]:
     # Use the env var to the jar directory if it is defined
     # otherwise look in the download directory
     jar_dir_name = os.environ.get(
-        LTP_JAR_DIR_PATH_ENV_VAR, get_language_tool_directory()
+        LTP_JAR_DIR_PATH_ENV_VAR, get_language_tool_directory(),
     )
     jar_path = None
     for jar_name in JAR_NAMES:
@@ -299,7 +299,7 @@ def get_locale_language() -> str:
 
 
 def kill_process_force(
-    *, pid: Optional[int] = None, proc: Optional[psutil.Process] = None
+    *, pid: Optional[int] = None, proc: Optional[psutil.Process] = None,
 ) -> None:
     """
     Forcefully kills a process and all its child processes.
