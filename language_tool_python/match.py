@@ -2,16 +2,18 @@
 
 import unicodedata
 from collections import OrderedDict
+from functools import total_ordering
 from typing import (
     Any,
     Dict,
-    Tuple,
     Iterator,
-    OrderedDict as OrderedDictType,
     List,
     Optional,
+    Tuple,
 )
-from functools import total_ordering
+from typing import (
+    OrderedDict as OrderedDictType,
+)
 
 
 def get_match_ordered_dict() -> OrderedDictType[str, type]:

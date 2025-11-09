@@ -1,38 +1,37 @@
 """LanguageTool server management module."""
 
-from typing import Dict, List, Optional, Any, Set
-
 import atexit
 import http.client
 import json
 import os
 import re
-import requests
 import socket
 import subprocess
 import threading
 import urllib.parse
+from typing import Any, Dict, List, Optional, Set
+
 import psutil
+import requests
 
 from .config_file import LanguageToolConfig
-from .download_lt import download_lt, LTP_DOWNLOAD_VERSION
+from .download_lt import LTP_DOWNLOAD_VERSION, download_lt
 from .language_tag import LanguageTag
 from .match import Match
 from .utils import (
-    correct,
-    parse_url,
-    get_locale_language,
-    get_language_tool_directory,
-    get_server_cmd,
     FAILSAFE_LANGUAGE,
-    startupinfo,
     LanguageToolError,
-    ServerError,
     PathError,
     RateLimitError,
+    ServerError,
+    correct,
+    get_language_tool_directory,
+    get_locale_language,
+    get_server_cmd,
     kill_process_force,
+    parse_url,
+    startupinfo,
 )
-
 
 DEBUG_MODE = False
 

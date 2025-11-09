@@ -4,9 +4,10 @@ import argparse
 import locale
 import re
 import sys
-from importlib.metadata import version, PackageNotFoundError
-import toml
+from importlib.metadata import PackageNotFoundError, version
 from typing import Any, Optional, Set, Union
+
+import toml
 
 from .server import LanguageTool
 from .utils import LanguageToolError

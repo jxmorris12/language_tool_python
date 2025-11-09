@@ -1,14 +1,14 @@
 """Utility functions for the LanguageTool library."""
 
-from typing import List, Tuple, Optional
-from shutil import which
-
 import glob
 import locale
 import os
 import subprocess
 import urllib.parse
 from enum import Enum
+from shutil import which
+from typing import List, Optional, Tuple
+
 import psutil
 
 from .config_file import LanguageToolConfig

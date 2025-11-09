@@ -6,7 +6,6 @@ import pytest
 
 from language_tool_python.utils import LanguageToolError, RateLimitError
 
-
 # THESE TESTS ARE SUPPOSED TO BE RUN WITH 6.7-SNAPSHOT VERSION OF LT SERVER
 
 
@@ -328,8 +327,9 @@ def test_spellcheck_en_gb():
 
 
 def test_session_only_new_spellings():
-    import os
     import hashlib
+    import os
+
     import language_tool_python
 
     library_path = language_tool_python.utils.get_language_tool_directory()

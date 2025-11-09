@@ -1,8 +1,8 @@
 """LanguageTool language tag normalization module."""
 
 import re
-from typing import Iterable, Any
 from functools import total_ordering
+from typing import Any, Iterable
 
 
 @total_ordering

@@ -3,21 +3,22 @@
 import logging
 import os
 import re
-import requests
 import subprocess
 import tempfile
-import tqdm
-from typing import IO, Dict, Optional, Tuple
 import zipfile
 from datetime import datetime
-
 from shutil import which
+from typing import IO, Dict, Optional, Tuple
 from urllib.parse import urljoin
+
+import requests
+import tqdm
+
 from .utils import (
+    LTP_JAR_DIR_PATH_ENV_VAR,
+    PathError,
     find_existing_language_tool_downloads,
     get_language_tool_download_path,
-    PathError,
-    LTP_JAR_DIR_PATH_ENV_VAR,
 )
 
 # Create logger for this file.

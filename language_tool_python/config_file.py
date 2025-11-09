@@ -1,10 +1,9 @@
 """Module for configuring LanguageTool's local server."""
 
-from typing import Any, Dict
-
 import atexit
 import os
 import tempfile
+from typing import Any, Dict
 
 # Allowed configuration keys for LanguageTool.
 ALLOWED_CONFIG_KEYS = {
