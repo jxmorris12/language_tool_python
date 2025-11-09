@@ -1,10 +1,12 @@
 # `language_tool_python`: a grammar checker for Python 📝
 
-![language tool python on pypi](https://badge.fury.io/py/language-tool-python.svg)
+[![language tool python on pypi](https://badge.fury.io/py/language-tool-python.svg)](https://pypi.org/project/language-tool-python/)
+[![Test with PyTest](https://github.com/jxmorris12/language_tool_python/workflows/Test%20with%20PyTest/badge.svg)](https://github.com/jxmorris12/language_tool_python/actions)
+[![Downloads](https://static.pepy.tech/badge/language-tool-python)](https://pepy.tech/project/language-tool-python)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+[![Contributions Welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/jxmorris12/language_tool_python/pulls)
 
-![Test with PyTest](https://github.com/jxmorris12/language_tool_python/workflows/Test%20with%20PyTest/badge.svg)
-
-Current LanguageTool version: **6.7-SNAPSHOT**
+Current LanguageTool version: **6.8-SNAPSHOT**
 
 This is a Python wrapper for [LanguageTool](https://languagetool.org). LanguageTool is open-source grammar tool, also known as the spellchecker for OpenOffice. This library allows you to make to detect grammar errors and spelling mistakes through a Python script or through a command-line interface.
 
