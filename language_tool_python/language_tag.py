@@ -92,5 +92,5 @@ class LanguageTag:
         except KeyError:
             try:
                 return languages[self._LANGUAGE_RE.match(tag).group(1).lower()]
-            except (KeyError, AttributeError):
-                raise ValueError(f"unsupported language: {tag!r}")
+            except (KeyError, AttributeError) as e:
+                raise ValueError(f"unsupported language: {tag!r}") from e

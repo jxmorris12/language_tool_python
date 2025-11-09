@@ -510,14 +510,14 @@ class LanguageTool:
                             raise RateLimitError(
                                 "You have exceeded the rate limit for the free "
                                 "LanguageTool API. Please try again later."
-                            )
-                        raise LanguageToolError(response.content.decode())
+                            ) from e
+                        raise LanguageToolError(response.content.decode()) from e
             except (IOError, http.client.HTTPException) as e:
                 if self._remote is False:
                     self._terminate_server()
                     self._start_local_server()
                 if n + 1 >= num_tries:
-                    raise LanguageToolError(f"{self._url}: {e}")
+                    raise LanguageToolError(f"{self._url}: {e}") from e
 
     def _start_server_on_free_port(self) -> None:
         """
