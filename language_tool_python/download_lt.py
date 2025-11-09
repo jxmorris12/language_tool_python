@@ -219,7 +219,7 @@ def download_zip(url: str, directory: str) -> None:
     # Download file using a context manager.
     with tempfile.NamedTemporaryFile(suffix=".zip", delete=False) as downloaded_file:
         http_get(url, downloaded_file)
-    temp_name = downloaded_file.name
+        temp_name = downloaded_file.name
     # Extract zip file to path.
     unzip_file(temp_name, directory)
     # Remove the temporary file.

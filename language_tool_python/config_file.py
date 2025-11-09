@@ -84,8 +84,9 @@ class LanguageToolConfig:
             # Write key=value entries as lines in temporary file.
             for key, value in self.config.items():
                 tmp_file.write(f"{key}={value}\n")
+            temp_name = tmp_file.name
 
         # Remove file when program exits.
-        atexit.register(lambda: os.unlink(tmp_file.name))
+        atexit.register(lambda: os.unlink(temp_name))
 
-        return tmp_file.name
+        return temp_name
