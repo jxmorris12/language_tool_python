@@ -1,26 +1,27 @@
 """Utility functions for the LanguageTool library."""
 
-from typing import List, Tuple, Optional
-from shutil import which
-
+import contextlib
 import glob
 import locale
 import os
 import subprocess
 import urllib.parse
 from enum import Enum
+from shutil import which
+from typing import List, Optional, Tuple
+
 import psutil
 
 from .config_file import LanguageToolConfig
 from .match import Match
 
 JAR_NAMES = [
-    'languagetool-server.jar',
-    'languagetool-standalone*.jar',  # 2.1
-    'LanguageTool.jar',
-    'LanguageTool.uno.jar'
+    "languagetool-server.jar",
+    "languagetool-standalone*.jar",  # 2.1
+    "LanguageTool.jar",
+    "LanguageTool.uno.jar",
 ]
-FAILSAFE_LANGUAGE = 'en'
+FAILSAFE_LANGUAGE = "en"
 
 LTP_PATH_ENV_VAR = "LTP_PATH"  # LanguageTool download path
 
@@ -29,7 +30,7 @@ LTP_JAR_DIR_PATH_ENV_VAR = "LTP_JAR_DIR_PATH"
 
 # https://mail.python.org/pipermail/python-dev/2011-July/112551.html
 
-if os.name == 'nt':
+if os.name == "nt":
     startupinfo = subprocess.STARTUPINFO()
     startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 else:
@@ -42,6 +43,7 @@ class LanguageToolError(Exception):
     This is a generic exception that can be used to indicate various types of
     errors encountered while using the LanguageTool library.
     """
+
     pass
 
 
@@ -51,6 +53,7 @@ class ServerError(LanguageToolError):
     This exception is a subclass of `LanguageToolError` and is used to indicate
     issues such as server startup failures.
     """
+
     pass
 
 
@@ -60,6 +63,7 @@ class JavaError(LanguageToolError):
     This exception is a subclass of `LanguageToolError` and is used to indicate
     issues that occur when interacting with Java, such as Java not being found.
     """
+
     pass
 
 
@@ -70,6 +74,7 @@ class PathError(LanguageToolError):
     to LanguageTool, such as the LanguageTool JAR file not being found,
     or a download path not being a valid available file path.
     """
+
     pass
 
 
@@ -79,6 +84,7 @@ class RateLimitError(LanguageToolError):
     This exception is a subclass of `LanguageToolError` and is used to indicate
     issues such as exceeding the allowed number of requests to the public API without a key.
     """
+
     pass
 
 
@@ -93,8 +99,8 @@ def parse_url(url_str: str) -> str:
     :return: The parsed URL in its canonical form.
     :rtype: str
     """
-    if 'http' not in url_str:
-        url_str = 'http://' + url_str
+    if "http" not in url_str:
+        url_str = "http://" + url_str
 
     return urllib.parse.urlparse(url_str).geturl()
 
@@ -139,18 +145,21 @@ def correct(text: str, matches: List[Match]) -> str:
     """
     ltext = list(text)
     matches = [match for match in matches if match.replacements]
-    errors = [ltext[match.offset:match.offset + match.errorLength]
-              for match in matches]
+    errors = [
+        ltext[match.offset : match.offset + match.errorLength] for match in matches
+    ]
     correct_offset = 0
     for n, match in enumerate(matches):
-        frompos, topos = (correct_offset + match.offset,
-                          correct_offset + match.offset + match.errorLength)
+        frompos, topos = (
+            correct_offset + match.offset,
+            correct_offset + match.offset + match.errorLength,
+        )
         if ltext[frompos:topos] != errors[n]:
             continue
         repl = match.replacements[0]
         ltext[frompos:topos] = list(repl)
         correct_offset += len(repl) - len(errors[n])
-    return ''.join(ltext)
+    return "".join(ltext)
 
 
 def get_language_tool_download_path() -> str:
@@ -164,11 +173,10 @@ def get_language_tool_download_path() -> str:
     :rtype: str
     """
     # Get download path from environment or use default.
-    download_path = os.environ.get(
+    return os.environ.get(
         LTP_PATH_ENV_VAR,
-        os.path.join(os.path.expanduser("~"), ".cache", "language_tool_python")
+        os.path.join(os.path.expanduser("~"), ".cache", "language_tool_python"),
     )
-    return download_path
 
 
 def find_existing_language_tool_downloads(download_folder: str) -> List[str]:
@@ -182,12 +190,11 @@ def find_existing_language_tool_downloads(download_folder: str) -> List[str]:
     :return: A list of paths to the existing LanguageTool download directories.
     :rtype: List[str]
     """
-    language_tool_path_list = [
-        path for path in
-        glob.glob(os.path.join(download_folder, 'LanguageTool*'))
+    return [
+        path
+        for path in glob.glob(os.path.join(download_folder, "LanguageTool*"))
         if os.path.isdir(path)
     ]
-    return language_tool_path_list
 
 
 def get_language_tool_directory() -> str:
@@ -202,23 +209,24 @@ def get_language_tool_directory() -> str:
     :return: The path to the latest version of LanguageTool found in the directory.
     :rtype: str
     """
-    
+
     download_folder = get_language_tool_download_path()
     if not os.path.isdir(download_folder):
-        raise NotADirectoryError(f"LanguageTool directory path is not a valid directory {download_folder}.")
-    language_tool_path_list = find_existing_language_tool_downloads(
-        download_folder
-    )
+        raise NotADirectoryError(
+            f"LanguageTool directory path is not a valid directory {download_folder}.",
+        )
+    language_tool_path_list = find_existing_language_tool_downloads(download_folder)
 
     if not len(language_tool_path_list):
-        raise FileNotFoundError(f'LanguageTool not found in {download_folder}.')
+        raise FileNotFoundError(f"LanguageTool not found in {download_folder}.")
 
     # Return the latest version found in the directory.
     return max(language_tool_path_list)
 
 
 def get_server_cmd(
-    port: Optional[int] = None, config: Optional[LanguageToolConfig] = None
+    port: Optional[int] = None,
+    config: Optional[LanguageToolConfig] = None,
 ) -> List[str]:
     """
     Generate the command to start the LanguageTool HTTP server.
@@ -231,14 +239,13 @@ def get_server_cmd(
     :rtype: List[str]
     """
     java_path, jar_path = get_jar_info()
-    cmd = [java_path, '-cp', jar_path,
-           'org.languagetool.server.HTTPServer']
+    cmd = [java_path, "-cp", jar_path, "org.languagetool.server.HTTPServer"]
 
     if port is not None:
-        cmd += ['-p', str(port)]
+        cmd += ["-p", str(port)]
 
     if config is not None:
-        cmd += ['--config', config.path]
+        cmd += ["--config", config.path]
 
     return cmd
 
@@ -246,8 +253,8 @@ def get_server_cmd(
 def get_jar_info() -> Tuple[str, str]:
     """
     Retrieve the path to the Java executable and the LanguageTool JAR file.
-    This function searches for the Java executable in the system's PATH and 
-    locates the LanguageTool JAR file either in a directory specified by an 
+    This function searches for the Java executable in the system's PATH and
+    locates the LanguageTool JAR file either in a directory specified by an
     environment variable or in a default download directory.
 
     :raises JavaError: If the Java executable cannot be found.
@@ -256,7 +263,7 @@ def get_jar_info() -> Tuple[str, str]:
     :rtype: Tuple[str, str]
     """
 
-    java_path = which('java')
+    java_path = which("java")
     if not java_path:
         raise JavaError("can't find Java")
 
@@ -264,7 +271,7 @@ def get_jar_info() -> Tuple[str, str]:
     # otherwise look in the download directory
     jar_dir_name = os.environ.get(
         LTP_JAR_DIR_PATH_ENV_VAR,
-        get_language_tool_directory()
+        get_language_tool_directory(),
     )
     jar_path = None
     for jar_name in JAR_NAMES:
@@ -293,7 +300,11 @@ def get_locale_language() -> str:
     return locale.getlocale()[0] or locale.getdefaultlocale()[0]
 
 
-def kill_process_force(*, pid: Optional[int] = None, proc: Optional[psutil.Process] = None) -> None:
+def kill_process_force(
+    *,
+    pid: Optional[int] = None,
+    proc: Optional[psutil.Process] = None,
+) -> None:
     """
     Forcefully kills a process and all its child processes.
     This function attempts to kill a process specified either by its PID or by a psutil.Process object.
@@ -311,11 +322,7 @@ def kill_process_force(*, pid: Optional[int] = None, proc: Optional[psutil.Proce
     except psutil.NoSuchProcess:
         return
     for child in proc.children(recursive=True):
-        try:
+        with contextlib.suppress(psutil.NoSuchProcess):
             child.kill()
-        except psutil.NoSuchProcess:
-            pass
-    try:
+    with contextlib.suppress(psutil.NoSuchProcess):
         proc.kill()
-    except psutil.NoSuchProcess:
-        pass

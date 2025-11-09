@@ -34,7 +34,7 @@ Before creating your pull request, when you have made all your commits, you need
 ruff check language_tool_python tests
 
 # Format code
-black language_tool_python tests
+ruff format language_tool_python tests
 
 # Tests
 pytest

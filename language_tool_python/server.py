@@ -1,32 +1,37 @@
 """LanguageTool server management module."""
 
-from typing import Dict, List, Optional, Any, Set
-
 import atexit
 import http.client
 import json
 import os
 import re
-import requests
 import socket
 import subprocess
 import threading
 import urllib.parse
+from typing import Any, Dict, List, Optional, Set
+
 import psutil
+import requests
 
 from .config_file import LanguageToolConfig
-from .download_lt import download_lt, LTP_DOWNLOAD_VERSION
+from .download_lt import LTP_DOWNLOAD_VERSION, download_lt
 from .language_tag import LanguageTag
 from .match import Match
 from .utils import (
+    FAILSAFE_LANGUAGE,
+    LanguageToolError,
+    PathError,
+    RateLimitError,
+    ServerError,
     correct,
-    parse_url, get_locale_language,
-    get_language_tool_directory, get_server_cmd,
-    FAILSAFE_LANGUAGE, startupinfo,
-    LanguageToolError, ServerError, PathError, RateLimitError,
-    kill_process_force
+    get_language_tool_directory,
+    get_locale_language,
+    get_server_cmd,
+    kill_process_force,
+    parse_url,
+    startupinfo,
 )
-
 
 DEBUG_MODE = False
 
@@ -55,7 +60,7 @@ class LanguageTool:
     :type config: Optional[str]
     :param language_tool_download_version: The version of LanguageTool to download if needed.
     :type language_tool_download_version: Optional[str]
-    
+
     Attributes:
         _MIN_PORT (int): The minimum port number to use for the server.
         _MAX_PORT (int): The maximum port number to use for the server.
@@ -83,6 +88,7 @@ class LanguageTool:
         language (str): The language to use (used in requests to the server and in other methods).
         _spell_checking_categories (Set[str]): A set of spell-checking categories.
     """
+
     _MIN_PORT = 8081
     _MAX_PORT = 8999
     _TIMEOUT = 5 * 60
@@ -93,11 +99,15 @@ class LanguageTool:
     _PORT_RE = re.compile(r"(?:https?://.*:|port\s+)(\d+)", re.I)
 
     def __init__(
-            self, language=None, motherTongue=None,
-            remote_server=None, newSpellings=None,
-            new_spellings_persist=True,
-            host=None, config=None,
-            language_tool_download_version: str = LTP_DOWNLOAD_VERSION
+        self,
+        language=None,
+        motherTongue=None,
+        remote_server=None,
+        newSpellings=None,
+        new_spellings_persist=True,
+        host=None,
+        config=None,
+        language_tool_download_version: str = LTP_DOWNLOAD_VERSION,
     ) -> None:
         """
         Initialize the LanguageTool server.
@@ -105,7 +115,7 @@ class LanguageTool:
         self.language_tool_download_version = language_tool_download_version
         self._new_spellings = None
         self._new_spellings_persist = new_spellings_persist
-        self._host = host or socket.gethostbyname('localhost')
+        self._host = host or socket.gethostbyname("localhost")
 
         if remote_server:
             assert config is None, "cannot pass config file to remote server"
@@ -114,7 +124,7 @@ class LanguageTool:
         if remote_server is not None:
             self._remote = True
             self._url = parse_url(remote_server)
-            self._url = urllib.parse.urljoin(self._url, 'v2/')
+            self._url = urllib.parse.urljoin(self._url, "v2/")
             self._update_remote_server_config(self._url)
         elif not self._server_is_alive():
             self._stop_consume_event = threading.Event()
@@ -137,7 +147,7 @@ class LanguageTool:
         self.preferred_variants = set()
         self.picky = False
 
-    def __enter__(self) -> 'LanguageTool':
+    def __enter__(self) -> "LanguageTool":
         """
         Enter the runtime context related to this object.
 
@@ -149,21 +159,26 @@ class LanguageTool:
         """
         return self
 
-    def __exit__(self, exc_type: Optional[type], exc_val: Optional[BaseException], exc_tb: Optional[Any]) -> None:
+    def __exit__(
+        self,
+        exc_type: Optional[type],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[Any],
+    ) -> None:
         """
         Exit the runtime context related to this object.
-        This method is called when the runtime context is exited. It can be used to 
-        clean up any resources that were allocated during the context. The parameters 
-        describe the exception that caused the context to be exited. If the context 
+        This method is called when the runtime context is exited. It can be used to
+        clean up any resources that were allocated during the context. The parameters
+        describe the exception that caused the context to be exited. If the context
         was exited without an exception, all three arguments will be None.
 
-        :param exc_type: The exception type of the exception that caused the context 
+        :param exc_type: The exception type of the exception that caused the context
                          to be exited, or None if no exception occurred.
         :type exc_type: Optional[type]
-        :param exc_val: The exception instance that caused the context to be exited, 
+        :param exc_val: The exception instance that caused the context to be exited,
                         or None if no exception occurred.
         :type exc_val: Optional[BaseException]
-        :param exc_tb: The traceback object associated with the exception, or None 
+        :param exc_tb: The traceback object associated with the exception, or None
                        if no exception occurred.
         :type exc_tb: Optional[Any]
         """
@@ -172,11 +187,11 @@ class LanguageTool:
     def __del__(self) -> None:
         """
         Destructor method that ensures the server is properly closed.
-        This method is called when the instance is about to be destroyed. It 
-        ensures that the `close` method is called to release any resources 
+        This method is called when the instance is about to be destroyed. It
+        ensures that the `close` method is called to release any resources
         or perform any necessary cleanup.
         """
-        
+
         self.close()
 
     def __repr__(self) -> str:
@@ -186,7 +201,7 @@ class LanguageTool:
         :return: A string that includes the class name, language, and mother tongue.
         :rtype: str
         """
-        return f'{self.__class__.__name__}(language={self.language!r}, motherTongue={self.motherTongue!r})'
+        return f"{self.__class__.__name__}(language={self.language!r}, motherTongue={self.motherTongue!r})"
 
     def close(self) -> None:
         """
@@ -211,7 +226,7 @@ class LanguageTool:
         :return: The language tag.
         :rtype: LanguageTag
         """
-        
+
         return self._language
 
     @language.setter
@@ -235,7 +250,7 @@ class LanguageTool:
         :return: The mother tongue language tag if set, otherwise None.
         :rtype: Optional[LanguageTag]
         """
-        
+
         return self._motherTongue
 
     @motherTongue.setter
@@ -248,7 +263,8 @@ class LanguageTool:
         """
 
         self._motherTongue = (
-            None if motherTongue is None
+            None
+            if motherTongue is None
             else LanguageTag(motherTongue, self._get_languages())
         )
 
@@ -261,7 +277,7 @@ class LanguageTool:
         :rtype: Set[str]
         """
 
-        return {'TYPOS'}
+        return {"TYPOS"}
 
     def check(self, text: str) -> List[Match]:
         """
@@ -272,9 +288,9 @@ class LanguageTool:
         :return: A list of Match objects representing the issues found in the text.
         :rtype: List[Match]
         """
-        url = urllib.parse.urljoin(self._url, 'check')
+        url = urllib.parse.urljoin(self._url, "check")
         response = self._query_server(url, self._create_params(text))
-        matches = response['matches']
+        matches = response["matches"]
         return [Match(match, text) for match in matches]
 
     def _create_params(self, text: str) -> Dict[str, str]:
@@ -298,23 +314,23 @@ class LanguageTool:
         - 'preferredVariants': A comma-separated list of preferred language variants, if specified.
         - 'level': 'picky' if picky mode is enabled.
         """
-        params = {'language': str(self.language), 'text': text}
+        params = {"language": str(self.language), "text": text}
         if self.motherTongue is not None:
-            params['motherTongue'] = self.motherTongue
+            params["motherTongue"] = self.motherTongue
         if self.disabled_rules:
-            params['disabledRules'] = ','.join(self.disabled_rules)
+            params["disabledRules"] = ",".join(self.disabled_rules)
         if self.enabled_rules:
-            params['enabledRules'] = ','.join(self.enabled_rules)
+            params["enabledRules"] = ",".join(self.enabled_rules)
         if self.enabled_rules_only:
-            params['enabledOnly'] = 'true'
+            params["enabledOnly"] = "true"
         if self.disabled_categories:
-            params['disabledCategories'] = ','.join(self.disabled_categories)
+            params["disabledCategories"] = ",".join(self.disabled_categories)
         if self.enabled_categories:
-            params['enabledCategories'] = ','.join(self.enabled_categories)
+            params["enabledCategories"] = ",".join(self.enabled_categories)
         if self.preferred_variants:
-            params['preferredVariants'] = ','.join(self.preferred_variants)
+            params["preferredVariants"] = ",".join(self.preferred_variants)
         if self.picky:
-            params['level'] = 'picky'
+            params["level"] = "picky"
         return params
 
     def correct(self, text: str) -> str:
@@ -331,12 +347,10 @@ class LanguageTool:
     def enable_spellchecking(self) -> None:
         """
         Enable spellchecking by removing spell checking categories from the disabled categories set.
-        This method updates the `disabled_categories` attribute by removing any categories that are 
+        This method updates the `disabled_categories` attribute by removing any categories that are
         related to spell checking, which are defined in the `_spell_checking_categories` attribute.
         """
-        self.disabled_categories.difference_update(
-            self._spell_checking_categories
-        )
+        self.disabled_categories.difference_update(self._spell_checking_categories)
 
     def disable_spellchecking(self) -> None:
         """
@@ -359,28 +373,34 @@ class LanguageTool:
         """
         library_path = get_language_tool_directory()
         spelling_file_path = os.path.join(
-            library_path, "org/languagetool/resource/en/hunspell/spelling.txt"
+            library_path,
+            "org/languagetool/resource/en/hunspell/spelling.txt",
         )
         if not os.path.exists(spelling_file_path):
             raise FileNotFoundError(
                 f"Failed to find the spellings file at {spelling_file_path}\n "
                 "Please file an issue at "
-                "https://github.com/jxmorris12/language_tool_python/issues")
+                "https://github.com/jxmorris12/language_tool_python/issues",
+            )
         return spelling_file_path
 
     def _register_spellings(self) -> None:
         """
         Registers new spellings by adding them to the spelling file.
-        This method reads the existing spellings from the spelling file, 
-        filters out the new spellings that are already present, and appends 
-        the remaining new spellings to the file. If the DEBUG_MODE is enabled, 
+        This method reads the existing spellings from the spelling file,
+        filters out the new spellings that are already present, and appends
+        the remaining new spellings to the file. If the DEBUG_MODE is enabled,
         it prints a message indicating the file where the new spellings were registered.
         """
-        
+
         spelling_file_path = self._get_valid_spelling_file_path()
-        with open(spelling_file_path, "r+", encoding='utf-8') as spellings_file:
-            existing_spellings = set(line.strip() for line in spellings_file.readlines())
-            new_spellings = [word for word in self._new_spellings if word not in existing_spellings]
+        with open(spelling_file_path, "r+", encoding="utf-8") as spellings_file:
+            existing_spellings = set(
+                line.strip() for line in spellings_file.readlines()
+            )
+            new_spellings = [
+                word for word in self._new_spellings if word not in existing_spellings
+            ]
             self._new_spellings = new_spellings
             if new_spellings:
                 if len(existing_spellings) > 0:
@@ -398,16 +418,21 @@ class LanguageTool:
         """
         spelling_file_path = self._get_valid_spelling_file_path()
 
-        with open(spelling_file_path, 'r', encoding='utf-8') as spellings_file:
+        with open(spelling_file_path, "r", encoding="utf-8") as spellings_file:
             lines = spellings_file.readlines()
 
         updated_lines = [
             line for line in lines if line.strip() not in self._new_spellings
         ]
-        if updated_lines and updated_lines[-1].endswith('\n'):
-           updated_lines[-1] = updated_lines[-1].strip()
+        if updated_lines and updated_lines[-1].endswith("\n"):
+            updated_lines[-1] = updated_lines[-1].strip()
 
-        with open(spelling_file_path, 'w', encoding='utf-8', newline='\n') as spellings_file:
+        with open(
+            spelling_file_path,
+            "w",
+            encoding="utf-8",
+            newline="\n",
+        ) as spellings_file:
             spellings_file.writelines(updated_lines)
 
         if DEBUG_MODE:
@@ -425,11 +450,11 @@ class LanguageTool:
         :rtype: Set[str]
         """
         self._start_server_if_needed()
-        url = urllib.parse.urljoin(self._url, 'languages')
+        url = urllib.parse.urljoin(self._url, "languages")
         languages = set()
         for e in self._query_server(url, num_tries=1):
-            languages.add(e.get('code'))
-            languages.add(e.get('longCode'))
+            languages.add(e.get("code"))
+            languages.add(e.get("longCode"))
         languages.add("auto")
         return languages
 
@@ -453,7 +478,10 @@ class LanguageTool:
         self._remote = True
 
     def _query_server(
-        self, url: str, params: Optional[Dict[str, str]] = None, num_tries: int = 2
+        self,
+        url: str,
+        params: Optional[Dict[str, str]] = None,
+        num_tries: int = 2,
     ) -> Any:
         """
         Query the server with the given URL and parameters.
@@ -469,34 +497,37 @@ class LanguageTool:
         :raises LanguageToolError: If the server returns an invalid JSON response or if the query fails after the specified number of retries.
         """
         if DEBUG_MODE:
-            print('_query_server url:', url, 'params:', params)
+            print("_query_server url:", url, "params:", params)
         for n in range(num_tries):
             try:
-                with (
-                    requests.get(url, params=params, timeout=self._TIMEOUT)
+                with requests.get(
+                    url,
+                    params=params,
+                    timeout=self._TIMEOUT,
                 ) as response:
                     try:
                         return response.json()
                     except json.decoder.JSONDecodeError as e:
                         if DEBUG_MODE:
                             print(
-                                f'URL {url} and params {params} '
-                                f'returned invalid JSON response: {e}'
+                                f"URL {url} and params {params} "
+                                f"returned invalid JSON response: {e}",
                             )
                             print(response)
                             print(response.content)
                         if response.status_code == 426:
                             raise RateLimitError(
-                                'You have exceeded the rate limit for the free '
-                                'LanguageTool API. Please try again later.'
-                            )
-                        raise LanguageToolError(response.content.decode())
+                                "You have exceeded the rate limit for the free "
+                                "LanguageTool API. Please try again later.",
+                            ) from e
+                        raise LanguageToolError(response.content.decode()) from e
             except (IOError, http.client.HTTPException) as e:
                 if self._remote is False:
                     self._terminate_server()
                     self._start_local_server()
                 if n + 1 >= num_tries:
-                    raise LanguageToolError(f'{self._url}: {e}')
+                    raise LanguageToolError(f"{self._url}: {e}") from e
+        return None
 
     def _start_server_on_free_port(self) -> None:
         """
@@ -508,7 +539,7 @@ class LanguageTool:
         :raises ServerError: If the server cannot be started and the maximum port number is reached.
         """
         while True:
-            self._url = f'http://{self._host}:{self._port}/v2/'
+            self._url = f"http://{self._host}:{self._port}/v2/"
             try:
                 self._start_local_server()
                 break
@@ -521,13 +552,13 @@ class LanguageTool:
     def _start_local_server(self) -> None:
         """
         Start the local LanguageTool server.
-        This method starts a local instance of the LanguageTool server. If the 
-        LanguageTool is not already downloaded, it will download the specified 
-        version. It handles the server initialization, including setting up 
+        This method starts a local instance of the LanguageTool server. If the
+        LanguageTool is not already downloaded, it will download the specified
+        version. It handles the server initialization, including setting up
         the server command and managing the server process.
 
         Notes:
-            - This method uses subprocess to start the server and reads the server 
+            - This method uses subprocess to start the server and reads the server
               output to determine the port it is running on.
             - It also starts a consumer thread to handle the server's stdout.
 
@@ -541,15 +572,11 @@ class LanguageTool:
         try:
             if DEBUG_MODE:
                 if self._port:
-                    print(
-                        'language_tool_python initializing with port:',
-                        self._port
-                    )
+                    print("language_tool_python initializing with port:", self._port)
                 if self.config:
                     print(
-                        'language_tool_python initializing '
-                        'with temporary config file:',
-                        self.config.path
+                        "language_tool_python initializing with temporary config file:",
+                        self.config.path,
                     )
             server_cmd = get_server_cmd(self._port, self.config)
         except PathError as e:
@@ -563,7 +590,7 @@ class LanguageTool:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 universal_newlines=True,
-                startupinfo=startupinfo
+                startupinfo=startupinfo,
             )
             global RUNNING_SERVER_PROCESSES
             RUNNING_SERVER_PROCESSES.append(self._server)
@@ -577,7 +604,9 @@ class LanguageTool:
                 if match:
                     port = int(match.group(1))
                     if port != self._port:
-                        raise LanguageToolError(f'requested port {self._port}, but got {port}')
+                        raise LanguageToolError(
+                            f"requested port {self._port}, but got {port}",
+                        )
                     break
             if not match:
                 err_msg = self._terminate_server()
@@ -590,18 +619,16 @@ class LanguageTool:
 
         if self._server:
             self._consumer_thread = threading.Thread(
-                target=lambda: self._consume(self._server.stdout))
+                target=lambda: self._consume(self._server.stdout),
+            )
             self._consumer_thread.daemon = True
             self._consumer_thread.start()
         else:
             # Couldn't start the server, so maybe there is already one running.
             if err:
                 raise Exception(err)
-            else:
-                raise ServerError(
-                    'Server running; don\'t start a server here.'
-                )
-    
+            raise ServerError("Server running; don't start a server here.")
+
     def _consume(self, stdout: Any) -> None:
         """
         Continuously reads from the provided stdout until a stop event is set.
@@ -611,7 +638,6 @@ class LanguageTool:
         """
         while not self._stop_consume_event.is_set() and stdout.readline():
             pass
-
 
     def _server_is_alive(self) -> bool:
         """
@@ -643,7 +669,7 @@ class LanguageTool:
             # Wait for the consumer thread to finish
             self._consumer_thread.join(timeout=5)
 
-        error_message = ''
+        error_message = ""
         if self._server:
             try:
                 try:
@@ -652,7 +678,7 @@ class LanguageTool:
                 except psutil.NoSuchProcess:
                     # If the process doesn't exist, set proc to None
                     proc = None
-                
+
                 # Attempt to terminate the process gracefully
                 self._server.terminate()
                 # Wait for the process to terminate and capture any stderr output
@@ -695,20 +721,19 @@ class LanguageToolPublicAPI(LanguageTool):
     :param kwargs: Keyword arguments passed to the parent class initializer.
     :type kwargs: Any
     """
+
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """
         Initialize the server with the given arguments.
         """
-        super().__init__(
-            *args, remote_server='https://languagetool.org/api/', **kwargs
-        )
+        super().__init__(*args, remote_server="https://languagetool.org/api/", **kwargs)
 
 
 @atexit.register
 def terminate_server() -> None:
     """
     Terminates all running server processes.
-    This function iterates over the list of running server processes and 
+    This function iterates over the list of running server processes and
     forcefully kills each process by its PID.
     """
     for pid in [p.pid for p in RUNNING_SERVER_PROCESSES]:

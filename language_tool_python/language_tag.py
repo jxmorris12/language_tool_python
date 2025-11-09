@@ -1,8 +1,9 @@
 """LanguageTool language tag normalization module."""
 
 import re
-from typing import Iterable, Any
 from functools import total_ordering
+from typing import Any, Iterable
+
 
 @total_ordering
 class LanguageTag:
@@ -18,8 +19,9 @@ class LanguageTag:
         tag (str): The language tag to be normalized.
         languages (Iterable[str]): An iterable of supported language tags.
         normalized_tag (str): The normalized language tag.
-        _LANGUAGE_RE (re.Pattern): A regular expression to match language tags. 
+        _LANGUAGE_RE (re.Pattern): A regular expression to match language tags.
     """
+
     _LANGUAGE_RE = re.compile(r"^([a-z]{2,3})(?:[_-]([a-z]{2}))?$", re.I)
 
     def __init__(self, tag: str, languages: Iterable[str]) -> None:
@@ -81,13 +83,14 @@ class LanguageTag:
         :rtype: str
         """
         if not tag:
-            raise ValueError('empty language tag')
-        languages = {language.lower().replace('-', '_'): language
-                     for language in self.languages}
+            raise ValueError("empty language tag")
+        languages = {
+            language.lower().replace("-", "_"): language for language in self.languages
+        }
         try:
-            return languages[tag.lower().replace('-', '_')]
+            return languages[tag.lower().replace("-", "_")]
         except KeyError:
             try:
                 return languages[self._LANGUAGE_RE.match(tag).group(1).lower()]
-            except (KeyError, AttributeError):
-                raise ValueError(f'unsupported language: {tag!r}')
+            except (KeyError, AttributeError) as e:
+                raise ValueError(f"unsupported language: {tag!r}") from e

@@ -2,19 +2,30 @@
 
 import unicodedata
 from collections import OrderedDict
-from typing import Any, Dict, Tuple, Iterator, OrderedDict as OrderedDictType, List, Optional
 from functools import total_ordering
+from typing import (
+    Any,
+    Dict,
+    Iterator,
+    List,
+    Optional,
+    Tuple,
+)
+from typing import (
+    OrderedDict as OrderedDictType,
+)
+
 
 def get_match_ordered_dict() -> OrderedDictType[str, type]:
     """
     Returns an ordered dictionary with predefined keys and their corresponding types.
 
-    :return: An OrderedDict where each key is a string representing a specific attribute 
+    :return: An OrderedDict where each key is a string representing a specific attribute
              and each value is the type of that attribute.
     :rtype: OrderedDictType[str, type]
 
     The keys and their corresponding types are:
-    
+
     - 'ruleId': str
     - 'message': str
     - 'replacements': list
@@ -26,19 +37,21 @@ def get_match_ordered_dict() -> OrderedDictType[str, type]:
     - 'ruleIssueType': str
     - 'sentence': str
     """
-    slots = OrderedDict([
-        ('ruleId', str), 
-        ('message', str),
-        ('replacements', list),
-        ('offsetInContext', int), 
-        ('context', str), 
-        ('offset', int), 
-        ('errorLength', int),
-        ('category', str), 
-        ('ruleIssueType', str),
-        ('sentence', str), 
-    ])
-    return slots
+    return OrderedDict(
+        [
+            ("ruleId", str),
+            ("message", str),
+            ("replacements", list),
+            ("offsetInContext", int),
+            ("context", str),
+            ("offset", int),
+            ("errorLength", int),
+            ("category", str),
+            ("ruleIssueType", str),
+            ("sentence", str),
+        ],
+    )
+
 
 def auto_type(obj: Any) -> Any:
     """
@@ -60,6 +73,7 @@ def auto_type(obj: Any) -> Any:
         except ValueError:
             return obj
 
+
 def four_byte_char_positions(text: str) -> List[int]:
     """
     Identify positions of 4-byte encoded characters in a UTF-8 string.
@@ -76,13 +90,14 @@ def four_byte_char_positions(text: str) -> List[int]:
     positions = []
     char_index = 0
     for char in text:
-        if len(char.encode('utf-8')) == 4:
+        if len(char.encode("utf-8")) == 4:
             positions.append(char_index)
             # Adding 1 to the index because 4 byte characters are
             # 2 bytes in length in LanguageTool, instead of 1 byte in Python.
             char_index += 1
         char_index += 1
     return positions
+
 
 @total_ordering
 class Match:
@@ -119,18 +134,18 @@ class Match:
         ruleIssueType (str): The issue type of the rule that was violated.
 
     Exemple of a match object received from the LanguageTool API :
-    
+
     ```
     {
-        'message': 'Possible spelling mistake found.', 
-        'shortMessage': 'Spelling mistake', 
-        'replacements': [{'value': 'newt'}, {'value': 'not'}, {'value': 'new', 'shortDescription': 'having just been made'}, {'value': 'news'}, {'value': 'foot', 'shortDescription': 'singular'}, {'value': 'root', 'shortDescription': 'underground organ of a plant'}, {'value': 'boot'}, {'value': 'noon'}, {'value': 'loot', 'shortDescription': 'plunder'}, {'value': 'moot'}, {'value': 'Root'}, {'value': 'soot', 'shortDescription': 'carbon black'}, {'value': 'newts'}, {'value': 'nook'}, {'value': 'Lieut'}, {'value': 'coot'}, {'value': 'hoot'}, {'value': 'toot'}, {'value': 'snoot'}, {'value': 'neut'}, {'value': 'nowt'}, {'value': 'Noor'}, {'value': 'noob'}], 
-        'offset': 8, 
-        'length': 4, 
-        'context': {'text': 'This is noot okay. ', 'offset': 8, 'length': 4}, 'sentence': 'This is noot okay.', 
-        'type': {'typeName': 'Other'}, 
-        'rule': {'id': 'MORFOLOGIK_RULE_EN_US', 'description': 'Possible spelling mistake', 'issueType': 'misspelling', 'category': {'id': 'TYPOS', 'name': 'Possible Typo'}}, 
-        'ignoreForIncompleteSentence': False, 
+        'message': 'Possible spelling mistake found.',
+        'shortMessage': 'Spelling mistake',
+        'replacements': [{'value': 'newt'}, {'value': 'not'}, {'value': 'new', 'shortDescription': 'having just been made'}, {'value': 'news'}, {'value': 'foot', 'shortDescription': 'singular'}, {'value': 'root', 'shortDescription': 'underground organ of a plant'}, {'value': 'boot'}, {'value': 'noon'}, {'value': 'loot', 'shortDescription': 'plunder'}, {'value': 'moot'}, {'value': 'Root'}, {'value': 'soot', 'shortDescription': 'carbon black'}, {'value': 'newts'}, {'value': 'nook'}, {'value': 'Lieut'}, {'value': 'coot'}, {'value': 'hoot'}, {'value': 'toot'}, {'value': 'snoot'}, {'value': 'neut'}, {'value': 'nowt'}, {'value': 'Noor'}, {'value': 'noob'}],
+        'offset': 8,
+        'length': 4,
+        'context': {'text': 'This is noot okay. ', 'offset': 8, 'length': 4}, 'sentence': 'This is noot okay.',
+        'type': {'typeName': 'Other'},
+        'rule': {'id': 'MORFOLOGIK_RULE_EN_US', 'description': 'Possible spelling mistake', 'issueType': 'misspelling', 'category': {'id': 'TYPOS', 'name': 'Possible Typo'}},
+        'ignoreForIncompleteSentence': False,
         'contextForSureMatch': 0
     }
     ```
@@ -138,7 +153,7 @@ class Match:
 
     PREVIOUS_MATCHES_TEXT: Optional[str] = None
     FOUR_BYTES_POSITIONS: Optional[List[int]] = None
-    
+
     def __init__(self, attrib: Dict[str, Any], text: str) -> None:
         """
         Initialize a Match object with the given attributes.
@@ -148,31 +163,31 @@ class Match:
         """
         if text is None:
             raise ValueError("The text parameter must not be None")
-        elif not isinstance(text, str):
+        if not isinstance(text, str):
             raise TypeError("The text parameter must be a string")
-        
+
         # Process rule.
-        attrib['category'] = attrib['rule']['category']['id']
-        attrib['ruleId'] = attrib['rule']['id']
-        attrib['ruleIssueType'] = attrib['rule']['issueType']
-        del attrib['rule']
+        attrib["category"] = attrib["rule"]["category"]["id"]
+        attrib["ruleId"] = attrib["rule"]["id"]
+        attrib["ruleIssueType"] = attrib["rule"]["issueType"]
+        del attrib["rule"]
         # Process context.
-        attrib['offsetInContext'] = attrib['context']['offset']
-        attrib['context'] = attrib['context']['text']
+        attrib["offsetInContext"] = attrib["context"]["offset"]
+        attrib["context"] = attrib["context"]["text"]
         # Process replacements.
-        attrib['replacements'] = [r['value'] for r in attrib['replacements']]
+        attrib["replacements"] = [r["value"] for r in attrib["replacements"]]
         # Rename error length.
-        attrib['errorLength'] = attrib['length']
+        attrib["errorLength"] = attrib["length"]
         # Normalize unicode
-        attrib['message'] = unicodedata.normalize("NFKC", attrib['message'])
+        attrib["message"] = unicodedata.normalize("NFKC", attrib["message"])
         # Store objects on self.
         for k, v in attrib.items():
             setattr(self, k, v)
-        
-        if Match.PREVIOUS_MATCHES_TEXT != text:
+
+        if text != Match.PREVIOUS_MATCHES_TEXT:
             Match.PREVIOUS_MATCHES_TEXT = text
             Match.FOUR_BYTES_POSITIONS = four_byte_char_positions(text)
-        # Get the positions of 4-byte encoded characters in the text because without 
+        # Get the positions of 4-byte encoded characters in the text because without
         # carrying out this step, the offsets of the matches could be incorrect.
         self.offset -= sum(1 for pos in Match.FOUR_BYTES_POSITIONS if pos < self.offset)
 
@@ -185,6 +200,7 @@ class Match:
         :return: A string representation of the object.
         :rtype: str
         """
+
         def _ordered_dict_repr() -> str:
             """
             Generate a string representation of the object's attributes in an ordered dictionary format.
@@ -199,26 +215,29 @@ class Match:
             """
             slots = list(get_match_ordered_dict())
             slots += list(set(self.__dict__).difference(slots))
-            attrs = [slot for slot in slots
-                     if slot in self.__dict__ and not slot.startswith('_')]
+            attrs = [
+                slot
+                for slot in slots
+                if slot in self.__dict__ and not slot.startswith("_")
+            ]
             return f"{{{', '.join([f'{attr!r}: {getattr(self, attr)!r}' for attr in attrs])}}}"
 
-        return f'{self.__class__.__name__}({_ordered_dict_repr()})'
+        return f"{self.__class__.__name__}({_ordered_dict_repr()})"
 
     def __str__(self) -> str:
         """
         Returns a string representation of the match object.
 
-        The string includes the offset, error length, rule ID, message, 
+        The string includes the offset, error length, rule ID, message,
         suggestions, and context with a visual indicator of the error position.
 
         :return: A formatted string describing the match object.
         :rtype: str
         """
         ruleId = self.ruleId
-        s = f'Offset {self.offset}, length {self.errorLength}, Rule ID: {ruleId}'
+        s = f"Offset {self.offset}, length {self.errorLength}, Rule ID: {ruleId}"
         if self.message:
-            s += f'\nMessage: {self.message}'
+            s += f"\nMessage: {self.message}"
         if self.replacements:
             s += f"\nSuggestion: {'; '.join(self.replacements)}"
         s += f"\n{self.context}\n{' ' * self.offsetInContext + '^' * self.errorLength}"
@@ -232,7 +251,9 @@ class Match:
         :return: The matched text from the context.
         :rtype: str
         """
-        return self.context[self.offsetInContext:self.offsetInContext+self.errorLength]
+        return self.context[
+            self.offsetInContext : self.offsetInContext + self.errorLength
+        ]
 
     def get_line_and_column(self, original_text: str) -> Tuple[int, int]:
         """
@@ -244,13 +265,17 @@ class Match:
         :rtype: Tuple[int, int]
         """
 
-        context_without_additions = self.context[3:-3] if len(self.context) > 6 else self.context
-        if context_without_additions not in original_text.replace('\n', ' '):
-            raise ValueError('The original text does not match the context of the error')
-        line = original_text.count('\n', 0, self.offset)
-        column = self.offset - original_text.rfind('\n', 0, self.offset)
+        context_without_additions = (
+            self.context[3:-3] if len(self.context) > 6 else self.context
+        )
+        if context_without_additions not in original_text.replace("\n", " "):
+            raise ValueError(
+                "The original text does not match the context of the error",
+            )
+        line = original_text.count("\n", 0, self.offset)
+        column = self.offset - original_text.rfind("\n", 0, self.offset)
         return line + 1, column
-    
+
     def select_replacement(self, index: int) -> None:
         """
         Select a single replacement suggestion based on the given index and update the replacements list, leaving only the selected replacement.
@@ -260,11 +285,13 @@ class Match:
         :raises ValueError: If there are no replacement suggestions.
         :raises ValueError: If the index is out of the valid range.
         """
-        
+
         if not self.replacements:
-            raise ValueError('This Match has no suggestions')
-        elif index < 0 or index >= len(self.replacements):
-            raise ValueError(f'This Match\'s suggestions are numbered from 0 to {len(self.replacements) - 1}')
+            raise ValueError("This Match has no suggestions")
+        if index < 0 or index >= len(self.replacements):
+            raise ValueError(
+                f"This Match's suggestions are numbered from 0 to {len(self.replacements) - 1}",
+            )
         self.replacements = [self.replacements[index]]
 
     def __eq__(self, other: Any) -> bool:
@@ -293,7 +320,7 @@ class Match:
         """
         Return an iterator over the attributes of the match object.
 
-        This method allows the match object to be iterated over, yielding the 
+        This method allows the match object to be iterated over, yielding the
         values of its attributes in the order defined by `get_match_ordered_dict`.
 
         :return: An iterator over the attribute values of the match object.
@@ -326,9 +353,9 @@ class Match:
         """
         Handle attribute access for undefined attributes.
 
-        This method is called when an attribute lookup has not found the attribute in the usual places 
-        (i.e., it is not an instance attribute nor is it found in the class tree for self). This method 
-        checks if the attribute name is in the ordered dictionary returned by `get_match_ordered_dict()`. 
+        This method is called when an attribute lookup has not found the attribute in the usual places
+        (i.e., it is not an instance attribute nor is it found in the class tree for self). This method
+        checks if the attribute name is in the ordered dictionary returned by `get_match_ordered_dict()`.
         If the attribute name is not found, it raises an AttributeError.
 
         :param name: The name of the attribute being accessed.
@@ -338,4 +365,6 @@ class Match:
         :raises AttributeError: If the attribute does not exist.
         """
         if name not in get_match_ordered_dict():
-            raise AttributeError(f'{self.__class__.__name__!r} object has no attribute {name!r}')
+            raise AttributeError(
+                f"{self.__class__.__name__!r} object has no attribute {name!r}",
+            )
