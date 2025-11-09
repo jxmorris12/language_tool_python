@@ -87,6 +87,16 @@ class LanguageTag:
         languages = {
             language.lower().replace("-", "_"): language for language in self.languages
         }
+
+        # If POSIX, default to English variants
+        if tag.lower() in {"c", "posix"} or tag.lower().startswith("c."):
+            for candidate in ("en_us", "en_gb", "en"):
+                if candidate in languages:
+                    return languages[candidate]
+            raise ValueError(
+                f"unsupported language (no default for POSIX locale): {tag!r}"
+            )
+
         try:
             return languages[tag.lower().replace("-", "_")]
         except KeyError:
