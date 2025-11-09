@@ -27,12 +27,16 @@ def parse_args() -> argparse.Namespace:
     :rtype: argparse.Namespace
     """
     parser = argparse.ArgumentParser(
-        description=__doc__.strip() if __doc__ else None, prog="language_tool_python",
+        description=__doc__.strip() if __doc__ else None,
+        prog="language_tool_python",
     )
     parser.add_argument("files", nargs="+", help='plain text file or "-" for stdin')
     parser.add_argument("-c", "--encoding", help="input encoding")
     parser.add_argument(
-        "-l", "--language", metavar="CODE", help='language code of the input or "auto"',
+        "-l",
+        "--language",
+        metavar="CODE",
+        help='language code of the input or "auto"',
     )
     parser.add_argument(
         "-m",
@@ -89,10 +93,12 @@ def parse_args() -> argparse.Namespace:
         help="disable spell-checking rules",
     )
     parser.add_argument(
-        "--ignore-lines", help="ignore lines that match this regular expression",
+        "--ignore-lines",
+        help="ignore lines that match this regular expression",
     )
     parser.add_argument(
-        "--remote-host", help="hostname of the remote LanguageTool server",
+        "--remote-host",
+        help="hostname of the remote LanguageTool server",
     )
     parser.add_argument("--remote-port", help="port of the remote LanguageTool server")
 
@@ -156,7 +162,9 @@ def get_rules(rules: str) -> Set[str]:
 
 
 def get_text(
-    filename: Union[str, int], encoding: Optional[str], ignore: Optional[str],
+    filename: Union[str, int],
+    encoding: Optional[str],
+    ignore: Optional[str],
 ) -> str:
     """
     Read the content of a file and return it as a string, optionally ignoring lines that match a regular expression.

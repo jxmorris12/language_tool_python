@@ -28,11 +28,13 @@ logger.setLevel(logging.INFO)
 
 # Get download host from environment or default.
 BASE_URL_SNAPSHOT = os.environ.get(
-    "LTP_DOWNLOAD_HOST_SNAPSHOT", "https://internal1.languagetool.org/snapshots/",
+    "LTP_DOWNLOAD_HOST_SNAPSHOT",
+    "https://internal1.languagetool.org/snapshots/",
 )
 FILENAME_SNAPSHOT = "LanguageTool-{version}-snapshot.zip"
 BASE_URL_RELEASE = os.environ.get(
-    "LTP_DOWNLOAD_HOST_RELEASE", "https://www.languagetool.org/download/",
+    "LTP_DOWNLOAD_HOST_RELEASE",
+    "https://www.languagetool.org/download/",
 )
 FILENAME_RELEASE = "LanguageTool-{version}.zip"
 
@@ -46,7 +48,8 @@ JAVA_VERSION_REGEX = re.compile(
 
 # Updated for later versions of java
 JAVA_VERSION_REGEX_UPDATED = re.compile(
-    r"^(?:java|openjdk) [version ]?(?P<major1>\d+)\.(?P<major2>\d+)", re.MULTILINE,
+    r"^(?:java|openjdk) [version ]?(?P<major1>\d+)\.(?P<major2>\d+)",
+    re.MULTILINE,
 )
 
 
@@ -65,7 +68,8 @@ def parse_java_version(version_text: str) -> Tuple[int, int]:
     :raises SystemExit: If the version string cannot be parsed.
     """
     match = re.search(JAVA_VERSION_REGEX, version_text) or re.search(
-        JAVA_VERSION_REGEX_UPDATED, version_text,
+        JAVA_VERSION_REGEX_UPDATED,
+        version_text,
     )
     if not match:
         raise SystemExit(f'Could not parse Java version from """{version_text}""".')
@@ -95,7 +99,9 @@ def confirm_java_compatibility(
         )
 
     output = subprocess.check_output(
-        [java_path, "-version"], stderr=subprocess.STDOUT, universal_newlines=True,
+        [java_path, "-version"],
+        stderr=subprocess.STDOUT,
+        universal_newlines=True,
     )
 
     major_version, minor_version = parse_java_version(output)
@@ -148,7 +154,9 @@ def get_common_prefix(z: zipfile.ZipFile) -> Optional[str]:
 
 
 def http_get(
-    url: str, out_file: IO[bytes], proxies: Optional[Dict[str, str]] = None,
+    url: str,
+    out_file: IO[bytes],
+    proxies: Optional[Dict[str, str]] = None,
 ) -> None:
     """
     Downloads a file from a given URL and writes it to the specified output file.

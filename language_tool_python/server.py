@@ -373,7 +373,8 @@ class LanguageTool:
         """
         library_path = get_language_tool_directory()
         spelling_file_path = os.path.join(
-            library_path, "org/languagetool/resource/en/hunspell/spelling.txt",
+            library_path,
+            "org/languagetool/resource/en/hunspell/spelling.txt",
         )
         if not os.path.exists(spelling_file_path):
             raise FileNotFoundError(
@@ -427,7 +428,10 @@ class LanguageTool:
             updated_lines[-1] = updated_lines[-1].strip()
 
         with open(
-            spelling_file_path, "w", encoding="utf-8", newline="\n",
+            spelling_file_path,
+            "w",
+            encoding="utf-8",
+            newline="\n",
         ) as spellings_file:
             spellings_file.writelines(updated_lines)
 
@@ -474,7 +478,10 @@ class LanguageTool:
         self._remote = True
 
     def _query_server(
-        self, url: str, params: Optional[Dict[str, str]] = None, num_tries: int = 2,
+        self,
+        url: str,
+        params: Optional[Dict[str, str]] = None,
+        num_tries: int = 2,
     ) -> Any:
         """
         Query the server with the given URL and parameters.
@@ -494,7 +501,9 @@ class LanguageTool:
         for n in range(num_tries):
             try:
                 with requests.get(
-                    url, params=params, timeout=self._TIMEOUT,
+                    url,
+                    params=params,
+                    timeout=self._TIMEOUT,
                 ) as response:
                     try:
                         return response.json()
