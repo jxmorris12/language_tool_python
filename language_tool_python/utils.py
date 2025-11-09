@@ -173,11 +173,10 @@ def get_language_tool_download_path() -> str:
     :rtype: str
     """
     # Get download path from environment or use default.
-    download_path = os.environ.get(
+    return os.environ.get(
         LTP_PATH_ENV_VAR,
         os.path.join(os.path.expanduser("~"), ".cache", "language_tool_python"),
     )
-    return download_path
 
 
 def find_existing_language_tool_downloads(download_folder: str) -> List[str]:
@@ -191,12 +190,11 @@ def find_existing_language_tool_downloads(download_folder: str) -> List[str]:
     :return: A list of paths to the existing LanguageTool download directories.
     :rtype: List[str]
     """
-    language_tool_path_list = [
+    return [
         path
         for path in glob.glob(os.path.join(download_folder, "LanguageTool*"))
         if os.path.isdir(path)
     ]
-    return language_tool_path_list
 
 
 def get_language_tool_directory() -> str:

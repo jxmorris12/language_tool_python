@@ -37,7 +37,7 @@ def get_match_ordered_dict() -> OrderedDictType[str, type]:
     - 'ruleIssueType': str
     - 'sentence': str
     """
-    slots = OrderedDict(
+    return OrderedDict(
         [
             ("ruleId", str),
             ("message", str),
@@ -51,7 +51,6 @@ def get_match_ordered_dict() -> OrderedDictType[str, type]:
             ("sentence", str),
         ]
     )
-    return slots
 
 
 def auto_type(obj: Any) -> Any:
@@ -164,7 +163,7 @@ class Match:
         """
         if text is None:
             raise ValueError("The text parameter must not be None")
-        elif not isinstance(text, str):
+        if not isinstance(text, str):
             raise TypeError("The text parameter must be a string")
 
         # Process rule.
@@ -289,7 +288,7 @@ class Match:
 
         if not self.replacements:
             raise ValueError("This Match has no suggestions")
-        elif index < 0 or index >= len(self.replacements):
+        if index < 0 or index >= len(self.replacements):
             raise ValueError(
                 f"This Match's suggestions are numbered from 0 to {len(self.replacements) - 1}"
             )

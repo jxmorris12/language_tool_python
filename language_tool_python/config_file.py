@@ -76,7 +76,9 @@ class LanguageToolConfig:
         :return: Path to the temporary file.
         :rtype: str
         """
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, encoding="utf-8") as tmp_file:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, encoding="utf-8"
+        ) as tmp_file:
             # Write key=value entries as lines in temporary file.
             for key, value in self.config.items():
                 tmp_file.write(f"{key}={value}\n")

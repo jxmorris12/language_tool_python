@@ -171,11 +171,10 @@ def get_text(
     :rtype: str
     """
     with open(filename, encoding=encoding) as f:
-        text = "".join(
+        return "".join(
             "\n" if (ignore and re.match(ignore, line)) else line
             for line in f.readlines()
         )
-    return text
 
 
 def main() -> int:

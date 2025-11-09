@@ -518,6 +518,7 @@ class LanguageTool:
                     self._start_local_server()
                 if n + 1 >= num_tries:
                     raise LanguageToolError(f"{self._url}: {e}") from e
+        return None
 
     def _start_server_on_free_port(self) -> None:
         """
@@ -617,8 +618,7 @@ class LanguageTool:
             # Couldn't start the server, so maybe there is already one running.
             if err:
                 raise Exception(err)
-            else:
-                raise ServerError("Server running; don't start a server here.")
+            raise ServerError("Server running; don't start a server here.")
 
     def _consume(self, stdout: Any) -> None:
         """
