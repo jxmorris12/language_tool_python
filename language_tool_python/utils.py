@@ -314,9 +314,10 @@ def kill_process_force(
     :type pid: Optional[int]
     :param proc: A psutil.Process object representing the process to be killed. Either `pid` or `proc` must be provided.
     :type proc: Optional[psutil.Process]
-    :raises AssertionError: If neither `pid` nor `proc` is provided.
+    :raises ValueError: If neither `pid` nor `proc` is provided.
     """
-    assert any([pid, proc]), "Must pass either pid or proc"
+    if not any([pid, proc]):
+        raise ValueError("Must pass either pid or proc")
     try:
         proc = psutil.Process(pid) if proc is None else proc
     except psutil.NoSuchProcess:

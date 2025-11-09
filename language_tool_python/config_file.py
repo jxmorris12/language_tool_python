@@ -31,7 +31,44 @@ ALLOWED_CONFIG_KEYS = {
     "maxPipelinePoolSize",
     "pipelineExpireTimeInSeconds",
     "pipelinePrewarming",
+    "trustXForwardForHeader",
+    "suggestionsEnabled",
 }
+
+
+def _is_lang_key(key: str) -> bool:
+    """
+    Check if a given key is a valid language key.
+    A valid language key must follow one of these formats:
+
+        - lang-<code> where code is a non-empty language code
+        - lang-<code>-dictPath where code is a non-empty language code
+
+    :param key: The key string to validate
+    :type key: str
+    :return: True if the key is a valid language key, False otherwise
+    :rtype: bool
+    """
+    if not key.startswith("lang-"):
+        return False
+
+    parts = key.split("-")
+    return (len(parts) == 2 and len(parts[1]) > 0) or (
+        len(parts) == 3 and len(parts[1]) > 0 and parts[2] == "dictPath"
+    )
+
+
+def _validate_config_keys(config: Dict[str, Any]) -> None:
+    """
+    Validate that all keys in the configuration dictionary are allowed.
+
+    :param config: Dictionary containing configuration keys and values.
+    :type config: Dict[str, Any]
+    :raises ValueError: If a key is found that is not in ALLOWED_CONFIG_KEYS and is not a language key.
+    """
+    for key in config:
+        if key not in ALLOWED_CONFIG_KEYS and not _is_lang_key(key):
+            raise ValueError(f"unexpected key in config: {key}")
 
 
 class LanguageToolConfig:
@@ -53,17 +90,23 @@ class LanguageToolConfig:
         """
         Initialize the LanguageToolConfig object.
         """
-        assert set(config.keys()) <= ALLOWED_CONFIG_KEYS, (
-            f"unexpected keys in config: {set(config.keys()) - ALLOWED_CONFIG_KEYS}"
-        )
-        assert len(config), "config cannot be empty"
+        if not config:
+            raise ValueError("config cannot be empty")
+        _validate_config_keys(config)
+
         self.config = config
 
         if "disabledRuleIds" in self.config:
             self.config["disabledRuleIds"] = ",".join(self.config["disabledRuleIds"])
         if "blockedReferrers" in self.config:
             self.config["blockedReferrers"] = ",".join(self.config["blockedReferrers"])
-        for key in ["pipelineCaching", "premiumOnly", "pipelinePrewarming"]:
+        for key in [
+            "pipelineCaching",
+            "premiumOnly",
+            "pipelinePrewarming",
+            "trustXForwardForHeader",
+            "suggestionsEnabled",
+        ]:
             if key in self.config:
                 self.config[key] = str(bool(self.config[key])).lower()
 

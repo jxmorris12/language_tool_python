@@ -117,8 +117,8 @@ class LanguageTool:
         self._new_spellings_persist = new_spellings_persist
         self._host = host or socket.gethostbyname("localhost")
 
-        if remote_server:
-            assert config is None, "cannot pass config file to remote server"
+        if remote_server and config is not None:
+            raise ValueError("Cannot use both remote_server and config parameters.")
         self.config = LanguageToolConfig(config) if config else None
 
         if remote_server is not None:

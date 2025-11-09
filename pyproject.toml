@@ -12,6 +12,19 @@ authors = [
 maintainers = [
     { name = "mdevolde", email = "martin.devolder2@gmail.com" }
 ]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Operating System :: OS Independent",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Text Processing :: Linguistic",
+]
+keywords = ["python", "nlp", "grammar", "languagetool", "grammar-checker", "spellchecker", "grammar-parser"]
 urls = { Repository = "https://github.com/jxmorris12/language_tool_python.git" }
 
 dependencies = [
