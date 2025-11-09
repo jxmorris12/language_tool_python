@@ -1,4 +1,3 @@
-include run_doctest.py
 include tests/test_local.bash
 include tests/test_remote.bash
 prune pytest-cache-files-*/

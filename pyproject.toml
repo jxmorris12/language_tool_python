@@ -4,7 +4,8 @@ version = "2.9.5"
 requires-python = ">=3.9"
 description = "Checks grammar using LanguageTool."
 readme = { file = "README.md", content-type = "text/markdown" }
-license = { file = "LICENSE" }
+license = "GPL-3.0-only"
+license-files = ["LICENSE"]
 authors = [
     { name = "Jack Morris", email = "jxmorris12@gmail.com" }
 ]
