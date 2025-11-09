@@ -34,3 +34,6 @@ language_tool_python = "language_tool_python.__main__:main"
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[tool.ruff.lint]
+select = ["F", "W", "I", "B", "SIM", "RET", "Q", "COM"]
