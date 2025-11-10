@@ -239,7 +239,7 @@ def download_lt(language_tool_version: Optional[str] = LTP_DOWNLOAD_VERSION) -> 
                                   specified, the default version defined by
                                   LTP_DOWNLOAD_VERSION is used.
     :type language_tool_version: Optional[str]
-    :raises AssertionError: If the download folder is not a directory.
+    :raises PathError: If the download folder is not a directory.
     :raises ValueError: If the specified version format is invalid.
     """
 
@@ -255,7 +255,8 @@ def download_lt(language_tool_version: Optional[str] = LTP_DOWNLOAD_VERSION) -> 
     # Make download path, if it doesn't exist.
     os.makedirs(download_folder, exist_ok=True)
 
-    assert os.path.isdir(download_folder)
+    if not os.path.isdir(download_folder):
+        raise PathError(f"Download folder {download_folder} is not a directory.")
     old_path_list = find_existing_language_tool_downloads(download_folder)
 
     if language_tool_version:
