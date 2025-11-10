@@ -49,5 +49,8 @@ language_tool_python = "language_tool_python.__main__:main"
 requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools]
+packages = { find = { include = ["language_tool_python*"] } }
+
 [tool.ruff.lint]
 select = ["F", "W", "I", "B", "SIM", "RET", "Q"]
