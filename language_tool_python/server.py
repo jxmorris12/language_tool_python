@@ -1,13 +1,14 @@
 """LanguageTool server management module."""
 
 import atexit
+import contextlib
 import http.client
 import json
 import os
-import re
+import random
 import socket
 import subprocess
-import threading
+import time
 import urllib.parse
 from typing import Any, Dict, List, Optional, Set
 
@@ -42,6 +43,20 @@ DEBUG_MODE = False
 RUNNING_SERVER_PROCESSES: List[subprocess.Popen] = []
 
 
+def _kill_processes(processes: List[subprocess.Popen]) -> None:
+    """
+    Kill all running server processes.
+    This function iterates over the list of running server processes and
+    forcefully kills each process by its PID.
+
+    :param processes: A list of subprocess.Popen objects representing the running server processes.
+    :type processes: List[subprocess.Popen]
+    """
+    for pid in [p.pid for p in processes]:
+        with contextlib.suppress(psutil.NoSuchProcess):
+            kill_process_force(pid=pid)
+
+
 class LanguageTool:
     """
     A class to interact with the LanguageTool server for text checking and correction.
@@ -64,21 +79,17 @@ class LanguageTool:
     :type language_tool_download_version: Optional[str]
 
     Attributes:
-        _MIN_PORT (int): The minimum port number to use for the server.
-        _MAX_PORT (int): The maximum port number to use for the server.
+        _AVAILABLE_PORTS (List[int]): A list of available ports for the server, shuffled randomly.
         _TIMEOUT (int): The timeout for server requests.
         _remote (bool): A flag to indicate if the server is remote.
         _port (int): The port number to use for the server.
         _server (subprocess.Popen): The server process.
-        _consumer_thread (threading.Thread): The thread to consume server output.
-        _PORT_RE (re.Pattern): A compiled regular expression pattern to match the server port.
         language_tool_download_version (str): The version of LanguageTool to download.
         _new_spellings (List[str]): A list of new spellings to register.
         _new_spellings_persist (bool): A flag to indicate if new spellings should persist.
         _host (str): The host to use for the server.
         config (LanguageToolConfig): The configuration to use for the server.
         _url (str): The URL of the server if remote.
-        _stop_consume_event (threading.Event): An event to signal the consumer thread to stop.
         motherTongue (str): The user's mother tongue (used in requests to the server).
         disabled_rules (Set[str]): A set of disabled rules (used in requests to the server).
         enabled_rules (Set[str]): A set of enabled rules (used in requests to the server).
@@ -90,15 +101,6 @@ class LanguageTool:
         language (str): The language to use (used in requests to the server and in other methods).
         _spell_checking_categories (Set[str]): A set of spell-checking categories.
     """
-
-    _MIN_PORT = 8081
-    _MAX_PORT = 8999
-    _TIMEOUT = 5 * 60
-    _remote = False
-    _port = _MIN_PORT
-    _server: subprocess.Popen = None
-    _consumer_thread: threading.Thread = None
-    _PORT_RE = re.compile(r"(?:https?://.*:|port\s+)(\d+)", re.I)
 
     def __init__(
         self,
@@ -114,10 +116,16 @@ class LanguageTool:
         """
         Initialize the LanguageTool server.
         """
+        self._remote = False
+        self._TIMEOUT = 5 * 60
         self.language_tool_download_version = language_tool_download_version
         self._new_spellings = None
         self._new_spellings_persist = new_spellings_persist
         self._host = host or socket.gethostbyname("localhost")
+        self._AVAILABLE_PORTS = list(range(8081, 8999))
+        random.shuffle(self._AVAILABLE_PORTS)
+        self._port = self._AVAILABLE_PORTS.pop()
+        self._server: subprocess.Popen = None
 
         if remote_server and config is not None:
             raise ValueError("Cannot use both remote_server and config parameters.")
@@ -129,7 +137,7 @@ class LanguageTool:
             self._url = urllib.parse.urljoin(self._url, "v2/")
             self._update_remote_server_config(self._url)
         elif not self._server_is_alive():
-            self._stop_consume_event = threading.Event()
+            self._url = f"http://{self._host}:{self._port}/v2/"
             self._start_server_on_free_port()
         if language is None:
             try:
@@ -541,13 +549,12 @@ class LanguageTool:
         :raises ServerError: If the server cannot be started and the maximum port number is reached.
         """
         while True:
-            self._url = f"http://{self._host}:{self._port}/v2/"
             try:
                 self._start_local_server()
                 break
             except ServerError:
-                if self._MIN_PORT <= self._port < self._MAX_PORT:
-                    self._port += 1
+                if len(self._AVAILABLE_PORTS) > 0:
+                    self._port = self._AVAILABLE_PORTS.pop()
                 else:
                     raise
 
@@ -559,18 +566,11 @@ class LanguageTool:
         version. It handles the server initialization, including setting up
         the server command and managing the server process.
 
-        Notes:
-            - This method uses subprocess to start the server and reads the server
-              output to determine the port it is running on.
-            - It also starts a consumer thread to handle the server's stdout.
-
         :raises PathError: If the path to LanguageTool cannot be found.
-        :raises LanguageToolError: If the server starts on a different port than requested.
-        :raises ServerError: If the server is already running or cannot be started.
+        :raises ServerError: If the server fails to start or exits early.
         """
         # Before starting local server, download language tool if needed.
         download_lt(self.language_tool_download_version)
-        err = None
         try:
             if DEBUG_MODE:
                 if self._port:
@@ -582,64 +582,62 @@ class LanguageTool:
                     )
             server_cmd = get_server_cmd(self._port, self.config)
         except PathError as e:
-            # Can't find path to LanguageTool.
-            err = e
+            raise PathError(
+                "Failed to find LanguageTool. Please ensure it is downloaded correctly.",
+            ) from e
         else:
-            # Need to PIPE all handles: http://bugs.python.org/issue3905
             self._server = subprocess.Popen(
                 server_cmd,
                 stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                universal_newlines=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                text=True,
                 startupinfo=startupinfo,
             )
             global RUNNING_SERVER_PROCESSES
             RUNNING_SERVER_PROCESSES.append(self._server)
 
-            match = None
-            while True:
-                line = self._server.stdout.readline()
-                if not line:
-                    break
-                match = self._PORT_RE.search(line)
-                if match:
-                    port = int(match.group(1))
-                    if port != self._port:
-                        raise LanguageToolError(
-                            f"requested port {self._port}, but got {port}",
-                        )
-                    break
-            if not match:
-                err_msg = self._terminate_server()
-                match = self._PORT_RE.search(err_msg)
-                if not match:
-                    raise LanguageToolError(err_msg)
-                port = int(match.group(1))
-                if port != self._port:
-                    raise LanguageToolError(err_msg)
+            self._wait_for_server_ready()
 
-        if self._server:
-            self._consumer_thread = threading.Thread(
-                target=lambda: self._consume(self._server.stdout),
-            )
-            self._consumer_thread.daemon = True
-            self._consumer_thread.start()
-        else:
-            # Couldn't start the server, so maybe there is already one running.
-            if err:
-                raise Exception(err)
+        if not self._server:
             raise ServerError("Server running; don't start a server here.")
 
-    def _consume(self, stdout: Any) -> None:
+    def _wait_for_server_ready(self, timeout: int = 15) -> None:
         """
-        Continuously reads from the provided stdout until a stop event is set.
+        Wait for the LanguageTool server to become ready and responsive.
+        This method polls the server's ``/languages`` endpoint until it responds
+        successfully or until the timeout is reached. It also monitors the server
+        process to detect early exits.
 
-        :param stdout: The output stream to read from.
-        :type stdout: Any
+        :param timeout: Maximum time in seconds to wait for the server to become ready.
+                        Defaults to 15 seconds.
+        :type timeout: int
+        :raises ServerError: If the server process exits early with a non-zero code,
+                             or if the server does not become ready within the specified
+                             timeout period.
         """
-        while not self._stop_consume_event.is_set() and stdout.readline():
-            pass
+        url = urllib.parse.urljoin(self._url, "languages")
+        start = time.time()
+
+        while time.time() - start < timeout:
+            # Early exit check
+            ret = self._server.poll()
+            if ret is not None:
+                raise ServerError(f"LanguageTool server exited early with code {ret}")
+
+            # Attempt to connect
+            with contextlib.suppress(requests.RequestException):
+                r = requests.get(url, timeout=2)
+                if r.ok:
+                    return
+
+            time.sleep(0.2)
+
+        # Timeout without response
+        raise ServerError(
+            f"LanguageTool server did not become ready on {self._host}:{self._port} "
+            f"within {timeout} seconds"
+        )
 
     def _server_is_alive(self) -> bool:
         """
@@ -651,65 +649,22 @@ class LanguageTool:
         """
         return self._server and self._server.poll() is None
 
-    def _terminate_server(self) -> str:
+    def _terminate_server(self) -> None:
         """
-        Terminates the server process and associated consumer thread.
+        Terminates the server process.
         This method performs the following steps:
-        1. Signals the consumer thread to stop consuming stdout.
-        2. Waits for the consumer thread to finish.
-        3. Attempts to terminate the server process gracefully.
-        4. If the server process does not terminate within the timeout, force kills it.
-        5. Closes all associated file descriptors (stdin, stdout, stderr).
-        6. Captures any error messages from stderr, if available.
-
-        :return: Error message from stderr, if any, for further logging or debugging.
-        :rtype: str
+        1. Attempts to terminate the server process gracefully.
+        2. Closes associated file descriptor (stdin).
         """
-        # Signal the consumer thread to stop consuming stdout
-        self._stop_consume_event.set()
-        if self._consumer_thread:
-            # Wait for the consumer thread to finish
-            self._consumer_thread.join(timeout=5)
-
-        error_message = ""
         if self._server:
-            try:
-                try:
-                    # Get the main server process using psutil
-                    proc = psutil.Process(self._server.pid)
-                except psutil.NoSuchProcess:
-                    # If the process doesn't exist, set proc to None
-                    proc = None
+            _kill_processes([self._server])
+            RUNNING_SERVER_PROCESSES.remove(self._server)
 
-                # Attempt to terminate the process gracefully
-                self._server.terminate()
-                # Wait for the process to terminate and capture any stderr output
-                _, stderr = self._server.communicate(timeout=5)
+            if self._server.stdin:
+                self._server.stdin.close()
 
-            except subprocess.TimeoutExpired:
-                # If the process does not terminate within the timeout, force kill it
-                kill_process_force(proc=proc)
-                # Capture remaining stderr output after force termination
-                _, stderr = self._server.communicate()
-
-            finally:
-                # Close all associated file descriptors (stdin, stdout, stderr)
-                if self._server.stdin:
-                    self._server.stdin.close()
-                if self._server.stdout:
-                    self._server.stdout.close()
-                if self._server.stderr:
-                    self._server.stderr.close()
-
-                # Release the server process object
-                self._server = None
-
-            # Capture any error messages from stderr, if available
-            if stderr:
-                error_message = stderr.strip()
-
-        # Return the error message, if any, for further logging or debugging
-        return error_message
+            # Release the server process object
+            self._server = None
 
 
 class LanguageToolPublicAPI(LanguageTool):
@@ -738,5 +693,4 @@ def terminate_server() -> None:
     This function iterates over the list of running server processes and
     forcefully kills each process by its PID.
     """
-    for pid in [p.pid for p in RUNNING_SERVER_PROCESSES]:
-        kill_process_force(pid=pid)
+    _kill_processes(RUNNING_SERVER_PROCESSES)
