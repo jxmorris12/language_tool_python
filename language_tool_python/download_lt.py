@@ -14,9 +14,9 @@ from urllib.parse import urljoin
 import requests
 import tqdm
 
+from .exceptions import PathError
 from .utils import (
     LTP_JAR_DIR_PATH_ENV_VAR,
-    PathError,
     find_existing_language_tool_downloads,
     get_language_tool_download_path,
 )

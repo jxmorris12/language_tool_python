@@ -209,7 +209,7 @@ tool = language_tool_python.LanguageTool('en-US', config={ 'maxTextLength': 100 
 
 ### Full list of configuration options
 
-Here's a full list of configuration options. See the LanguageTool [HTTPServerConfig](https://languagetool.org/development/api/org/languagetool/server/HTTPServerConfig.html) documentation for details.
+Here's a full list of configuration options:
 
 ```
 'maxTextLength' - maximum text length, longer texts will cause an error (optional)
@@ -240,6 +240,18 @@ Here's a full list of configuration options. See the LanguageTool [HTTPServerCon
 'maxPipelinePoolSize' - cache size if 'pipelineCaching' is set
 'pipelineExpireTimeInSeconds' - time after which pipeline cache items expire
 'pipelinePrewarming' - set to 'true' to fill pipeline cache on start (can slow down start a lot)
+'trustXForwardForHeader' - set this to 'true' if you run the server behind a reverse proxy and want the
+                           request limit to work on the original IP addresses provided by the 'X-forwarded-for' HTTP header,
+                           usually set by the proxy
+'suggestionsEnabled' - if suggestions should be generated for spell check errors (optional, default: true)
+
+Spellcheck-only languages: You can add simple spellcheck-only support for languages that LT doesn't
+                           support by defining two optional properties:
+  'lang-xx' - set name of the language, use language code instead of 'xx', e.g. lang-tr=Turkish
+  'lang-xx-dictPath' - absolute path to the hunspell .dic file, use language code instead of 'xx', e.g.
+                       lang-tr-dictPath=/path/to/tr.dic. Note that the same directory also needs to
+                       contain a common_words.txt file with the most common 10,000 words (used for
+                       better language detection)
 ```
 
 ## Installation

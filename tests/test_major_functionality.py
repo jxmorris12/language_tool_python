@@ -4,7 +4,7 @@ import time
 
 import pytest
 
-from language_tool_python.utils import LanguageToolError, RateLimitError
+from language_tool_python.exceptions import LanguageToolError, RateLimitError
 
 # THESE TESTS ARE SUPPOSED TO BE RUN WITH 6.7-SNAPSHOT VERSION OF LT SERVER
 

@@ -16,14 +16,16 @@ import requests
 
 from .config_file import LanguageToolConfig
 from .download_lt import LTP_DOWNLOAD_VERSION, download_lt
-from .language_tag import LanguageTag
-from .match import Match
-from .utils import (
-    FAILSAFE_LANGUAGE,
+from .exceptions import (
     LanguageToolError,
     PathError,
     RateLimitError,
     ServerError,
+)
+from .language_tag import LanguageTag
+from .match import Match
+from .utils import (
+    FAILSAFE_LANGUAGE,
     correct,
     get_language_tool_directory,
     get_locale_language,
