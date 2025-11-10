@@ -179,7 +179,7 @@ You can run LanguageTool on one host and connect to it from another.  This is us
 #### client
 ```python
 >>> import language_tool_python
->>> lang_tool = language_tool_python.LanguageTool('en-US', remote_server='http://0.0.0.0:8081')
+>>> lang_tool = language_tool_python.LanguageTool('en-US', remote_server='http://127.0.0.1:8081')
 >>>
 >>>
 >>> lang_tool.check('helo darknes my old frend')
