@@ -9,8 +9,8 @@ from typing import Any, Optional, Set, Union
 
 import toml
 
+from .exceptions import LanguageToolError
 from .server import LanguageTool
-from .utils import LanguageToolError
 
 try:
     __version__ = version("language_tool_python")

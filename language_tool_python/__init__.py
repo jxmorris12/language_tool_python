@@ -6,9 +6,10 @@ __all__ = [
     "LanguageTag",
     "Match",
     "utils",
+    "exceptions",
 ]
 
-from . import utils
+from . import exceptions, utils
 from .language_tag import LanguageTag
 from .match import Match
 from .server import LanguageTool, LanguageToolPublicAPI
