@@ -6,7 +6,7 @@ import pytest
 
 from language_tool_python.exceptions import LanguageToolError, RateLimitError
 
-# THESE TESTS ARE SUPPOSED TO BE RUN WITH 6.7-SNAPSHOT VERSION OF LT SERVER
+# THESE TESTS ARE SUPPOSED TO BE RUN WITH 6.8-SNAPSHOT VERSION OF LT SERVER
 
 
 def test_langtool_load():
@@ -101,6 +101,7 @@ def test_process_starts_and_stops_in_context_manager():
         proc: subprocess.Popen = tool._server
         # Make sure process is running before killing language tool object.
         assert proc.poll() is None, "tool._server not running after creation"
+    time.sleep(0.5)  # Give some time for process to stop after context manager exit.
     # Make sure process stopped after close() was called.
     assert proc.poll() is not None, "tool._server should stop running after deletion"
 
@@ -115,6 +116,7 @@ def test_process_starts_and_stops_on_close():
     tool.close()  # Explicitly close() object so process stops before garbage collection.
     del tool
     # Make sure process stopped after close() was called.
+    time.sleep(0.5)  # Give some time for process to stop after close() call.
     assert proc.poll() is not None, "tool._server should stop running after deletion"
     # remember --> if poll is None: # p.subprocess is alive
 
