@@ -11,7 +11,7 @@ class LanguageToolError(Exception):
 class ServerError(LanguageToolError):
     """
     Exception raised for errors that occur when interacting with the LanguageTool server.
-    This exception is a subclass of `LanguageToolError` and is used to indicate
+    This exception is a subclass of ``LanguageToolError`` and is used to indicate
     issues such as server startup failures.
     """
 
@@ -21,7 +21,7 @@ class ServerError(LanguageToolError):
 class JavaError(LanguageToolError):
     """
     Exception raised for errors related to the Java backend of LanguageTool.
-    This exception is a subclass of `LanguageToolError` and is used to indicate
+    This exception is a subclass of ``LanguageToolError`` and is used to indicate
     issues that occur when interacting with Java, such as Java not being found.
     """
 
@@ -42,7 +42,7 @@ class PathError(LanguageToolError):
 class RateLimitError(LanguageToolError):
     """
     Exception raised for errors related to rate limiting in the LanguageTool server.
-    This exception is a subclass of `LanguageToolError` and is used to indicate
+    This exception is a subclass of ``LanguageToolError`` and is used to indicate
     issues such as exceeding the allowed number of requests to the public API without a key.
     """
 

@@ -34,13 +34,20 @@ dependencies = [
     "toml"
 ]
 
-[project.optional-dependencies]
-dev = [
+[dependency-groups]
+tests = [
     "pytest",
     "pytest-xdist",
     "pytest-cov",
     "pytest-runner"
 ]
+
+docs = [
+  "furo",
+  "sphinx",
+  "sphinx-design",
+]
+
 
 [project.scripts]
 language_tool_python = "language_tool_python.__main__:main"

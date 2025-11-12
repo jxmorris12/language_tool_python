@@ -18,19 +18,18 @@ class OptionSpec:
     This class defines the structure and behavior of a configuration option,
     including its type constraints, encoding mechanism, and optional validation.
 
-    Attributes:
-        py_types (Union[type, tuple[type, ...]]): The Python type(s) that this option accepts.
-        encoder (Callable[[Any], str]): A callable that converts the option value to its string representation.
-        validator (Optional[Callable[[Any], None]]): An optional callable that validates the option value.
-
-    .. note::
     This class is frozen (immutable) to ensure configuration specifications
     remain constant throughout the application lifecycle.
     """
 
     py_types: Union[type, tuple[type, ...]]
+    """The Python type(s) that this option accepts."""
+
     encoder: Callable[[Any], str]
+    """A callable that converts the option value to its string representation."""
+
     validator: Optional[Callable[[Any], None]] = None
+    """An optional validator function for the option value."""
 
 
 def _bool_encoder(v: Any) -> str:
@@ -201,14 +200,13 @@ class LanguageToolConfig:
 
     :param config: Dictionary containing configuration keys and values.
     :type config: Dict[str, Any]
-
-    Attributes:
-        config (Dict[str, Any]): Dictionary containing configuration keys and values.
-        path (str): Path to the temporary file storing the configuration.
     """
 
     config: Dict[str, Any]
+    """Dictionary containing configuration keys and values."""
+
     path: str
+    """Path to the temporary file storing the configuration."""
 
     def __init__(self, config: Dict[str, Any]):
         """

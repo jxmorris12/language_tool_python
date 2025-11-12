@@ -117,8 +117,8 @@ def confirm_java_compatibility(
         )
     )
 
-    # Some installs of java show the version number like `14.0.1`
-    # and others show `1.14.0.1`
+    # Some installs of java show the version number like '14.0.1'
+    # and others show '1.14.0.1'
     # (with a leading 1). We want to support both.
     # (See softwareengineering.stackexchange.com/questions/175075/why-is-java-version-1-x-referred-to-as-java-x)
     if is_old_version:

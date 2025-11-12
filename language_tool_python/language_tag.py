@@ -14,15 +14,19 @@ class LanguageTag:
     :type tag: str
     :param languages: An iterable of supported language tags.
     :type languages: Iterable[str]
-
-    Attributes:
-        tag (str): The language tag to be normalized.
-        languages (Iterable[str]): An iterable of supported language tags.
-        normalized_tag (str): The normalized language tag.
-        _LANGUAGE_RE (re.Pattern): A regular expression to match language tags.
     """
 
+    tag: str
+    """The language tag to be normalized."""
+
+    languages: Iterable[str]
+    """An iterable of supported language tags."""
+
+    normalized_tag: str
+    """The normalized language tag."""
+
     _LANGUAGE_RE = re.compile(r"^([a-z]{2,3})(?:[_-]([a-z]{2}))?$", re.I)
+    """A regular expression to match language tags."""
 
     def __init__(self, tag: str, languages: Iterable[str]) -> None:
         """

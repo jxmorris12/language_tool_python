@@ -66,11 +66,11 @@ def classify_matches(matches: List[Match]) -> TextStatus:
     Classify the matches (result of a check on a text) into one of three categories:
     CORRECT, FAULTY, or GARBAGE.
     This function checks the status of the matches and returns a corresponding
-    `TextStatus` value.
+    ``TextStatus`` value.
 
     :param matches: A list of Match objects to be classified.
     :type matches: List[Match]
-    :return: The classification of the matches as a `TextStatus` value.
+    :return: The classification of the matches as a ``TextStatus`` value.
     :rtype: TextStatus
     """
     if not len(matches):
@@ -116,8 +116,8 @@ def get_language_tool_download_path() -> str:
     """
     Get the download path for LanguageTool.
     This function retrieves the download path for LanguageTool from the environment variable
-    specified by `LTP_PATH_ENV_VAR`. If the environment variable is not set, it defaults to
-    a path in the user's home directory under `.cache/language_tool_python`.
+    specified by ``LTP_PATH_ENV_VAR``. If the environment variable is not set, it defaults to
+    a path in the user's home directory under ``.cache/language_tool_python``.
 
     :return: The download path for LanguageTool.
     :rtype: str
@@ -241,8 +241,8 @@ def get_locale_language() -> str:
     """
     Get the current locale language.
     This function retrieves the current locale language setting of the system.
-    It first attempts to get the locale using `locale.getlocale()`. If that fails,
-    it falls back to using `locale.getdefaultlocale()`.
+    It first attempts to get the locale using ``locale.getlocale()``. If that fails,
+    it falls back to using ``locale.getdefaultlocale()``.
 
     :return: The language code of the current locale.
     :rtype: str
@@ -260,11 +260,11 @@ def kill_process_force(
     This function attempts to kill a process specified either by its PID or by a psutil.Process object.
     If the process has any child processes, they will be killed first.
 
-    :param pid: The process ID of the process to be killed. Either `pid` or `proc` must be provided.
+    :param pid: The process ID of the process to be killed. Either ``pid`` or ``proc`` must be provided.
     :type pid: Optional[int]
-    :param proc: A psutil.Process object representing the process to be killed. Either `pid` or `proc` must be provided.
+    :param proc: A psutil.Process object representing the process to be killed. Either ``pid`` or ``proc`` must be provided.
     :type proc: Optional[psutil.Process]
-    :raises ValueError: If neither `pid` nor `proc` is provided.
+    :raises ValueError: If neither ``pid`` nor ``proc`` is provided.
     """
     if not any([pid, proc]):
         raise ValueError("Must pass either pid or proc")
