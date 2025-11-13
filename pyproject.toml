@@ -48,6 +48,13 @@ docs = [
   "sphinx-design",
 ]
 
+types = [
+    "types-requests",
+    "types-tqdm",
+    "types-psutil",
+    "types-toml",
+]
+
 
 [project.scripts]
 language_tool_python = "language_tool_python.__main__:main"
@@ -59,5 +66,19 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools]
 packages = { find = { include = ["language_tool_python*"] } }
 
+[tool.setuptools.package-data]
+language_tool_python = ["py.typed"]
+
 [tool.ruff.lint]
 select = ["F", "W", "I", "B", "SIM", "RET", "Q"]
+
+[tool.mypy]
+files = ["language_tool_python"]
+strict = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_unreachable = true
+no_implicit_optional = true
+show_error_codes = true
+pretty = true
+disable_error_code = ["import-untyped"]

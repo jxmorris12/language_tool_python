@@ -132,7 +132,7 @@ class RulesAction(argparse.Action):
         namespace: Any,
         values: Any,
         option_string: Optional[str] = None,
-    ):
+    ) -> None:
         """
         This method is called when the action is triggered. It updates the set of rules
         in the namespace with the provided values. The method is invoked automatically

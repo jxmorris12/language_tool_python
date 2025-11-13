@@ -105,6 +105,9 @@ class LanguageTag:
             return languages[tag.lower().replace("-", "_")]
         except KeyError:
             try:
-                return languages[self._LANGUAGE_RE.match(tag).group(1).lower()]
+                match = self._LANGUAGE_RE.match(tag)
+                if match is None:
+                    raise AttributeError("tag does not match pattern")
+                return languages[match.group(1).lower()]
             except (KeyError, AttributeError) as e:
                 raise ValueError(f"unsupported language: {tag!r}") from e

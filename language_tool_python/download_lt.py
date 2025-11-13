@@ -79,7 +79,7 @@ def parse_java_version(version_text: str) -> Tuple[int, int]:
 
 
 def confirm_java_compatibility(
-    language_tool_version: Optional[str] = LTP_DOWNLOAD_VERSION,
+    language_tool_version: str = LTP_DOWNLOAD_VERSION,
 ) -> None:
     """
     Confirms if the installed Java version is compatible with language-tool-python.
@@ -87,7 +87,7 @@ def confirm_java_compatibility(
     It raises an error if Java is not installed or if the version is incompatible.
 
     :param language_tool_version: The version of LanguageTool to check compatibility for.
-    :type language_tool_version: Optional[str]
+    :type language_tool_version: str
     :raises ModuleNotFoundError: If no Java installation is detected.
     :raises SystemError: If the detected Java version is less than the required version.
     """
@@ -228,7 +228,7 @@ def download_zip(url: str, directory: str) -> None:
     logger.info(f"Downloaded {url} to {directory}.")
 
 
-def download_lt(language_tool_version: Optional[str] = LTP_DOWNLOAD_VERSION) -> None:
+def download_lt(language_tool_version: str = LTP_DOWNLOAD_VERSION) -> None:
     """
     Downloads and extracts the specified version of LanguageTool.
     This function checks for Java compatibility, creates the necessary download
@@ -238,7 +238,7 @@ def download_lt(language_tool_version: Optional[str] = LTP_DOWNLOAD_VERSION) -> 
     :param language_tool_version: The version of LanguageTool to download. If not
                                   specified, the default version defined by
                                   LTP_DOWNLOAD_VERSION is used.
-    :type language_tool_version: Optional[str]
+    :type language_tool_version: str
     :raises PathError: If the download folder is not a directory.
     :raises ValueError: If the specified version format is invalid.
     """

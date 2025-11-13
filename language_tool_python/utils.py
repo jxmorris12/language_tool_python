@@ -8,7 +8,7 @@ import subprocess
 import urllib.parse
 from enum import Enum
 from shutil import which
-from typing import List, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
 import psutil
 
@@ -31,11 +31,16 @@ LTP_JAR_DIR_PATH_ENV_VAR = "LTP_JAR_DIR_PATH"
 
 # https://mail.python.org/pipermail/python-dev/2011-July/112551.html
 
+startupinfo: Optional[Any] = None
+
 if os.name == "nt":
-    startupinfo = subprocess.STARTUPINFO()
-    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-else:
-    startupinfo = None
+    # Gets STARTUPINFO dynamically to avoid issues on non-Windows platforms
+    startupinfo_cls = getattr(subprocess, "STARTUPINFO", None)
+    if startupinfo_cls is not None:
+        si = startupinfo_cls()
+        # STARTF_USESHOWWINDOW also dynamically retrieved
+        si.dwFlags |= getattr(subprocess, "STARTF_USESHOWWINDOW", 0)
+        startupinfo = si
 
 
 def parse_url(url_str: str) -> str:
@@ -242,12 +247,13 @@ def get_locale_language() -> str:
     Get the current locale language.
     This function retrieves the current locale language setting of the system.
     It first attempts to get the locale using ``locale.getlocale()``. If that fails,
-    it falls back to using ``locale.getdefaultlocale()``.
+    it falls back to using ``locale.getdefaultlocale()``. If both methods fail to
+    provide a valid language code, it returns a default failsafe language code.
 
     :return: The language code of the current locale.
     :rtype: str
     """
-    return locale.getlocale()[0] or locale.getdefaultlocale()[0]
+    return locale.getlocale()[0] or locale.getdefaultlocale()[0] or FAILSAFE_LANGUAGE
 
 
 def kill_process_force(
