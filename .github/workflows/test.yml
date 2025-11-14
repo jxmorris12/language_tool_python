@@ -38,7 +38,7 @@ jobs:
 
     - name: Install dependencies & build package
       run: |
-        uv pip install setuptools wheel build pytest pytest-xdist --system
+        uv pip install setuptools wheel build pytest pytest-cov pytest-xdist --system
         uv build
         uv pip install dist/*.whl --system
 
@@ -71,8 +71,8 @@ jobs:
 
       - name: Run Ruff Linter
         run: |
-          uvx ruff check .
-          uvx ruff format --check .
+          uvx ruff@0.14.5 check .
+          uvx ruff@0.14.5 format --check .
   
   type_check:
     name: Type Check with Mypy
@@ -96,4 +96,4 @@ jobs:
 
       - name: Run Mypy Type Checker
         run: | 
-          uvx mypy
+          uvx mypy@1.18.2

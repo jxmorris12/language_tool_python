@@ -536,6 +536,7 @@ name = "language-tool-python"
 version = "2.9.5"
 source = { editable = "." }
 dependencies = [
+    { name = "packaging" },
     { name = "psutil" },
     { name = "requests" },
     { name = "toml" },
@@ -566,6 +567,7 @@ types = [
 
 [package.metadata]
 requires-dist = [
+    { name = "packaging" },
     { name = "psutil" },
     { name = "requests" },
     { name = "toml" },
