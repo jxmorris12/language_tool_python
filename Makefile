@@ -1,18 +1,17 @@
+.PHONY: default check test doc
+
+default:
+	@echo "Usage: make [check|test|doc]"
+	@exit 1
+
 check:
-	pycodestyle \
-		--exclude ./language_tool_python/LanguageTool-* \
-		--ignore=E402,W504 \
-		./language_tool_python \
-		./language_tool_python/ \
-		$(wildcard *.py)
-	pylint \
-		--rcfile=/dev/null \
-		--errors-only \
-		--disable=import-error \
-		--disable=no-member \
-		--disable=no-name-in-module \
-		--disable=raising-bad-type \
-		./language_tool_python \
-		$(wildcard ./language_tool_python/*.py) \
-		$(wildcard *.py)
-	python extract_long_description.py | rstcheck -
+	uvx ruff@0.14.5 check .
+	uvx ruff@0.14.5 format --check .
+	uvx mypy@1.18.2
+
+test:
+	pytest
+
+doc:
+	source ./.venv/bin/activate && uv run sphinx-apidoc -o docs/source/references language_tool_python
+	source ./.venv/bin/activate && cd ./docs && make html

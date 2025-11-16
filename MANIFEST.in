@@ -21,7 +21,7 @@ prune tests/
 exclude .gitignore
 exclude build_and_publish.sh
 exclude CONTRIBUTING.md
-exclude extract_long_description.py
+exclude make.bat
 exclude Makefile
 exclude pytest.ini
 exclude uv.lock
