@@ -10,6 +10,7 @@ import socket
 import subprocess
 import time
 import urllib.parse
+import warnings
 from typing import Any, Dict, List, Optional, Set
 
 import psutil
@@ -201,8 +202,9 @@ class LanguageTool:
         ensures that the `close` method is called to release any resources
         or perform any necessary cleanup.
         """
-
-        self.close()
+        if self._server_is_alive():
+            warnings.warn("unclosed server", ResourceWarning, stacklevel=2)
+            self.close()
 
     def __repr__(self) -> str:
         """
@@ -605,7 +607,7 @@ class LanguageTool:
     def _wait_for_server_ready(self, timeout: int = 15) -> None:
         """
         Wait for the LanguageTool server to become ready and responsive.
-        This method polls the server's ``/languages`` endpoint until it responds
+        This method polls the server's ``/healthcheck`` endpoint until it responds
         successfully or until the timeout is reached. It also monitors the server
         process to detect early exits.
 
@@ -616,7 +618,7 @@ class LanguageTool:
                              or if the server does not become ready within the specified
                              timeout period.
         """
-        url = urllib.parse.urljoin(self._url, "languages")
+        url = urllib.parse.urljoin(self._url, "healthcheck")
         start = time.time()
 
         while time.time() - start < timeout:
