@@ -30,6 +30,7 @@ urls = { Repository = "https://github.com/jxmorris12/language_tool_python.git" }
 dependencies = [
     "requests",
     "tqdm",
+    "packaging",
     "psutil",
     "toml"
 ]
@@ -81,4 +82,4 @@ warn_unreachable = true
 no_implicit_optional = true
 show_error_codes = true
 pretty = true
-disable_error_code = ["import-untyped"]
+disable_error_code = ["import-not-found", "import-untyped"]

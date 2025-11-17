@@ -13,6 +13,7 @@ from urllib.parse import urljoin
 
 import requests
 import tqdm
+from packaging.version import Version
 
 from .exceptions import PathError
 from .utils import (
@@ -109,7 +110,7 @@ def confirm_java_compatibility(
     is_old_version = language_tool_version != "latest" and (
         (
             re.match(r"^\d+\.\d+$", language_tool_version)
-            and language_tool_version < "6.6"
+            and Version(language_tool_version) < Version("6.6")
         )
         or (
             re.match(r"^\d{8}$", language_tool_version)
