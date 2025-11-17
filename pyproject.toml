@@ -25,7 +25,6 @@ classifiers = [
     "Topic :: Text Processing :: Linguistic",
 ]
 keywords = ["python", "nlp", "grammar", "languagetool", "grammar-checker", "spellchecker", "grammar-parser"]
-urls = { Repository = "https://github.com/jxmorris12/language_tool_python.git" }
 
 dependencies = [
     "requests",
@@ -34,6 +33,10 @@ dependencies = [
     "psutil",
     "toml"
 ]
+
+[project.urls]
+repository = "https://github.com/jxmorris12/language_tool_python.git"
+documentation = "https://language-tool-python.readthedocs.io/en/latest/"
 
 [dependency-groups]
 tests = [
