@@ -1,10 +1,15 @@
 """LanguageTool command line."""
 
 import argparse
+import importlib.resources
 import locale
+import logging
 import re
 import sys
+import traceback
 from importlib.metadata import PackageNotFoundError, version
+from logging.config import dictConfig
+from pathlib import Path
 from typing import Any, Optional, Set, Union
 
 import toml
@@ -15,8 +20,21 @@ from .server import LanguageTool
 try:
     __version__ = version("language_tool_python")
 except PackageNotFoundError:  # If the package is not installed in the environment, read the version from pyproject.toml
-    with open("pyproject.toml", "rb") as f:
+    project_root = Path(__file__).resolve().parent.parent
+    pyproject = project_root / "pyproject.toml"
+    with open(pyproject, "rb") as f:
         __version__ = toml.loads(f.read().decode("utf-8"))["project"]["version"]
+
+
+logger = logging.getLogger(__name__)
+with (
+    importlib.resources.as_file(
+        importlib.resources.files("language_tool_python").joinpath("logging.toml")
+    ) as config_path,
+    open(config_path, "rb") as f,
+):
+    log_config = toml.loads(f.read().decode("utf-8"))
+dictConfig(log_config)
 
 
 def parse_args() -> argparse.Namespace:
@@ -101,6 +119,7 @@ def parse_args() -> argparse.Namespace:
         help="hostname of the remote LanguageTool server",
     )
     parser.add_argument("--remote-port", help="port of the remote LanguageTool server")
+    parser.add_argument("--verbose", action="store_true", help="enable verbose output")
 
     args = parser.parse_args()
 
@@ -120,11 +139,10 @@ class RulesAction(argparse.Action):
     This action is used to modify the set of rules stored in the argparse
     namespace when the action is triggered. It updates the attribute specified
     by 'self.dest' with the provided values.
-
-    .. attribute:: dest
-        :type: str
-        The destination attribute to update.
     """
+
+    dest: str
+    """The destination attribute to update."""
 
     def __call__(
         self,
@@ -186,6 +204,21 @@ def get_text(
         )
 
 
+def print_exception(exc: Exception, debug: bool) -> None:
+    """
+    Print an exception message to stderr, optionally including a stack trace.
+
+    :param exc: The exception to print.
+    :type exc: Exception
+    :param debug: Whether to include a stack trace.
+    :type debug: bool
+    """
+    if debug:
+        traceback.print_exc()
+    else:
+        print(exc, file=sys.stderr)
+
+
 def main() -> int:
     """
     Main function to parse arguments, process files, and check text using LanguageTool.
@@ -194,6 +227,9 @@ def main() -> int:
     :rtype: int
     """
     args = parse_args()
+
+    if args.verbose:
+        logging.getLogger().setLevel(logging.DEBUG)
 
     status = 0
 
@@ -216,55 +252,53 @@ def main() -> int:
             remote_server = args.remote_host
             if args.remote_port is not None:
                 remote_server += f":{args.remote_port}"
-        lang_tool = LanguageTool(
+        with LanguageTool(
             language=args.language,
             motherTongue=args.mother_tongue,
             remote_server=remote_server,
-        )
+        ) as lang_tool:
+            try:
+                text = get_text(filename, encoding, ignore=args.ignore_lines)
+            except (UnicodeError, FileNotFoundError) as exception:
+                print_exception(exception, args.verbose)
+                continue
 
-        try:
-            text = get_text(filename, encoding, ignore=args.ignore_lines)
-        except UnicodeError as exception:
-            print(f"{filename}: {exception}", file=sys.stderr)
-            continue
+            if not args.spell_check:
+                lang_tool.disable_spellchecking()
 
-        if not args.spell_check:
-            lang_tool.disable_spellchecking()
+            lang_tool.disabled_rules.update(args.disable)
+            lang_tool.enabled_rules.update(args.enable)
+            lang_tool.enabled_rules_only = args.enabled_only
 
-        lang_tool.disabled_rules.update(args.disable)
-        lang_tool.enabled_rules.update(args.enable)
-        lang_tool.enabled_rules_only = args.enabled_only
+            if args.picky:
+                lang_tool.picky = True
 
-        if args.picky:
-            lang_tool.picky = True
+            try:
+                if args.apply:
+                    print(lang_tool.correct(text))
+                else:
+                    for match in lang_tool.check(text):
+                        rule_id = match.ruleId
 
-        try:
-            if args.apply:
-                print(lang_tool.correct(text))
-            else:
-                for match in lang_tool.check(text):
-                    rule_id = match.ruleId
+                        replacement_text = ", ".join(
+                            f"'{word}'" for word in match.replacements
+                        ).strip()
 
-                    replacement_text = ", ".join(
-                        f"'{word}'" for word in match.replacements
-                    ).strip()
+                        message = match.message
 
-                    message = match.message
+                        # Messages that end with punctuation already include the
+                        # suggestion.
+                        if replacement_text and not message.endswith("?"):
+                            message += " Suggestions: " + replacement_text
 
-                    # Messages that end with punctuation already include the
-                    # suggestion.
-                    if replacement_text and not message.endswith("?"):
-                        message += " Suggestions: " + replacement_text
+                        line, column = match.get_line_and_column(text)
 
-                    line, column = match.get_line_and_column(text)
+                        print(f"{filename}:{line}:{column}: {rule_id}: {message}")
 
-                    print(f"{filename}:{line}:{column}: {rule_id}: {message}")
-
-                    status = 2
-        except LanguageToolError as exception:
-            print(f"{filename}: {exception}", file=sys.stderr)
-            continue
-
+                        status = 2
+            except LanguageToolError as exception:
+                print_exception(exception, args.verbose)
+                continue
     return status
 
 

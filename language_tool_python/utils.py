@@ -3,6 +3,7 @@
 import contextlib
 import glob
 import locale
+import logging
 import os
 import subprocess
 import urllib.parse
@@ -15,6 +16,8 @@ import psutil
 from .config_file import LanguageToolConfig
 from .exceptions import JavaError, PathError
 from .match import Match
+
+logger = logging.getLogger(__name__)
 
 JAR_NAMES = [
     "languagetool-server.jar",
@@ -167,16 +170,18 @@ def get_language_tool_directory() -> str:
 
     download_folder = get_language_tool_download_path()
     if not os.path.isdir(download_folder):
-        raise NotADirectoryError(
-            f"LanguageTool directory path is not a valid directory {download_folder}.",
-        )
+        err = f"LanguageTool directory path is not a valid directory {download_folder}."
+        raise NotADirectoryError(err)
     language_tool_path_list = find_existing_language_tool_downloads(download_folder)
 
     if not len(language_tool_path_list):
-        raise FileNotFoundError(f"LanguageTool not found in {download_folder}.")
+        err = f"LanguageTool not found in {download_folder}."
+        raise FileNotFoundError(err)
 
     # Return the latest version found in the directory.
-    return max(language_tool_path_list)
+    latest = max(language_tool_path_list)
+    logger.debug("Using LanguageTool directory: %s", latest)
+    return latest
 
 
 def get_server_cmd(
@@ -202,6 +207,7 @@ def get_server_cmd(
     if config is not None:
         cmd += ["--config", config.path]
 
+    logger.debug("LanguageTool server command: %r", cmd)
     return cmd
 
 
@@ -220,7 +226,8 @@ def get_jar_info() -> Tuple[str, str]:
 
     java_path = which("java")
     if not java_path:
-        raise JavaError("can't find Java")
+        err = "can't find Java"
+        raise JavaError(err)
 
     # Use the env var to the jar directory if it is defined
     # otherwise look in the download directory
@@ -232,13 +239,15 @@ def get_jar_info() -> Tuple[str, str]:
     for jar_name in JAR_NAMES:
         for jar_path in glob.glob(os.path.join(jar_dir_name, jar_name)):
             if os.path.isfile(jar_path):
+                logger.debug("Found LanguageTool JAR: %s", jar_path)
                 break
         else:
             jar_path = None
         if jar_path:
             break
     else:
-        raise PathError(f"can't find languagetool-standalone in {jar_dir_name!r}")
+        err = f"can't find languagetool-standalone in {jar_dir_name!r}"
+        raise PathError(err)
     return java_path, jar_path
 
 
@@ -273,13 +282,17 @@ def kill_process_force(
     :raises ValueError: If neither ``pid`` nor ``proc`` is provided.
     """
     if not any([pid, proc]):
-        raise ValueError("Must pass either pid or proc")
+        err = "Must pass either pid or proc"
+        raise ValueError(err)
     try:
         proc = psutil.Process(pid) if proc is None else proc
     except psutil.NoSuchProcess:
+        logger.debug("Process %s does not exist, nothing to kill", pid)
         return
+    logger.debug("Killing process %s and its children", proc.pid)
     for child in proc.children(recursive=True):
         with contextlib.suppress(psutil.NoSuchProcess):
+            logger.debug("Killing child process %s", child.pid)
             child.kill()
     with contextlib.suppress(psutil.NoSuchProcess):
         proc.kill()

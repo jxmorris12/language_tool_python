@@ -400,9 +400,3 @@ def test_inexistant_language():
 
     with language_tool_python.LanguageTool("en-US") as tool, pytest.raises(ValueError):
         language_tool_python.LanguageTag("xx-XX", tool._get_languages())
-
-
-def test_debug_mode():
-    from language_tool_python.server import DEBUG_MODE
-
-    assert DEBUG_MODE is False

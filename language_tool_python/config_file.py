@@ -1,6 +1,7 @@
 """Module for configuring LanguageTool's local server."""
 
 import atexit
+import logging
 import os
 import tempfile
 from dataclasses import dataclass
@@ -8,6 +9,8 @@ from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, Optional, Tuple, Union
 
 from .exceptions import PathError
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -94,9 +97,11 @@ def _path_validator(v: Any) -> None:
     """
     p = Path(v)
     if not p.exists():
-        raise PathError(f"path does not exist: {p}")
+        err = f"path does not exist: {p}"
+        raise PathError(err)
     if not p.is_file():
-        raise PathError(f"path is not a file: {p}")
+        err = f"path is not a file: {p}"
+        raise PathError(err)
 
 
 CONFIG_SCHEMA: Dict[str, OptionSpec] = {
@@ -169,22 +174,27 @@ def _encode_config(config: Dict[str, Any]) -> Dict[str, str]:
     :raises TypeError: If a value's type does not match the expected type(s) defined
                       in the CONFIG_SCHEMA specification.
     """
+    logger.debug("Encoding LanguageTool config with keys: %s", list(config.keys()))
     encoded: Dict[str, str] = {}
     for key, value in config.items():
         if _is_lang_key(key) and key.count("-") == 1:  # lang-<code>
+            logger.debug("Encoding language option %s=%r", key, value)
             encoded[key] = str(value)
             continue
         if _is_lang_key(key) and key.count("-") == 2:  # lang-<code>-dictPath
+            logger.debug("Encoding language dictPath %s=%r", key, value)
             _path_validator(value)
             encoded[key] = _path_encoder(value)
             continue
 
         spec = CONFIG_SCHEMA.get(key)
         if spec is None:
-            raise ValueError(f"unexpected key in config: {key}")
+            err = f"unexpected key in config: {key}"
+            raise ValueError(err)
 
         if not isinstance(value, spec.py_types):
-            raise TypeError(f"invalid type for {key}: {type(value).__name__}")
+            err = f"invalid type for {key}: {type(value).__name__}"
+            raise TypeError(err)
         if spec.validator is not None:
             spec.validator(value)
         encoded[key] = spec.encoder(value)
@@ -210,7 +220,8 @@ class LanguageToolConfig:
         Initialize the LanguageToolConfig object.
         """
         if not config:
-            raise ValueError("config cannot be empty")
+            err = "config cannot be empty"
+            raise ValueError(err)
 
         self.config = _encode_config(config)
         self.path = self._create_temp_file()
@@ -231,6 +242,8 @@ class LanguageToolConfig:
             for key, value in self.config.items():
                 tmp_file.write(f"{key}={value}\n")
             temp_name = tmp_file.name
+
+        logger.debug("Created temporary LanguageTool config file at %s", temp_name)
 
         # Remove file when program exits.
         atexit.register(lambda: os.unlink(temp_name))

@@ -1,7 +1,7 @@
 include pyproject.toml
 include README.md
 include LICENSE
-recursive-include language_tool_python *.py
+recursive-include language_tool_python *.py *.toml
 include language_tool_python/py.typed
 
 prune .github/

@@ -22,9 +22,7 @@ from .utils import (
     get_language_tool_download_path,
 )
 
-# Create logger for this file.
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 # Get download host from environment or default.
@@ -73,7 +71,8 @@ def parse_java_version(version_text: str) -> Tuple[int, int]:
         version_text,
     )
     if not match:
-        raise SystemExit(f'Could not parse Java version from """{version_text}""".')
+        err = f"Could not parse Java version from '{version_text}'."
+        raise SystemExit(err)
     major1 = int(match.group("major1"))
     major2 = int(match.group("major2")) if match.group("major2") else 0
     return (major1, major2)
@@ -95,15 +94,20 @@ def confirm_java_compatibility(
 
     java_path = which("java")
     if not java_path:
-        raise ModuleNotFoundError(
-            "No java install detected. Please install java to use language-tool-python.",
+        err = (
+            "No java install detected. Please install java to use language-tool-python."
         )
+        raise ModuleNotFoundError(err)
+
+    logger.debug("Found java executable at %s", java_path)
 
     output = subprocess.check_output(
         [java_path, "-version"],
         stderr=subprocess.STDOUT,
         universal_newlines=True,
     )
+
+    logger.debug("java -version output: %s", output.strip())
 
     major_version, minor_version = parse_java_version(output)
     version_date_cutoff = datetime.strptime("2025-03-27", "%Y-%m-%d")
@@ -126,16 +130,14 @@ def confirm_java_compatibility(
         if (major_version == 1 and minor_version < 8) or (
             major_version != 1 and major_version < 8
         ):
-            raise SystemError(
-                f"Detected java {major_version}.{minor_version}. LanguageTool requires Java >= 8 for version {language_tool_version}.",
-            )
+            err = f"Detected java {major_version}.{minor_version}. LanguageTool requires Java >= 8 for version {language_tool_version}."
+            raise SystemError(err)
     else:
         if (major_version == 1 and minor_version < 17) or (
             major_version != 1 and major_version < 17
         ):
-            raise SystemError(
-                f"Detected java {major_version}.{minor_version}. LanguageTool requires Java >= 17 for version {language_tool_version}.",
-            )
+            err = f"Detected java {major_version}.{minor_version}. LanguageTool requires Java >= 17 for version {language_tool_version}."
+            raise SystemError(err)
 
 
 def get_common_prefix(z: zipfile.ZipFile) -> Optional[str]:
@@ -170,13 +172,13 @@ def http_get(
     :type proxies: Optional[Dict[str, str]]
     :raises PathError: If the file could not be found at the given URL (HTTP 404).
     """
+    logger.info("Starting download from %s", url)
     req = requests.get(url, stream=True, proxies=proxies)
     content_length = req.headers.get("Content-Length")
     total = int(content_length) if content_length is not None else None
     if req.status_code == 404:
-        raise PathError(
-            f"Could not find at URL {url}. The given version may not exist or is no longer available.",
-        )
+        err = f"Could not find at URL {url}. The given version may not exist or is no longer available."
+        raise PathError(err)
     version = (
         url.split("/")[-1].split("-")[1].replace("-snapshot", "").replace(".zip", "")
     )
@@ -203,7 +205,7 @@ def unzip_file(temp_file_name: str, directory_to_extract_to: str) -> None:
     :type directory_to_extract_to: str
     """
 
-    logger.info(f"Unzipping {temp_file_name} to {directory_to_extract_to}.")
+    logger.info("Unzipping %s to %s", temp_file_name, directory_to_extract_to)
     with zipfile.ZipFile(temp_file_name, "r") as zip_ref:
         zip_ref.extractall(directory_to_extract_to)
 
@@ -217,6 +219,7 @@ def download_zip(url: str, directory: str) -> None:
     :param directory: The directory where the ZIP file should be extracted.
     :type directory: str
     """
+    logger.info("Downloading from %s to %s", url, directory)
     # Download file using a context manager.
     with tempfile.NamedTemporaryFile(suffix=".zip", delete=False) as downloaded_file:
         http_get(url, downloaded_file)
@@ -225,8 +228,6 @@ def download_zip(url: str, directory: str) -> None:
     unzip_file(temp_name, directory)
     # Remove the temporary file.
     os.remove(temp_name)
-    # Tell the user the download path.
-    logger.info(f"Downloaded {url} to {directory}.")
 
 
 def download_lt(language_tool_version: str = LTP_DOWNLOAD_VERSION) -> None:
@@ -257,7 +258,8 @@ def download_lt(language_tool_version: str = LTP_DOWNLOAD_VERSION) -> None:
     os.makedirs(download_folder, exist_ok=True)
 
     if not os.path.isdir(download_folder):
-        raise PathError(f"Download folder {download_folder} is not a directory.")
+        err = f"Download folder {download_folder} is not a directory."
+        raise PathError(err)
     old_path_list = find_existing_language_tool_downloads(download_folder)
 
     if language_tool_version:
@@ -269,11 +271,12 @@ def download_lt(language_tool_version: str = LTP_DOWNLOAD_VERSION) -> None:
             filename = FILENAME_SNAPSHOT.format(version=version)
             language_tool_download_url = urljoin(BASE_URL_SNAPSHOT, filename)
         else:
-            raise ValueError(
+            err = (
                 f"You can only download a specific version of LanguageTool if it is "
                 f"formatted like 'x.y' (e.g. '5.4'). The version you provided is {version}."
-                f"You can also use 'latest' to download the latest snapshot of LanguageTool.",
+                f"You can also use 'latest' to download the latest snapshot of LanguageTool."
             )
+            raise ValueError(err)
         dirname, _ = os.path.splitext(filename)
         dirname = dirname.replace("latest", LT_SNAPSHOT_CURRENT_VERSION)
         if version == "latest":

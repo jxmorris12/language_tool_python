@@ -4,6 +4,7 @@ import atexit
 import contextlib
 import http.client
 import json
+import logging
 import os
 import random
 import socket
@@ -37,7 +38,7 @@ from .utils import (
     startupinfo,
 )
 
-DEBUG_MODE = False
+logger = logging.getLogger(__name__)
 
 # Keep track of running server PIDs in a global list. This way,
 # we can ensure they're killed on exit.
@@ -165,7 +166,8 @@ class LanguageTool:
         self._server = None
 
         if remote_server and config is not None:
-            raise ValueError("Cannot use both remote_server and config parameters.")
+            err = "Cannot use both remote_server and config parameters."
+            raise ValueError(err)
         self.config = LanguageToolConfig(config) if config else None
 
         if remote_server is not None:
@@ -240,6 +242,10 @@ class LanguageTool:
         """
         if self._server_is_alive():
             warnings.warn("unclosed server", ResourceWarning, stacklevel=2)
+            logger.warning(
+                "Unclosed server (server still running at %s). Closing it now.",
+                getattr(self, "_url", "unknown"),
+            )
             self.close()
 
     def __repr__(self) -> str:
@@ -334,6 +340,7 @@ class LanguageTool:
         :rtype: List[Match]
         """
         url = urllib.parse.urljoin(self._url, "check")
+        logger.debug("Sending text to LanguageTool server at %s", url)
         response = self._query_server(url, self._create_params(text))
         matches = response["matches"]
         return [Match(match, text) for match in matches]
@@ -422,11 +429,12 @@ class LanguageTool:
             "org/languagetool/resource/en/hunspell/spelling.txt",
         )
         if not os.path.exists(spelling_file_path):
-            raise FileNotFoundError(
-                f"Failed to find the spellings file at {spelling_file_path}\n "
-                "Please file an issue at "
-                "https://github.com/jxmorris12/language_tool_python/issues",
+            err = (
+                f"Failed to find the spellings file at {spelling_file_path}\n"
+                " Please file an issue at "
+                "https://github.com/jxmorris12/language_tool_python/issues"
             )
+            raise FileNotFoundError(err)
         return spelling_file_path
 
     def _register_spellings(self) -> None:
@@ -442,6 +450,7 @@ class LanguageTool:
             return
 
         spelling_file_path = self._get_valid_spelling_file_path()
+        logger.debug("Registering new spellings at %s", spelling_file_path)
         with open(spelling_file_path, "r+", encoding="utf-8") as spellings_file:
             existing_spellings = set(
                 line.strip() for line in spellings_file.readlines()
@@ -454,8 +463,6 @@ class LanguageTool:
                 if len(existing_spellings) > 0:
                     spellings_file.write("\n")
                 spellings_file.write("\n".join(new_spellings))
-        if DEBUG_MODE:
-            print(f"Registered new spellings at {spelling_file_path}")
 
     def _unregister_spellings(self) -> None:
         """
@@ -468,6 +475,7 @@ class LanguageTool:
             return
 
         spelling_file_path = self._get_valid_spelling_file_path()
+        logger.debug("Unregistering new spellings at %s", spelling_file_path)
 
         with open(spelling_file_path, "r", encoding="utf-8") as spellings_file:
             lines = spellings_file.readlines()
@@ -485,9 +493,6 @@ class LanguageTool:
             newline="\n",
         ) as spellings_file:
             spellings_file.writelines(updated_lines)
-
-        if DEBUG_MODE:
-            print(f"Unregistered new spellings at {spelling_file_path}")
 
     def _get_languages(self) -> Set[str]:
         """
@@ -547,8 +552,7 @@ class LanguageTool:
         :rtype: Any
         :raises LanguageToolError: If the server returns an invalid JSON response or if the query fails after the specified number of retries.
         """
-        if DEBUG_MODE:
-            print("_query_server url:", url, "params:", params)
+        logger.debug("_query_server url: %s", url)
         for n in range(num_tries):
             try:
                 with requests.get(
@@ -559,25 +563,26 @@ class LanguageTool:
                     try:
                         return response.json()
                     except json.decoder.JSONDecodeError as e:
-                        if DEBUG_MODE:
-                            print(
-                                f"URL {url} and params {params} "
-                                f"returned invalid JSON response: {e}",
-                            )
-                            print(response)
-                            print(response.content)
+                        logger.debug(
+                            "URL %s returned invalid JSON response: %s",
+                            url,
+                            e,
+                        )
+                        logger.debug("Status code: %s", response.status_code)
                         if response.status_code == 426:
-                            raise RateLimitError(
+                            err = (
                                 "You have exceeded the rate limit for the free "
-                                "LanguageTool API. Please try again later.",
-                            ) from e
+                                "LanguageTool API. Please try again later."
+                            )
+                            raise RateLimitError(err) from e
                         raise LanguageToolError(response.content.decode()) from e
             except (IOError, http.client.HTTPException) as e:
                 if self._remote is False:
                     self._terminate_server()
                     self._start_local_server()
                 if n + 1 >= num_tries:
-                    raise LanguageToolError(f"{self._url}: {e}") from e
+                    err2 = f"{self._url}: {e}"
+                    raise LanguageToolError(err2) from e
         return None
 
     def _start_server_on_free_port(self) -> None:
@@ -595,7 +600,9 @@ class LanguageTool:
                 break
             except ServerError:
                 if len(self._available_ports) > 0:
+                    old_port = self._port
                     self._port = self._available_ports.pop()
+                    logger.debug("Port %s failed, trying port %s", old_port, self._port)
                 else:
                     raise
 
@@ -613,19 +620,16 @@ class LanguageTool:
         # Before starting local server, download language tool if needed.
         download_lt(self.language_tool_download_version)
         try:
-            if DEBUG_MODE:
-                if self._port:
-                    print("language_tool_python initializing with port:", self._port)
-                if self.config:
-                    print(
-                        "language_tool_python initializing with temporary config file:",
-                        self.config.path,
-                    )
+            if self._port:
+                logger.info(
+                    "language_tool_python initializing with port: %s", self._port
+                )
             server_cmd = get_server_cmd(self._port, self.config)
         except PathError as e:
-            raise PathError(
-                "Failed to find LanguageTool. Please ensure it is downloaded correctly.",
-            ) from e
+            err = (
+                "Failed to find LanguageTool. Please ensure it is downloaded correctly."
+            )
+            raise PathError(err) from e
         else:
             self._server = subprocess.Popen(
                 server_cmd,
@@ -641,7 +645,8 @@ class LanguageTool:
             self._wait_for_server_ready()
 
         if not self._server:
-            raise ServerError("Server running; don't start a server here.")
+            err = "Failed to start LanguageTool server."
+            raise ServerError(err)
 
     def _wait_for_server_ready(self, timeout: int = 15) -> None:
         """
@@ -658,15 +663,19 @@ class LanguageTool:
                              timeout period or if the server process is not initialized.
         """
         if self._server is None:
-            raise ServerError("Server process is not initialized.")
+            err = "Server process is not initialized."
+            raise ServerError(err)
         url = urllib.parse.urljoin(self._url, "healthcheck")
         start = time.time()
+
+        logger.debug("Waiting for LanguageTool server readiness at %s", url)
 
         while time.time() - start < timeout:
             # Early exit check
             ret = self._server.poll()
             if ret is not None:
-                raise ServerError(f"LanguageTool server exited early with code {ret}")
+                err = f"LanguageTool server exited early with code {ret}"
+                raise ServerError(err)
 
             # Attempt to connect
             with contextlib.suppress(requests.RequestException):
@@ -677,10 +686,11 @@ class LanguageTool:
             time.sleep(0.2)
 
         # Timeout without response
-        raise ServerError(
+        err = (
             f"LanguageTool server did not become ready on {self._host}:{self._port} "
             f"within {timeout} seconds"
         )
+        raise ServerError(err)
 
     def _server_is_alive(self) -> bool:
         """
@@ -700,6 +710,7 @@ class LanguageTool:
         2. Closes associated file descriptor (stdin).
         """
         if self._server:
+            logger.info("Terminating LanguageTool server on port %s", self._port)
             _kill_processes([self._server])
             RUNNING_SERVER_PROCESSES.remove(self._server)
 
@@ -737,4 +748,9 @@ def terminate_server() -> None:
     This function iterates over the list of running server processes and
     forcefully kills each process by its PID.
     """
+    if RUNNING_SERVER_PROCESSES:
+        logger.info(
+            "Terminating %d LanguageTool server process(es) at exit",
+            len(RUNNING_SERVER_PROCESSES),
+        )
     _kill_processes(RUNNING_SERVER_PROCESSES)
