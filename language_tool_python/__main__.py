@@ -121,8 +121,9 @@ class RulesAction(argparse.Action):
     namespace when the action is triggered. It updates the attribute specified
     by 'self.dest' with the provided values.
 
-    Attributes:
-        dest (str): the destination attribute to update
+    .. attribute:: dest
+        :type: str
+        The destination attribute to update.
     """
 
     def __call__(

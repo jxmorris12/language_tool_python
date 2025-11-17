@@ -78,30 +78,70 @@ class LanguageTool:
     :type config: Optional[str]
     :param language_tool_download_version: The version of LanguageTool to download if needed.
     :type language_tool_download_version: Optional[str]
-
-    Attributes:
-        _AVAILABLE_PORTS (List[int]): A list of available ports for the server, shuffled randomly.
-        _TIMEOUT (int): The timeout for server requests.
-        _remote (bool): A flag to indicate if the server is remote.
-        _port (int): The port number to use for the server.
-        _server (subprocess.Popen): The server process.
-        language_tool_download_version (str): The version of LanguageTool to download.
-        _new_spellings (List[str]): A list of new spellings to register.
-        _new_spellings_persist (bool): A flag to indicate if new spellings should persist.
-        _host (str): The host to use for the server.
-        config (LanguageToolConfig): The configuration to use for the server.
-        _url (str): The URL of the server if remote.
-        motherTongue (str): The user's mother tongue (used in requests to the server).
-        disabled_rules (Set[str]): A set of disabled rules (used in requests to the server).
-        enabled_rules (Set[str]): A set of enabled rules (used in requests to the server).
-        disabled_categories (Set[str]): A set of disabled categories (used in requests to the server).
-        enabled_categories (Set[str]): A set of enabled categories (used in requests to the server).
-        enabled_rules_only (bool): A flag to indicate if only enabled rules should be used (used in requests to the server).
-        preferred_variants (Set[str]): A set of preferred variants (used in requests to the server).
-        picky (bool): A flag to indicate if the tool should be picky (used in requests to the server).
-        language (str): The language to use (used in requests to the server and in other methods).
-        _spell_checking_categories (Set[str]): A set of spell-checking categories.
     """
+
+    _AVAILABLE_PORTS: List[int]
+    """A list of available ports for the server, shuffled randomly."""
+
+    _TIMEOUT: int
+    """The timeout for server requests."""
+
+    _remote: bool
+    """A flag to indicate if the server is remote."""
+
+    _port: int
+    """The port number to use for the server."""
+
+    _server: subprocess.Popen
+    """The server process."""
+
+    _language_tool_download_version: str
+    """The version of LanguageTool to download."""
+
+    _new_spellings: Optional[List[str]]
+    """A list of new spellings to register."""
+
+    _new_spellings_persist: bool
+    """A flag to indicate if new spellings should persist."""
+
+    _host: str
+    """The host to use for the server."""
+
+    config: Optional[LanguageToolConfig]
+    """The configuration to use for the server."""
+
+    _url: str
+    """The URL of the server if remote."""
+
+    motherTongue: Optional[str]
+    """The user's mother tongue (used in requests to the server)."""
+
+    disabled_rules: Set[str]
+    """A set of disabled rules (used in requests to the server)."""
+
+    enabled_rules: Set[str]
+    """A set of enabled rules (used in requests to the server)."""
+
+    enabled_rules_only: bool
+    """A flag to indicate if only enabled rules should be used (used in requests to the server)."""
+
+    preferred_variants: Set[str]
+    """A set of preferred variants (used in requests to the server)."""
+
+    picky: bool
+    """A flag to indicate if the tool should be picky (used in requests to the server)."""
+
+    language: LanguageTag
+    """The language to use (used in requests to the server and in other methods)."""
+
+    _spell_checking_categories: Set[str]
+    """A set of spell-checking categories."""
+
+    disabled_categories: Set[str]
+    """A set of disabled categories (used in requests to the server)."""
+
+    enabled_categories: Set[str]
+    """A set of enabled categories (used in requests to the server)."""
 
     def __init__(
         self,
@@ -163,7 +203,7 @@ class LanguageTool:
         Enter the runtime context related to this object.
 
         This method is called when execution flow enters the context of the
-        `with` statement using this object. It returns the object itself.
+        ``with`` statement using this object. It returns the object itself.
 
         :return: The object itself.
         :rtype: LanguageTool
@@ -199,7 +239,7 @@ class LanguageTool:
         """
         Destructor method that ensures the server is properly closed.
         This method is called when the instance is about to be destroyed. It
-        ensures that the `close` method is called to release any resources
+        ensures that the ``close`` method is called to release any resources
         or perform any necessary cleanup.
         """
         if self._server_is_alive():
@@ -222,7 +262,7 @@ class LanguageTool:
         This method performs the following actions:
         1. Checks if the server is alive and terminates it if necessary.
         2. If new spellings are not set to persist and there are new spellings,
-           it unregisters the spellings and clears the list of new spellings.
+        it unregisters the spellings and clears the list of new spellings.
         """
         if self._server_is_alive():
             self._terminate_server()
@@ -359,8 +399,8 @@ class LanguageTool:
     def enable_spellchecking(self) -> None:
         """
         Enable spellchecking by removing spell checking categories from the disabled categories set.
-        This method updates the `disabled_categories` attribute by removing any categories that are
-        related to spell checking, which are defined in the `_spell_checking_categories` attribute.
+        This method updates the ``disabled_categories`` attribute by removing any categories that are
+        related to spell checking, which are defined in the ``_spell_checking_categories`` attribute.
         """
         self.disabled_categories.difference_update(self._spell_checking_categories)
 
@@ -425,7 +465,7 @@ class LanguageTool:
         """
         Unregister new spellings from the spelling file.
         This method reads the current spellings from the spelling file, removes any
-        spellings that are present in the `_new_spellings` attribute, and writes the
+        spellings that are present in the ``_new_spellings`` attribute, and writes the
         updated list back to the file.
         """
         spelling_file_path = self._get_valid_spelling_file_path()
@@ -672,7 +712,7 @@ class LanguageTool:
 class LanguageToolPublicAPI(LanguageTool):
     """
     A class to interact with the public LanguageTool API.
-    This class extends the `LanguageTool` class and initializes it with the
+    This class extends the ``LanguageTool`` class and initializes it with the
     remote server set to the public LanguageTool API endpoint.
 
     :param args: Positional arguments passed to the parent class initializer.

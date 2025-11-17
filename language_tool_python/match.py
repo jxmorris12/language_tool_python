@@ -105,54 +105,69 @@ class Match:
     Represents a match object that contains information about a language rule violation.
 
     :param attrib: A dictionary containing various attributes for the match.
-                       The dictionary is expected to have the following keys:
+                    The dictionary is expected to have the following keys:
 
-                       - 'rule': A dictionary with keys 'category' (which has an 'id') and 'id', 'issueType'.
-
-                       - 'context': A dictionary with keys 'offset' and 'text'.
-
-                       - 'replacements': A list of dictionaries, each containing a 'value'.
-
-                       - 'length': The length of the error.
-
-                       - 'message': The message describing the error.
+                        - ``rule`` (*Dict[str, Any]*): A dictionary with keys ``category`` (which has an ``id``) and ``id``, ``issueType``.
+                        - ``context`` (*Dict[str, Any]*): A dictionary with keys ``offset`` and ``text``.
+                        - ``replacements`` (*List[Dict[str, str]]*): A list of dictionaries, each containing a ``value``.
+                        - ``length`` (*int*): The length of the error.
+                        - ``message`` (*str*): The message describing the error.
     :type attrib: Dict[str, Any]
     :param text: The original text in which the error occurred (the whole text, not just the context).
     :type text: str
 
-    Attributes:
-        PREVIOUS_MATCHES_TEXT (Optional[str]): The text of the previous match object.
-        FOUR_BYTES_POSITIONS (Optional[List[int]]): The positions of 4-byte encoded characters in the text, registered by the previous match object (kept for optimization purposes if the text is the same).
-        ruleId (str): The ID of the rule that was violated.
-        message (str): The message describing the error.
-        replacements (list): A list of suggested replacements for the error.
-        offsetInContext (int): The offset of the error in the context.
-        context (str): The context in which the error occurred.
-        offset (int): The offset of the error.
-        errorLength (int): The length of the error.
-        category (str): The category of the rule that was violated.
-        ruleIssueType (str): The issue type of the rule that was violated.
+    Example of a match object received from the LanguageTool API :
 
-    Exemple of a match object received from the LanguageTool API :
+    .. code-block:: python
 
-    ```
-    {
-        'message': 'Possible spelling mistake found.',
-        'shortMessage': 'Spelling mistake',
-        'replacements': [{'value': 'newt'}, {'value': 'not'}, {'value': 'new', 'shortDescription': 'having just been made'}, {'value': 'news'}, {'value': 'foot', 'shortDescription': 'singular'}, {'value': 'root', 'shortDescription': 'underground organ of a plant'}, {'value': 'boot'}, {'value': 'noon'}, {'value': 'loot', 'shortDescription': 'plunder'}, {'value': 'moot'}, {'value': 'Root'}, {'value': 'soot', 'shortDescription': 'carbon black'}, {'value': 'newts'}, {'value': 'nook'}, {'value': 'Lieut'}, {'value': 'coot'}, {'value': 'hoot'}, {'value': 'toot'}, {'value': 'snoot'}, {'value': 'neut'}, {'value': 'nowt'}, {'value': 'Noor'}, {'value': 'noob'}],
-        'offset': 8,
-        'length': 4,
-        'context': {'text': 'This is noot okay. ', 'offset': 8, 'length': 4}, 'sentence': 'This is noot okay.',
-        'type': {'typeName': 'Other'},
-        'rule': {'id': 'MORFOLOGIK_RULE_EN_US', 'description': 'Possible spelling mistake', 'issueType': 'misspelling', 'category': {'id': 'TYPOS', 'name': 'Possible Typo'}},
-        'ignoreForIncompleteSentence': False,
-        'contextForSureMatch': 0
-    }
-    ```
+        {
+            'message': 'Possible spelling mistake found.',
+            'shortMessage': 'Spelling mistake',
+            'replacements': [{'value': 'newt'}, {'value': 'not'}, {'value': 'new', 'shortDescription': 'having just been made'}, {'value': 'news'}, {'value': 'foot', 'shortDescription': 'singular'}, {'value': 'root', 'shortDescription': 'underground organ of a plant'}, {'value': 'boot'}, {'value': 'noon'}, {'value': 'loot', 'shortDescription': 'plunder'}, {'value': 'moot'}, {'value': 'Root'}, {'value': 'soot', 'shortDescription': 'carbon black'}, {'value': 'newts'}, {'value': 'nook'}, {'value': 'Lieut'}, {'value': 'coot'}, {'value': 'hoot'}, {'value': 'toot'}, {'value': 'snoot'}, {'value': 'neut'}, {'value': 'nowt'}, {'value': 'Noor'}, {'value': 'noob'}],
+            'offset': 8,
+            'length': 4,
+            'context': {'text': 'This is noot okay. ', 'offset': 8, 'length': 4}, 'sentence': 'This is noot okay.',
+            'type': {'typeName': 'Other'},
+            'rule': {'id': 'MORFOLOGIK_RULE_EN_US', 'description': 'Possible spelling mistake', 'issueType': 'misspelling', 'category': {'id': 'TYPOS', 'name': 'Possible Typo'}},
+            'ignoreForIncompleteSentence': False,
+            'contextForSureMatch': 0
+        }
+
     """
 
     PREVIOUS_MATCHES_TEXT: Optional[str] = None
+    """The text of the previous match object."""
+
     FOUR_BYTES_POSITIONS: Optional[List[int]] = None
+    """The positions of 4-byte encoded characters in the text, registered by the previous match object
+    (kept for optimization purposes if the text is the same)."""
+
+    ruleId: str
+    """The ID of the rule that was violated."""
+
+    message: str
+    """The message describing the error."""
+
+    replacements: List[str]
+    """A list of suggested replacements for the error."""
+
+    offsetInContext: int
+    """The offset of the error in the context."""
+
+    context: str
+    """The context in which the error occurred."""
+
+    offset: int
+    """The offset of the error."""
+
+    errorLength: int
+    """The length of the error."""
+
+    category: str
+    """The category of the rule that was violated."""
+
+    ruleIssueType: str
+    """The issue type of the rule that was violated."""
 
     def __init__(self, attrib: Dict[str, Any], text: str) -> None:
         """
@@ -206,7 +221,7 @@ class Match:
             Generate a string representation of the object's attributes in an ordered dictionary format.
 
             This method collects the attributes of the object, ensuring that the order of attributes
-            is preserved as defined by `get_match_ordered_dict()`. Attributes that are not part of the
+            is preserved as defined by ``get_match_ordered_dict()``. Attributes that are not part of the
             ordered dictionary are appended at the end. Attributes starting with an underscore are
             excluded from the representation.
 
@@ -321,7 +336,7 @@ class Match:
         Return an iterator over the attributes of the match object.
 
         This method allows the match object to be iterated over, yielding the
-        values of its attributes in the order defined by `get_match_ordered_dict`.
+        values of its attributes in the order defined by ``get_match_ordered_dict()``.
 
         :return: An iterator over the attribute values of the match object.
         :rtype: Iterator[Any]
@@ -333,7 +348,7 @@ class Match:
         Set an attribute on the instance.
 
         This method overrides the default behavior of setting an attribute.
-        It attempts to transform the value using a function from `get_match_ordered_dict()`
+        It attempts to transform the value using a function from ``get_match_ordered_dict()``
         based on the provided key. If the key is not found in the dictionary, the attribute
         is not set.
 
@@ -341,7 +356,6 @@ class Match:
         :type key: str
         :param value: The value to set the attribute to.
         :type value: Any
-        :raises KeyError: If the key is not found in the dictionary returned by `get_match_ordered_dict()`.
         """
         try:
             value = get_match_ordered_dict()[key](value)
@@ -355,7 +369,7 @@ class Match:
 
         This method is called when an attribute lookup has not found the attribute in the usual places
         (i.e., it is not an instance attribute nor is it found in the class tree for self). This method
-        checks if the attribute name is in the ordered dictionary returned by `get_match_ordered_dict()`.
+        checks if the attribute name is in the ordered dictionary returned by ``get_match_ordered_dict()``.
         If the attribute name is not found, it raises an AttributeError.
 
         :param name: The name of the attribute being accessed.
