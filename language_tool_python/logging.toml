@@ -1,0 +1,26 @@
+# Logging config for language_tool_python command line
+# This config is only used when running the command line tool
+# There is no impact on library users who import language_tool_python
+# Each library user can configure logging by themselves as needed
+
+version = 1
+disable_existing_loggers = false
+
+[formatters]
+
+[formatters.default]
+format = "[%(levelname)s|%(name)s|L%(lineno)d] %(asctime)s: %(message)s"
+datefmt = "%Y-%m-%dT%H:%M:%S%z"
+
+[handlers]
+
+[handlers.stdout]
+class = "logging.StreamHandler"
+formatter = "default"
+stream = "ext://sys.stdout"
+
+[loggers]
+
+[loggers.root]
+level = "INFO"
+handlers = ["stdout"]

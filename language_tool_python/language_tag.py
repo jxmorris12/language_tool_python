@@ -1,8 +1,11 @@
 """LanguageTool language tag normalization module."""
 
+import logging
 import re
 from functools import total_ordering
 from typing import Any, Iterable
+
+logger = logging.getLogger(__name__)
 
 
 @total_ordering
@@ -86,28 +89,37 @@ class LanguageTag:
         :return: The normalized language tag.
         :rtype: str
         """
+        logger.debug("Normalizing language tag: %r", tag)
+
         if not tag:
-            raise ValueError("empty language tag")
+            err = "empty language tag"
+            raise ValueError(err)
         languages = {
             language.lower().replace("-", "_"): language for language in self.languages
         }
+        logger.debug("Available languages: %s", list(languages.keys()))
 
         # If POSIX, default to English variants
         if tag.lower() in {"c", "posix"} or tag.lower().startswith("c."):
+            logger.debug("Detected POSIX/C locale for tag %r", tag)
             for candidate in ("en_us", "en_gb", "en"):
                 if candidate in languages:
+                    logger.debug("Using POSIX fallback language %r", candidate)
                     return languages[candidate]
-            raise ValueError(
-                f"unsupported language (no default for POSIX locale): {tag!r}"
-            )
+            err = f"unsupported language (no default for POSIX locale): {tag!r}"
+            raise ValueError(err)
 
         try:
             return languages[tag.lower().replace("-", "_")]
-        except KeyError:
+        except KeyError as e:
+            logger.debug("Tag %r not found directly, attempting regex match", tag)
             try:
                 match = self._LANGUAGE_RE.match(tag)
                 if match is None:
-                    raise AttributeError("tag does not match pattern")
+                    err = "tag does not match pattern"
+                    raise AttributeError(err) from e
+                logger.debug("Regex match groups: %s", match.groups())
                 return languages[match.group(1).lower()]
             except (KeyError, AttributeError) as e:
-                raise ValueError(f"unsupported language: {tag!r}") from e
+                err = f"unsupported language: {tag!r}"
+                raise ValueError(err) from e

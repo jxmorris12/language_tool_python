@@ -1,5 +1,6 @@
 """LanguageTool API Match object representation and utility module."""
 
+import logging
 import unicodedata
 from collections import OrderedDict
 from functools import total_ordering
@@ -14,6 +15,8 @@ from typing import (
 from typing import (
     OrderedDict as OrderedDictType,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def get_match_ordered_dict() -> OrderedDictType[str, type]:
@@ -96,6 +99,8 @@ def four_byte_char_positions(text: str) -> List[int]:
             # 2 bytes in length in LanguageTool, instead of 1 byte in Python.
             char_index += 1
         char_index += 1
+    if positions:
+        logger.debug("Found 4-byte encoded characters at positions: %s", positions)
     return positions
 
 
@@ -283,9 +288,8 @@ class Match:
             self.context[3:-3] if len(self.context) > 6 else self.context
         )
         if context_without_additions not in original_text.replace("\n", " "):
-            raise ValueError(
-                "The original text does not match the context of the error",
-            )
+            err = "The original text does not match the context of the error"
+            raise ValueError(err)
         line = original_text.count("\n", 0, self.offset)
         column = self.offset - original_text.rfind("\n", 0, self.offset)
         return line + 1, column
@@ -301,11 +305,11 @@ class Match:
         """
 
         if not self.replacements:
-            raise ValueError("This Match has no suggestions")
+            err = "This Match has no suggestions"
+            raise ValueError(err)
         if index < 0 or index >= len(self.replacements):
-            raise ValueError(
-                f"This Match's suggestions are numbered from 0 to {len(self.replacements) - 1}",
-            )
+            err = f"This Match's suggestions are numbered from 0 to {len(self.replacements) - 1}"
+            raise ValueError(err)
         self.replacements = [self.replacements[index]]
 
     def __eq__(self, other: Any) -> bool:
@@ -378,6 +382,5 @@ class Match:
         :raises AttributeError: If the attribute does not exist.
         """
         if name not in get_match_ordered_dict():
-            raise AttributeError(
-                f"{self.__class__.__name__!r} object has no attribute {name!r}",
-            )
+            err = f"{self.__class__.__name__!r} object has no attribute {name!r}"
+            raise AttributeError(err)
