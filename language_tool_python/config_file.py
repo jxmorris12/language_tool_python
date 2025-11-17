@@ -5,7 +5,7 @@ import os
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterable, Optional, Union
+from typing import Any, Callable, Dict, Iterable, Optional, Tuple, Union
 
 from .exceptions import PathError
 
@@ -22,7 +22,7 @@ class OptionSpec:
     remain constant throughout the application lifecycle.
     """
 
-    py_types: Union[type, tuple[type, ...]]
+    py_types: Union[type, Tuple[type, ...]]
     """The Python type(s) that this option accepts."""
 
     encoder: Callable[[Any], str]
@@ -47,7 +47,7 @@ def _bool_encoder(v: Any) -> str:
     return str(bool(v)).lower()
 
 
-def _comma_list_encoder(v: Any) -> str:
+def _comma_list_encoder(v: Union[str, Iterable[str]]) -> str:
     """
     Encode a value as a comma-separated list string.
 
@@ -57,16 +57,13 @@ def _comma_list_encoder(v: Any) -> str:
     with commas.
 
     :param v: The value to encode. Can be a string or an iterable of values.
-    :type v: Any
+    :type v: Union[str, Iterable[str]]
     :return: A comma-separated string representation of the input value.
     :rtype: str
-    :raises TypeError: If the input is neither a string nor an iterable.
     """
     if isinstance(v, str):
         return v
-    if isinstance(v, Iterable):
-        return ",".join(str(x) for x in v)
-    raise TypeError("expected string or iterable for comma-list option")
+    return ",".join(str(x) for x in v)
 
 
 def _path_encoder(v: Any) -> str:

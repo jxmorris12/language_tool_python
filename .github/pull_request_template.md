@@ -31,4 +31,4 @@ If applicable, include links to any relevant documentation, articles, or resourc
 - [ ] Updated any relevant tests.
 - [ ] Updated any relevant documentation.
 - [ ] Added comments to your code where necessary.
-- [ ] Formatted your code, run the linters and tests.
+- [ ] Formatted your code, run the linters, checked types and tests.

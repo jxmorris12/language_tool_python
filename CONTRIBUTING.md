@@ -20,7 +20,7 @@ If you want to contribute, you first need to fork the repo (and preferably creat
 
 To start developing, you can install all the necessary packages in your python environment with this command (optional dependencies will be installed):
 ```shell
-pip install -e .[dev]
+uv sync --group tests --group docs --group types
 ```
 
 When pushing commits, please use the project naming conventions, which are available in [this guide](https://www.conventionalcommits.org/en/v1.0.0/).
@@ -31,10 +31,13 @@ The documentation style used in the project is **ReStructuredText**. Please, if 
 Before creating your pull request, when you have made all your commits, you need to run this:
 ```shell
 # Run linters (maybe you will have to fix some issues)
-ruff check language_tool_python tests
+uvx ruff check .
 
 # Format code
-ruff format language_tool_python tests
+uvx ruff format .
+
+# Check types
+uvx mypy
 
 # Tests
 pytest

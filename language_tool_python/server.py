@@ -11,7 +11,7 @@ import subprocess
 import time
 import urllib.parse
 import warnings
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Literal, Optional, Set
 
 import psutil
 import requests
@@ -41,10 +41,10 @@ DEBUG_MODE = False
 
 # Keep track of running server PIDs in a global list. This way,
 # we can ensure they're killed on exit.
-RUNNING_SERVER_PROCESSES: List[subprocess.Popen] = []
+RUNNING_SERVER_PROCESSES: List[subprocess.Popen[str]] = []
 
 
-def _kill_processes(processes: List[subprocess.Popen]) -> None:
+def _kill_processes(processes: List[subprocess.Popen[str]]) -> None:
     """
     Kill all running server processes.
     This function iterates over the list of running server processes and
@@ -80,10 +80,10 @@ class LanguageTool:
     :type language_tool_download_version: Optional[str]
     """
 
-    _AVAILABLE_PORTS: List[int]
+    _available_ports: List[int]
     """A list of available ports for the server, shuffled randomly."""
 
-    _TIMEOUT: int
+    _TIMEOUT: Literal[300] = 300
     """The timeout for server requests."""
 
     _remote: bool
@@ -92,7 +92,7 @@ class LanguageTool:
     _port: int
     """The port number to use for the server."""
 
-    _server: subprocess.Popen
+    _server: Optional[subprocess.Popen[str]]
     """The server process."""
 
     _language_tool_download_version: str
@@ -113,7 +113,7 @@ class LanguageTool:
     _url: str
     """The URL of the server if remote."""
 
-    motherTongue: Optional[str]
+    _mother_tongue: Optional[str]
     """The user's mother tongue (used in requests to the server)."""
 
     disabled_rules: Set[str]
@@ -121,6 +121,12 @@ class LanguageTool:
 
     enabled_rules: Set[str]
     """A set of enabled rules (used in requests to the server)."""
+
+    disabled_categories: Set[str]
+    """A set of disabled categories (used in requests to the server)."""
+
+    enabled_categories: Set[str]
+    """A set of enabled categories (used in requests to the server)."""
 
     enabled_rules_only: bool
     """A flag to indicate if only enabled rules should be used (used in requests to the server)."""
@@ -131,42 +137,32 @@ class LanguageTool:
     picky: bool
     """A flag to indicate if the tool should be picky (used in requests to the server)."""
 
-    language: LanguageTag
+    _language: LanguageTag
     """The language to use (used in requests to the server and in other methods)."""
-
-    _spell_checking_categories: Set[str]
-    """A set of spell-checking categories."""
-
-    disabled_categories: Set[str]
-    """A set of disabled categories (used in requests to the server)."""
-
-    enabled_categories: Set[str]
-    """A set of enabled categories (used in requests to the server)."""
 
     def __init__(
         self,
-        language=None,
-        motherTongue=None,
-        remote_server=None,
-        newSpellings=None,
-        new_spellings_persist=True,
-        host=None,
-        config=None,
+        language: Optional[str] = None,
+        motherTongue: Optional[str] = None,
+        remote_server: Optional[str] = None,
+        newSpellings: Optional[List[str]] = None,
+        new_spellings_persist: bool = True,
+        host: Optional[str] = None,
+        config: Optional[Dict[str, Any]] = None,
         language_tool_download_version: str = LTP_DOWNLOAD_VERSION,
     ) -> None:
         """
         Initialize the LanguageTool server.
         """
         self._remote = False
-        self._TIMEOUT = 5 * 60
         self.language_tool_download_version = language_tool_download_version
         self._new_spellings = None
         self._new_spellings_persist = new_spellings_persist
         self._host = host or socket.gethostbyname("localhost")
-        self._AVAILABLE_PORTS = list(range(8081, 8999))
-        random.shuffle(self._AVAILABLE_PORTS)
-        self._port = self._AVAILABLE_PORTS.pop()
-        self._server: subprocess.Popen = None
+        self._available_ports = list(range(8081, 8999))
+        random.shuffle(self._available_ports)
+        self._port = self._available_ports.pop()
+        self._server = None
 
         if remote_server and config is not None:
             raise ValueError("Cannot use both remote_server and config parameters.")
@@ -189,7 +185,7 @@ class LanguageTool:
             self._new_spellings = newSpellings
             self._register_spellings()
         self._language = LanguageTag(language, self._get_languages())
-        self.motherTongue = motherTongue
+        self._mother_tongue = motherTongue
         self.disabled_rules = set()
         self.enabled_rules = set()
         self.disabled_categories = set()
@@ -260,11 +256,11 @@ class LanguageTool:
         Closes the server and performs necessary cleanup operations.
 
         This method performs the following actions:
-        1. Checks if the server is alive and terminates it if necessary.
+        1. Checks if the server is alive, not remote and terminates it if necessary.
         2. If new spellings are not set to persist and there are new spellings,
         it unregisters the spellings and clears the list of new spellings.
         """
-        if self._server_is_alive():
+        if self._remote is not True and self._server_is_alive():
             self._terminate_server()
         if not self._new_spellings_persist and self._new_spellings:
             self._unregister_spellings()
@@ -302,8 +298,9 @@ class LanguageTool:
         :return: The mother tongue language tag if set, otherwise None.
         :rtype: Optional[LanguageTag]
         """
-
-        return self._motherTongue
+        if self._mother_tongue is not None:
+            return LanguageTag(self._mother_tongue, self._get_languages())
+        return None
 
     @motherTongue.setter
     def motherTongue(self, motherTongue: Optional[str]) -> None:
@@ -314,11 +311,7 @@ class LanguageTool:
         :type motherTongue: Optional[str]
         """
 
-        self._motherTongue = (
-            None
-            if motherTongue is None
-            else LanguageTag(motherTongue, self._get_languages())
-        )
+        self._mother_tongue = motherTongue
 
     @property
     def _spell_checking_categories(self) -> Set[str]:
@@ -368,7 +361,7 @@ class LanguageTool:
         """
         params = {"language": str(self.language), "text": text}
         if self.motherTongue is not None:
-            params["motherTongue"] = self.motherTongue
+            params["motherTongue"] = self.motherTongue.tag
         if self.disabled_rules:
             params["disabledRules"] = ",".join(self.disabled_rules)
         if self.enabled_rules:
@@ -445,6 +438,9 @@ class LanguageTool:
         it prints a message indicating the file where the new spellings were registered.
         """
 
+        if self._new_spellings is None:
+            return
+
         spelling_file_path = self._get_valid_spelling_file_path()
         with open(spelling_file_path, "r+", encoding="utf-8") as spellings_file:
             existing_spellings = set(
@@ -468,6 +464,9 @@ class LanguageTool:
         spellings that are present in the ``_new_spellings`` attribute, and writes the
         updated list back to the file.
         """
+        if self._new_spellings is None:
+            return
+
         spelling_file_path = self._get_valid_spelling_file_path()
 
         with open(spelling_file_path, "r", encoding="utf-8") as spellings_file:
@@ -503,7 +502,7 @@ class LanguageTool:
         """
         self._start_server_if_needed()
         url = urllib.parse.urljoin(self._url, "languages")
-        languages = set()
+        languages: Set[str] = set()
         for e in self._query_server(url, num_tries=1):
             languages.add(e.get("code"))
             languages.add(e.get("longCode"))
@@ -595,8 +594,8 @@ class LanguageTool:
                 self._start_local_server()
                 break
             except ServerError:
-                if len(self._AVAILABLE_PORTS) > 0:
-                    self._port = self._AVAILABLE_PORTS.pop()
+                if len(self._available_ports) > 0:
+                    self._port = self._available_ports.pop()
                 else:
                     raise
 
@@ -656,8 +655,10 @@ class LanguageTool:
         :type timeout: int
         :raises ServerError: If the server process exits early with a non-zero code,
                              or if the server does not become ready within the specified
-                             timeout period.
+                             timeout period or if the server process is not initialized.
         """
+        if self._server is None:
+            raise ServerError("Server process is not initialized.")
         url = urllib.parse.urljoin(self._url, "healthcheck")
         start = time.time()
 
@@ -689,7 +690,7 @@ class LanguageTool:
         :return: True if the server is alive (exists and running), False otherwise.
         :rtype: bool
         """
-        return self._server and self._server.poll() is None
+        return bool(self._server and self._server.poll() is None)
 
     def _terminate_server(self) -> None:
         """
@@ -725,7 +726,8 @@ class LanguageToolPublicAPI(LanguageTool):
         """
         Initialize the server with the given arguments.
         """
-        super().__init__(*args, remote_server="https://languagetool.org/api/", **kwargs)
+        kwargs.setdefault("remote_server", "https://languagetool.org/api/")
+        super().__init__(*args, **kwargs)
 
 
 @atexit.register

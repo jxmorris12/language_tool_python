@@ -87,7 +87,7 @@ def four_byte_char_positions(text: str) -> List[int]:
     :return: A list of positions where 4-byte encoded characters are found.
     :rtype: List[int]
     """
-    positions = []
+    positions: List[int] = []
     char_index = 0
     for char in text:
         if len(char.encode("utf-8")) == 4:
@@ -176,10 +176,6 @@ class Match:
         This method adjusts the positions of 4-byte encoded characters in the text
         to ensure the offsets of the matches are correct.
         """
-        if text is None:
-            raise ValueError("The text parameter must not be None")
-        if not isinstance(text, str):
-            raise TypeError("The text parameter must be a string")
 
         # Process rule.
         attrib["category"] = attrib["rule"]["category"]["id"]
@@ -204,7 +200,10 @@ class Match:
             Match.FOUR_BYTES_POSITIONS = four_byte_char_positions(text)
         # Get the positions of 4-byte encoded characters in the text because without
         # carrying out this step, the offsets of the matches could be incorrect.
-        self.offset -= sum(1 for pos in Match.FOUR_BYTES_POSITIONS if pos < self.offset)
+        if Match.FOUR_BYTES_POSITIONS is not None:
+            self.offset -= sum(
+                1 for pos in Match.FOUR_BYTES_POSITIONS if pos < self.offset
+            )
 
     def __repr__(self) -> str:
         """

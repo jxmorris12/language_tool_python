@@ -1,6 +1,12 @@
-include tests/test_local.bash
-include tests/test_remote.bash
-prune pytest-cache-files-*/
+include pyproject.toml
+include README.md
+include LICENSE
+recursive-include language_tool_python *.py
+include language_tool_python/py.typed
+
+prune .github/
+prune .pytest-cache/
+prune .ruff_cache/
 prune env/
 prune .env
 prune .venv
@@ -9,3 +15,13 @@ prune venv/
 prune ENV/
 prune env.bak/
 prune venv.bak/
+prune docs/
+prune tests/
+
+exclude .gitignore
+exclude build_and_publish.sh
+exclude CONTRIBUTING.md
+exclude extract_long_description.py
+exclude Makefile
+exclude pytest.ini
+exclude uv.lock
