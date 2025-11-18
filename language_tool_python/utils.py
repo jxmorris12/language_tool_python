@@ -104,13 +104,13 @@ def correct(text: str, matches: List[Match]) -> str:
     ltext = list(text)
     matches = [match for match in matches if match.replacements]
     errors = [
-        ltext[match.offset : match.offset + match.errorLength] for match in matches
+        ltext[match.offset : match.offset + match.error_length] for match in matches
     ]
     correct_offset = 0
     for n, match in enumerate(matches):
         frompos, topos = (
             correct_offset + match.offset,
-            correct_offset + match.offset + match.errorLength,
+            correct_offset + match.offset + match.error_length,
         )
         if ltext[frompos:topos] != errors[n]:
             continue

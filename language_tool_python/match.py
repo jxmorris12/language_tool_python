@@ -29,28 +29,28 @@ def get_match_ordered_dict() -> OrderedDictType[str, type]:
 
     The keys and their corresponding types are:
 
-    - 'ruleId': str
+    - 'rule_id': str
     - 'message': str
     - 'replacements': list
-    - 'offsetInContext': int
+    - 'offset_in_context': int
     - 'context': str
     - 'offset': int
-    - 'errorLength': int
+    - 'error_length': int
     - 'category': str
-    - 'ruleIssueType': str
+    - 'rule_issue_type': str
     - 'sentence': str
     """
     return OrderedDict(
         [
-            ("ruleId", str),
+            ("rule_id", str),
             ("message", str),
             ("replacements", list),
-            ("offsetInContext", int),
+            ("offset_in_context", int),
             ("context", str),
             ("offset", int),
-            ("errorLength", int),
+            ("error_length", int),
             ("category", str),
-            ("ruleIssueType", str),
+            ("rule_issue_type", str),
             ("sentence", str),
         ],
     )
@@ -147,7 +147,7 @@ class Match:
     """The positions of 4-byte encoded characters in the text, registered by the previous match object
     (kept for optimization purposes if the text is the same)."""
 
-    ruleId: str
+    rule_id: str
     """The ID of the rule that was violated."""
 
     message: str
@@ -156,7 +156,7 @@ class Match:
     replacements: List[str]
     """A list of suggested replacements for the error."""
 
-    offsetInContext: int
+    offset_in_context: int
     """The offset of the error in the context."""
 
     context: str
@@ -165,13 +165,13 @@ class Match:
     offset: int
     """The offset of the error."""
 
-    errorLength: int
+    error_length: int
     """The length of the error."""
 
     category: str
     """The category of the rule that was violated."""
 
-    ruleIssueType: str
+    rule_issue_type: str
     """The issue type of the rule that was violated."""
 
     def __init__(self, attrib: Dict[str, Any], text: str) -> None:
@@ -184,16 +184,16 @@ class Match:
 
         # Process rule.
         attrib["category"] = attrib["rule"]["category"]["id"]
-        attrib["ruleId"] = attrib["rule"]["id"]
-        attrib["ruleIssueType"] = attrib["rule"]["issueType"]
+        attrib["rule_id"] = attrib["rule"]["id"]
+        attrib["rule_issue_type"] = attrib["rule"]["issueType"]
         del attrib["rule"]
         # Process context.
-        attrib["offsetInContext"] = attrib["context"]["offset"]
+        attrib["offset_in_context"] = attrib["context"]["offset"]
         attrib["context"] = attrib["context"]["text"]
         # Process replacements.
         attrib["replacements"] = [r["value"] for r in attrib["replacements"]]
         # Rename error length.
-        attrib["errorLength"] = attrib["length"]
+        attrib["error_length"] = attrib["length"]
         # Normalize unicode
         attrib["message"] = unicodedata.normalize("NFKC", attrib["message"])
         # Store objects on self.
@@ -253,17 +253,17 @@ class Match:
         :return: A formatted string describing the match object.
         :rtype: str
         """
-        ruleId = self.ruleId
-        s = f"Offset {self.offset}, length {self.errorLength}, Rule ID: {ruleId}"
+        rule_id = self.rule_id
+        s = f"Offset {self.offset}, length {self.error_length}, Rule ID: {rule_id}"
         if self.message:
             s += f"\nMessage: {self.message}"
         if self.replacements:
             s += f"\nSuggestion: {'; '.join(self.replacements)}"
-        s += f"\n{self.context}\n{' ' * self.offsetInContext + '^' * self.errorLength}"
+        s += f"\n{self.context}\n{' ' * self.offset_in_context + '^' * self.error_length}"
         return s
 
     @property
-    def matchedText(self) -> str:
+    def matched_text(self) -> str:
         """
         Returns the substring from the context that corresponds to the matched text.
 
@@ -271,7 +271,7 @@ class Match:
         :rtype: str
         """
         return self.context[
-            self.offsetInContext : self.offsetInContext + self.errorLength
+            self.offset_in_context : self.offset_in_context + self.error_length
         ]
 
     def get_line_and_column(self, original_text: str) -> Tuple[int, int]:
