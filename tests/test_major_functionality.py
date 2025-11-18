@@ -17,31 +17,31 @@ def test_langtool_load():
 
         expected_matches = [
             {
-                "ruleId": "UPPERCASE_SENTENCE_START",
+                "rule_id": "UPPERCASE_SENTENCE_START",
                 "message": "This sentence does not start with an uppercase letter.",
                 "replacements": ["Ai"],
-                "offsetInContext": 0,
+                "offset_in_context": 0,
                 "context": "ain't nothin but a thang",
                 "offset": 0,
-                "errorLength": 2,
+                "error_length": 2,
                 "category": "CASING",
-                "ruleIssueType": "typographical",
+                "rule_issue_type": "typographical",
                 "sentence": "ain't nothin but a thang",
             },
             {
-                "ruleId": "MORFOLOGIK_RULE_EN_US",
+                "rule_id": "MORFOLOGIK_RULE_EN_US",
                 "message": "Possible spelling mistake found.",
                 "replacements": ["nothing", "no thin"],
-                "offsetInContext": 6,
+                "offset_in_context": 6,
                 "context": "ain't nothin but a thang",
                 "offset": 6,
-                "errorLength": 6,
+                "error_length": 6,
                 "category": "TYPOS",
-                "ruleIssueType": "misspelling",
+                "rule_issue_type": "misspelling",
                 "sentence": "ain't nothin but a thang",
             },
             {
-                "ruleId": "MORFOLOGIK_RULE_EN_US",
+                "rule_id": "MORFOLOGIK_RULE_EN_US",
                 "message": "Possible spelling mistake found.",
                 "replacements": [
                     "than",
@@ -60,12 +60,12 @@ def test_langtool_load():
                     "Thanh",
                     "bhang",
                 ],
-                "offsetInContext": 19,
+                "offset_in_context": 19,
                 "context": "ain't nothin but a thang",
                 "offset": 19,
-                "errorLength": 5,
+                "error_length": 5,
                 "category": "TYPOS",
-                "ruleIssueType": "misspelling",
+                "rule_issue_type": "misspelling",
                 "sentence": "ain't nothin but a thang",
             },
         ]
@@ -74,14 +74,14 @@ def test_langtool_load():
         for match_i, match in enumerate(matches):
             assert isinstance(match, language_tool_python.Match)
             for key in [
-                "ruleId",
+                "rule_id",
                 "message",
-                "offsetInContext",
+                "offset_in_context",
                 "context",
                 "offset",
-                "errorLength",
+                "error_length",
                 "category",
-                "ruleIssueType",
+                "rule_issue_type",
                 "sentence",
             ]:
                 assert expected_matches[match_i][key] == getattr(match, key)
@@ -296,7 +296,7 @@ def test_remote_es():
             matches = tool.check(es_text)
             assert (
                 str(matches)
-                == """[Match({'ruleId': 'AFRENTAR_DIFICULTADES', 'message': 'Confusión entre «afrontar» y «afrentar».', 'replacements': ['afrontar'], 'offsetInContext': 43, 'context': '...n texto aquí. LanguageTool le ayudará a afrentar algunas dificultades propias de la escr...', 'offset': 49, 'errorLength': 8, 'category': 'INCORRECT_EXPRESSIONS', 'ruleIssueType': 'grammar', 'sentence': 'LanguageTool le ayudará a afrentar algunas dificultades propias de la escritura.'}), Match({'ruleId': 'PRON_HABER_PARTICIPIO', 'message': 'El v. ‘haber’ se escribe con hache.', 'replacements': ['ha'], 'offsetInContext': 43, 'context': '...ificultades propias de la escritura. Se a hecho un esfuerzo para detectar errores...', 'offset': 107, 'errorLength': 1, 'category': 'MISSPELLING', 'ruleIssueType': 'misspelling', 'sentence': 'Se a hecho un esfuerzo para detectar errores tipográficos, ortograficos y incluso gramaticales.'}), Match({'ruleId': 'MORFOLOGIK_RULE_ES', 'message': 'Se ha encontrado un posible error ortográfico.', 'replacements': ['ortográficos', 'ortográficas', 'ortográfico', 'orográficos', 'ortografiaos', 'ortografíeos'], 'offsetInContext': 43, 'context': '...rzo para detectar errores tipográficos, ortograficos y incluso gramaticales. También algunos...', 'offset': 163, 'errorLength': 12, 'category': 'TYPOS', 'ruleIssueType': 'misspelling', 'sentence': 'Se a hecho un esfuerzo para detectar errores tipográficos, ortograficos y incluso gramaticales.'}), Match({'ruleId': 'Y_E_O_U', 'message': 'Cuando precede a palabras que comienzan por ‘i’, la conjunción ‘y’ se transforma en ‘e’.', 'replacements': ['e'], 'offsetInContext': 43, 'context': '...ctar errores tipográficos, ortograficos y incluso gramaticales. También algunos e...', 'offset': 176, 'errorLength': 1, 'category': 'GRAMMAR', 'ruleIssueType': 'grammar', 'sentence': 'Se a hecho un esfuerzo para detectar errores tipográficos, ortograficos y incluso gramaticales.'}), Match({'ruleId': 'GROSSO_MODO', 'message': 'Esta expresión latina se usa sin preposición.', 'replacements': ['grosso modo'], 'offsetInContext': 43, 'context': '...les. También algunos errores de estilo, a grosso modo.', 'offset': 235, 'errorLength': 13, 'category': 'GRAMMAR', 'ruleIssueType': 'grammar', 'sentence': 'También algunos errores de estilo, a grosso modo.'})]"""
+                == """[Match({'rule_id': 'AFRENTAR_DIFICULTADES', 'message': 'Confusión entre «afrontar» y «afrentar».', 'replacements': ['afrontar'], 'offset_in_context': 43, 'context': '...n texto aquí. LanguageTool le ayudará a afrentar algunas dificultades propias de la escr...', 'offset': 49, 'error_length': 8, 'category': 'INCORRECT_EXPRESSIONS', 'rule_issue_type': 'grammar', 'sentence': 'LanguageTool le ayudará a afrentar algunas dificultades propias de la escritura.'}), Match({'rule_id': 'PRON_HABER_PARTICIPIO', 'message': 'El v. ‘haber’ se escribe con hache.', 'replacements': ['ha'], 'offset_in_context': 43, 'context': '...ificultades propias de la escritura. Se a hecho un esfuerzo para detectar errores...', 'offset': 107, 'error_length': 1, 'category': 'MISSPELLING', 'rule_issue_type': 'misspelling', 'sentence': 'Se a hecho un esfuerzo para detectar errores tipográficos, ortograficos y incluso gramaticales.'}), Match({'rule_id': 'MORFOLOGIK_RULE_ES', 'message': 'Se ha encontrado un posible error ortográfico.', 'replacements': ['ortográficos', 'ortográficas', 'ortográfico', 'orográficos', 'ortografiaos', 'ortografíeos'], 'offset_in_context': 43, 'context': '...rzo para detectar errores tipográficos, ortograficos y incluso gramaticales. También algunos...', 'offset': 163, 'error_length': 12, 'category': 'TYPOS', 'rule_issue_type': 'misspelling', 'sentence': 'Se a hecho un esfuerzo para detectar errores tipográficos, ortograficos y incluso gramaticales.'}), Match({'rule_id': 'Y_E_O_U', 'message': 'Cuando precede a palabras que comienzan por ‘i’, la conjunción ‘y’ se transforma en ‘e’.', 'replacements': ['e'], 'offset_in_context': 43, 'context': '...ctar errores tipográficos, ortograficos y incluso gramaticales. También algunos e...', 'offset': 176, 'error_length': 1, 'category': 'GRAMMAR', 'rule_issue_type': 'grammar', 'sentence': 'Se a hecho un esfuerzo para detectar errores tipográficos, ortograficos y incluso gramaticales.'}), Match({'rule_id': 'GROSSO_MODO', 'message': 'Esta expresión latina se usa sin preposición.', 'replacements': ['grosso modo'], 'offset_in_context': 43, 'context': '...les. También algunos errores de estilo, a grosso modo.', 'offset': 235, 'error_length': 13, 'category': 'GRAMMAR', 'rule_issue_type': 'grammar', 'sentence': 'También algunos errores de estilo, a grosso modo.'})]"""
             )
     except RateLimitError:
         print("Rate limit error: skipping test about public API.")
@@ -348,7 +348,7 @@ def test_session_only_new_spellings():
     new_spellings = ["word1", "word2", "word3"]
     with language_tool_python.LanguageTool(
         "en-US",
-        newSpellings=new_spellings,
+        new_spellings=new_spellings,
         new_spellings_persist=False,
     ) as tool:
         tool.enabled_rules_only = True

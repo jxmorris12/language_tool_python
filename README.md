@@ -71,7 +71,7 @@ If you want to apply a particular suggestion from a `Match`, use `Match.select_r
 >>> tool = language_tool_python.LanguageTool('en-US')
 >>> matches = tool.check(s)
 >>> matches
-[Match({'ruleId': 'MORFOLOGIK_RULE_EN_US', 'message': 'Possible spelling mistake found.', 'replacements': ['BOK', 'OK', 'book', 'box'], 'offsetInContext': 11, 'context': 'There is a bok on the table.', 'offset': 11, 'errorLength': 3, 'category': 'TYPOS', 'ruleIssueType': 'misspelling', 'sentence': 'There is a bok on the table.'})]
+[Match({'rule_id': 'MORFOLOGIK_RULE_EN_US', 'message': 'Possible spelling mistake found.', 'replacements': ['BOK', 'OK', 'book', 'box'], 'offset_in_context': 11, 'context': 'There is a bok on the table.', 'offset': 11, 'error_length': 3, 'category': 'TYPOS', 'rule_issue_type': 'misspelling', 'sentence': 'There is a bok on the table.'})]
 >>> matches[0].select_replacement(2) 
 >>> patched_text = language_tool_python.utils.correct(s, matches)    
 >>> patched_text
@@ -115,9 +115,9 @@ From the interpreter:
 Check out some ``Match`` object attributes:
 
 ```python
->>> matches[0].ruleId, matches[0].replacements # ('EN_A_VS_AN', ['an'])
+>>> matches[0].rule_id, matches[0].replacements # ('EN_A_VS_AN', ['an'])
 ('EN_A_VS_AN', ['an'])
->>> matches[1].ruleId, matches[1].replacements
+>>> matches[1].rule_id, matches[1].replacements
 ('TOT_HE', ['to the'])
 ```
 
@@ -188,7 +188,7 @@ You can run LanguageTool on one host and connect to it from another.  This is us
 >>>
 >>>
 >>> lang_tool.check('helo darknes my old frend')
-[Match({'ruleId': 'UPPERCASE_SENTENCE_START', 'message': 'This sentence does not start with an uppercase letter.', 'replacements': ['Helo'], 'offsetInContext': 0, 'context': 'helo darknes my old frend', 'offset': 0, 'errorLength': 4, 'category': 'CASING', 'ruleIssueType': 'typographical', 'sentence': 'helo darknes my old frend'}), Match({'ruleId': 'MORFOLOGIK_RULE_EN_US', 'message': 'Possible spelling mistake found.', 'replacements': ['darkness', 'darkens', 'darkies'], 'offsetInContext': 5, 'context': 'helo darknes my old frend', 'offset': 5, 'errorLength': 7, 'category': 'TYPOS', 'ruleIssueType': 'misspelling', 'sentence': 'helo darknes my old frend'}), Match({'ruleId': 'MORFOLOGIK_RULE_EN_US', 'message': 'Possible spelling mistake found.', 'replacements': ['friend', 'trend', 'Fred', 'freed', 'Freud', 'Friend', 'fend', 'fiend', 'frond', 'rend', 'fr end'], 'offsetInContext': 20, 'context': 'helo darknes my old frend', 'offset': 20, 'errorLength': 5, 'category': 'TYPOS', 'ruleIssueType': 'misspelling', 'sentence': 'helo darknes my old frend'})]
+[Match({'rule_id': 'UPPERCASE_SENTENCE_START', 'message': 'This sentence does not start with an uppercase letter.', 'replacements': ['Helo'], 'offset_in_Context': 0, 'context': 'helo darknes my old frend', 'offset': 0, 'error_length': 4, 'category': 'CASING', 'rule_issue_type': 'typographical', 'sentence': 'helo darknes my old frend'}), Match({'rule_id': 'MORFOLOGIK_RULE_EN_US', 'message': 'Possible spelling mistake found.', 'replacements': ['darkness', 'darkens', 'darkies'], 'offset_in_context': 5, 'context': 'helo darknes my old frend', 'offset': 5, 'error_length': 7, 'category': 'TYPOS', 'rule_issue_type': 'misspelling', 'sentence': 'helo darknes my old frend'}), Match({'rule_id': 'MORFOLOGIK_RULE_EN_US', 'message': 'Possible spelling mistake found.', 'replacements': ['friend', 'trend', 'Fred', 'freed', 'Freud', 'Friend', 'fend', 'fiend', 'frond', 'rend', 'fr end'], 'offset_in_context': 20, 'context': 'helo darknes my old frend', 'offset': 20, 'error_length': 5, 'category': 'TYPOS', 'rule_issue_type': 'misspelling', 'sentence': 'helo darknes my old frend'})]
 >>>
 ```
 

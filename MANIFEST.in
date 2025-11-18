@@ -19,6 +19,7 @@ prune docs/
 prune tests/
 
 exclude .gitignore
+exclude .readthedocs.yaml
 exclude build_and_publish.sh
 exclude CONTRIBUTING.md
 exclude make.bat

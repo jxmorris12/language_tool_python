@@ -254,7 +254,7 @@ def main() -> int:
                 remote_server += f":{args.remote_port}"
         with LanguageTool(
             language=args.language,
-            motherTongue=args.mother_tongue,
+            mother_tongue=args.mother_tongue,
             remote_server=remote_server,
         ) as lang_tool:
             try:
@@ -278,7 +278,7 @@ def main() -> int:
                     print(lang_tool.correct(text))
                 else:
                     for match in lang_tool.check(text):
-                        rule_id = match.ruleId
+                        rule_id = match.rule_id
 
                         replacement_text = ", ".join(
                             f"'{word}'" for word in match.replacements

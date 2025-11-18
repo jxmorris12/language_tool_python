@@ -65,12 +65,12 @@ class LanguageTool:
 
     :param language: The language to be used by the LanguageTool server. If None, it will try to detect the system language.
     :type language: Optional[str]
-    :param motherTongue: The mother tongue of the user.
-    :type motherTongue: Optional[str]
+    :param mother_tongue: The mother tongue of the user.
+    :type mother_tongue: Optional[str]
     :param remote_server: URL of a remote LanguageTool server. If provided, the local server will not be started.
     :type remote_server: Optional[str]
-    :param newSpellings: Custom spellings to be added to the LanguageTool server.
-    :type newSpellings: Optional[List[str]]
+    :param new_spellings: Custom spellings to be added to the LanguageTool server.
+    :type new_spellings: Optional[List[str]]
     :param new_spellings_persist: Whether the new spellings should persist across sessions.
     :type new_spellings_persist: Optional[bool]
     :param host: The host address for the LanguageTool server. Defaults to 'localhost'.
@@ -144,9 +144,9 @@ class LanguageTool:
     def __init__(
         self,
         language: Optional[str] = None,
-        motherTongue: Optional[str] = None,
+        mother_tongue: Optional[str] = None,
         remote_server: Optional[str] = None,
-        newSpellings: Optional[List[str]] = None,
+        new_spellings: Optional[List[str]] = None,
         new_spellings_persist: bool = True,
         host: Optional[str] = None,
         config: Optional[Dict[str, Any]] = None,
@@ -160,8 +160,7 @@ class LanguageTool:
         self._new_spellings = None
         self._new_spellings_persist = new_spellings_persist
         self._host = host or socket.gethostbyname("localhost")
-        self._available_ports = list(range(8081, 8999))
-        random.shuffle(self._available_ports)
+        self._available_ports = random.sample(range(8081, 8999), (8999 - 8081))
         self._port = self._available_ports.pop()
         self._server = None
 
@@ -183,11 +182,11 @@ class LanguageTool:
                 language = get_locale_language()
             except ValueError:
                 language = FAILSAFE_LANGUAGE
-        if newSpellings:
-            self._new_spellings = newSpellings
+        if new_spellings:
+            self._new_spellings = new_spellings
             self._register_spellings()
         self._language = LanguageTag(language, self._get_languages())
-        self._mother_tongue = motherTongue
+        self._mother_tongue = mother_tongue
         self.disabled_rules = set()
         self.enabled_rules = set()
         self.disabled_categories = set()
@@ -255,7 +254,7 @@ class LanguageTool:
         :return: A string that includes the class name, language, and mother tongue.
         :rtype: str
         """
-        return f"{self.__class__.__name__}(language={self.language!r}, motherTongue={self.motherTongue!r})"
+        return f"{self.__class__.__name__}(language={self.language!r}, motherTongue={self.mother_tongue!r})"
 
     def close(self) -> None:
         """
@@ -297,7 +296,7 @@ class LanguageTool:
         self.enabled_rules.clear()
 
     @property
-    def motherTongue(self) -> Optional[LanguageTag]:
+    def mother_tongue(self) -> Optional[LanguageTag]:
         """
         Retrieve the mother tongue language tag.
 
@@ -308,16 +307,16 @@ class LanguageTool:
             return LanguageTag(self._mother_tongue, self._get_languages())
         return None
 
-    @motherTongue.setter
-    def motherTongue(self, motherTongue: Optional[str]) -> None:
+    @mother_tongue.setter
+    def mother_tongue(self, mother_tongue: Optional[str]) -> None:
         """
         Sets the mother tongue for the language tool.
 
-        :param motherTongue: The mother tongue language tag as a string. If None, the mother tongue is set to None.
-        :type motherTongue: Optional[str]
+        :param mother_tongue: The mother tongue language tag as a string. If None, the mother tongue is set to None.
+        :type mother_tongue: Optional[str]
         """
 
-        self._mother_tongue = motherTongue
+        self._mother_tongue = mother_tongue
 
     @property
     def _spell_checking_categories(self) -> Set[str]:
@@ -367,8 +366,8 @@ class LanguageTool:
         - 'level': 'picky' if picky mode is enabled.
         """
         params = {"language": str(self.language), "text": text}
-        if self.motherTongue is not None:
-            params["motherTongue"] = self.motherTongue.tag
+        if self.mother_tongue is not None:
+            params["motherTongue"] = self.mother_tongue.tag
         if self.disabled_rules:
             params["disabledRules"] = ",".join(self.disabled_rules)
         if self.enabled_rules:
@@ -452,9 +451,7 @@ class LanguageTool:
         spelling_file_path = self._get_valid_spelling_file_path()
         logger.debug("Registering new spellings at %s", spelling_file_path)
         with open(spelling_file_path, "r+", encoding="utf-8") as spellings_file:
-            existing_spellings = set(
-                line.strip() for line in spellings_file.readlines()
-            )
+            existing_spellings = {line.strip() for line in spellings_file.readlines()}
             new_spellings = [
                 word for word in self._new_spellings if word not in existing_spellings
             ]
