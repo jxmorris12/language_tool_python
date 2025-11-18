@@ -7,6 +7,7 @@ import subprocess
 import tempfile
 import zipfile
 from datetime import datetime
+from pathlib import Path
 from shutil import which
 from typing import IO, Dict, Optional, Tuple
 from urllib.parse import urljoin
@@ -200,14 +201,14 @@ def http_get(
     progress.close()
 
 
-def unzip_file(temp_file_name: str, directory_to_extract_to: str) -> None:
+def unzip_file(temp_file_name: str, directory_to_extract_to: Path) -> None:
     """
     Unzips a zip file to a specified directory.
 
     :param temp_file_name: A temporary file object representing the zip file to be extracted.
     :type temp_file_name: str
     :param directory_to_extract_to: The directory where the contents of the zip file will be extracted.
-    :type directory_to_extract_to: str
+    :type directory_to_extract_to: Path
     """
 
     logger.info("Unzipping %s to %s", temp_file_name, directory_to_extract_to)
@@ -215,14 +216,14 @@ def unzip_file(temp_file_name: str, directory_to_extract_to: str) -> None:
         zip_ref.extractall(directory_to_extract_to)
 
 
-def download_zip(url: str, directory: str) -> None:
+def download_zip(url: str, directory: Path) -> None:
     """
     Downloads a ZIP file from the given URL and extracts it to the specified directory.
 
     :param url: The URL of the ZIP file to download.
     :type url: str
     :param directory: The directory where the ZIP file should be extracted.
-    :type directory: str
+    :type directory: Path
     """
     logger.info("Downloading from %s to %s", url, directory)
     # Download file using a context manager.
@@ -232,14 +233,13 @@ def download_zip(url: str, directory: str) -> None:
     # Extract zip file to path.
     unzip_file(temp_name, directory)
     # Remove the temporary file.
-    os.remove(temp_name)
+    Path(temp_name).unlink(missing_ok=True)
 
 
 def download_lt(language_tool_version: str = LTP_DOWNLOAD_VERSION) -> None:
     """
     Downloads and extracts the specified version of LanguageTool.
-    This function checks for Java compatibility, creates the necessary download
-    directory if it does not exist, and downloads the specified version of
+    This function checks for Java compatibility, and downloads the specified version of
     LanguageTool if it is not already present.
 
     :param language_tool_version: The version of LanguageTool to download. If not
@@ -259,10 +259,7 @@ def download_lt(language_tool_version: str = LTP_DOWNLOAD_VERSION) -> None:
     if os.environ.get(LTP_JAR_DIR_PATH_ENV_VAR):
         return
 
-    # Make download path, if it doesn't exist.
-    os.makedirs(download_folder, exist_ok=True)
-
-    if not os.path.isdir(download_folder):
+    if not download_folder.is_dir():
         err = f"Download folder {download_folder} is not a directory."
         raise PathError(err)
     old_path_list = find_existing_language_tool_downloads(download_folder)
@@ -282,11 +279,11 @@ def download_lt(language_tool_version: str = LTP_DOWNLOAD_VERSION) -> None:
                 f"You can also use 'latest' to download the latest snapshot of LanguageTool."
             )
             raise ValueError(err)
-        dirname, _ = os.path.splitext(filename)
+        dirname = Path(filename).stem
         dirname = dirname.replace("latest", LT_SNAPSHOT_CURRENT_VERSION)
         if version == "latest":
             dirname = f"LanguageTool-{LT_SNAPSHOT_CURRENT_VERSION}"
-        extract_path = os.path.join(download_folder, dirname)
+        extract_path = download_folder / dirname
 
         if extract_path not in old_path_list:
             download_zip(language_tool_download_url, download_folder)
