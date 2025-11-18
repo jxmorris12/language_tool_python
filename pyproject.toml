@@ -74,7 +74,10 @@ packages = { find = { include = ["language_tool_python*"] } }
 language_tool_python = ["py.typed", "logging.toml"]
 
 [tool.ruff.lint]
-select = ["F", "W", "I", "B", "SIM", "RET", "Q"]
+select = ["F", "W", "I", "B", "SIM", "RET", "Q", "N", "S", "BLE"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*.py" = ["S101"]
 
 [tool.mypy]
 files = ["language_tool_python"]

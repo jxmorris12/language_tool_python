@@ -628,7 +628,7 @@ class LanguageTool:
             )
             raise PathError(err) from e
         else:
-            self._server = subprocess.Popen(
+            self._server = subprocess.Popen(  # noqa: S603  # server_cmd is constructed internally -> trusted
                 server_cmd,
                 stdin=subprocess.PIPE,
                 stdout=subprocess.DEVNULL,

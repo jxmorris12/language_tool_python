@@ -370,8 +370,8 @@ def test_session_only_new_spellings():
 def test_disabled_rule_in_config():
     import language_tool_python
 
-    GRAMMAR_TOOL_CONFIG = {"disabledRuleIds": ["MORFOLOGIK_RULE_EN_US"]}
-    with language_tool_python.LanguageTool("en-US", config=GRAMMAR_TOOL_CONFIG) as tool:
+    grammar_tool_config = {"disabledRuleIds": ["MORFOLOGIK_RULE_EN_US"]}
+    with language_tool_python.LanguageTool("en-US", config=grammar_tool_config) as tool:
         text = "He realised that the organization was in jeopardy."
         matches = tool.check(text)
         assert len(matches) == 0
