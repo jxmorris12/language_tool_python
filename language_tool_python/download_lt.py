@@ -101,7 +101,7 @@ def confirm_java_compatibility(
 
     logger.debug("Found java executable at %s", java_path)
 
-    output = subprocess.check_output(
+    output = subprocess.check_output(  # noqa: S603  # java_path come from shutil.which -> trusted
         [java_path, "-version"],
         stderr=subprocess.STDOUT,
         universal_newlines=True,
@@ -170,10 +170,15 @@ def http_get(
     :type out_file: IO[bytes]
     :param proxies: Optional dictionary of proxies to use for the request.
     :type proxies: Optional[Dict[str, str]]
+    :raises TimeoutError: If the request times out.
     :raises PathError: If the file could not be found at the given URL (HTTP 404).
     """
     logger.info("Starting download from %s", url)
-    req = requests.get(url, stream=True, proxies=proxies)
+    try:
+        req = requests.get(url, stream=True, proxies=proxies, timeout=60)
+    except requests.exceptions.Timeout as e:
+        err = f"Request to {url} timed out."
+        raise TimeoutError(err) from e
     content_length = req.headers.get("Content-Length")
     total = int(content_length) if content_length is not None else None
     if req.status_code == 404:
