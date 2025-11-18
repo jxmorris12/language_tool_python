@@ -332,14 +332,18 @@ def test_spellcheck_en_gb():
 
 def test_session_only_new_spellings():
     import hashlib
-    import os
 
     import language_tool_python
 
     library_path = language_tool_python.utils.get_language_tool_directory()
-    spelling_file_path = os.path.join(
-        library_path,
-        "org/languagetool/resource/en/hunspell/spelling.txt",
+    spelling_file_path = (
+        library_path
+        / "org"
+        / "languagetool"
+        / "resource"
+        / "en"
+        / "hunspell"
+        / "spelling.txt"
     )
     with open(spelling_file_path, "r") as spelling_file:
         initial_spelling_file_contents = spelling_file.read()

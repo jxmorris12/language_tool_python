@@ -1,17 +1,18 @@
 """Utility functions for the LanguageTool library."""
 
 import contextlib
-import glob
 import locale
 import logging
 import os
 import subprocess
 import urllib.parse
 from enum import Enum
+from pathlib import Path
 from shutil import which
 from typing import Any, List, Optional, Tuple
 
 import psutil
+from packaging import version
 
 from .config_file import LanguageToolConfig
 from .exceptions import JavaError, PathError
@@ -120,42 +121,65 @@ def correct(text: str, matches: List[Match]) -> str:
     return "".join(ltext)
 
 
-def get_language_tool_download_path() -> str:
+def get_language_tool_download_path() -> Path:
     """
     Get the download path for LanguageTool.
     This function retrieves the download path for LanguageTool from the environment variable
     specified by ``LTP_PATH_ENV_VAR``. If the environment variable is not set, it defaults to
     a path in the user's home directory under ``.cache/language_tool_python``.
+    The function ensures that the directory exists before returning it.
 
     :return: The download path for LanguageTool.
-    :rtype: str
+    :rtype: Path
     """
     # Get download path from environment or use default.
-    return os.environ.get(
+    path_str = os.environ.get(
         LTP_PATH_ENV_VAR,
-        os.path.join(os.path.expanduser("~"), ".cache", "language_tool_python"),
+        str(Path.home() / ".cache" / "language_tool_python"),
     )
+    path = Path(path_str)
+    path.mkdir(parents=True, exist_ok=True)
+    return path
 
 
-def find_existing_language_tool_downloads(download_folder: str) -> List[str]:
+def find_existing_language_tool_downloads(download_folder: Path) -> List[Path]:
     """
     Find existing LanguageTool downloads in the specified folder.
     This function searches for directories in the given download folder
     that match the pattern 'LanguageTool*' and returns a list of their paths.
 
     :param download_folder: The folder where LanguageTool downloads are stored.
-    :type download_folder: str
+    :type download_folder: Path
     :return: A list of paths to the existing LanguageTool download directories.
-    :rtype: List[str]
+    :rtype: List[Path]
     """
-    return [
-        path
-        for path in glob.glob(os.path.join(download_folder, "LanguageTool*"))
-        if os.path.isdir(path)
-    ]
+    return [path for path in download_folder.glob("LanguageTool*") if path.is_dir()]
 
 
-def get_language_tool_directory() -> str:
+def _extract_version(path: Path) -> version.Version:
+    """
+    Extract the version number from a LanguageTool directory path.
+
+    This function parses the directory name to extract the version information
+    from LanguageTool installation folders that follow the naming convention
+    'LanguageTool-X.Y-SNAPSHOT'.
+
+    :param path: The path to the LanguageTool directory
+    :type path: Path
+    :return: The parsed version object extracted from the directory name
+    :rtype: version.Version
+    :raises ValueError: If the directory name doesn't start with 'LanguageTool-'
+    """
+    if not path.name.startswith("LanguageTool-"):
+        raise ValueError(f"Invalid LanguageTool folder name: {path.name}")
+    # Handle LanguageTool- prefix
+    version_str = path.name.removeprefix("LanguageTool-")
+    # Handle both -SNAPSHOT and -snapshot suffixes
+    version_str = version_str.removesuffix("-SNAPSHOT").removesuffix("-snapshot")
+    return version.parse(version_str)
+
+
+def get_language_tool_directory() -> Path:
     """
     Get the directory path of the LanguageTool installation.
     This function checks the download folder for LanguageTool installations,
@@ -165,11 +189,11 @@ def get_language_tool_directory() -> str:
     :raises NotADirectoryError: If the download folder path is not a valid directory.
     :raises FileNotFoundError: If no LanguageTool installation is found in the download folder.
     :return: The path to the latest version of LanguageTool found in the directory.
-    :rtype: str
+    :rtype: Path
     """
 
     download_folder = get_language_tool_download_path()
-    if not os.path.isdir(download_folder):
+    if not download_folder.is_dir():
         err = f"LanguageTool directory path is not a valid directory {download_folder}."
         raise NotADirectoryError(err)
     language_tool_path_list = find_existing_language_tool_downloads(download_folder)
@@ -179,7 +203,10 @@ def get_language_tool_directory() -> str:
         raise FileNotFoundError(err)
 
     # Return the latest version found in the directory.
-    latest = max(language_tool_path_list)
+    latest = max(
+        language_tool_path_list,
+        key=_extract_version,
+    )
     logger.debug("Using LanguageTool directory: %s", latest)
     return latest
 
@@ -199,7 +226,12 @@ def get_server_cmd(
     :rtype: List[str]
     """
     java_path, jar_path = get_jar_info()
-    cmd = [java_path, "-cp", jar_path, "org.languagetool.server.HTTPServer"]
+    cmd = [
+        str(java_path),
+        "-cp",
+        str(jar_path),
+        "org.languagetool.server.HTTPServer",
+    ]
 
     if port is not None:
         cmd += ["-p", str(port)]
@@ -211,7 +243,7 @@ def get_server_cmd(
     return cmd
 
 
-def get_jar_info() -> Tuple[str, str]:
+def get_jar_info() -> Tuple[Path, Path]:
     """
     Retrieve the path to the Java executable and the LanguageTool JAR file.
     This function searches for the Java executable in the system's PATH and
@@ -221,13 +253,14 @@ def get_jar_info() -> Tuple[str, str]:
     :raises JavaError: If the Java executable cannot be found.
     :raises PathError: If the LanguageTool JAR file cannot be found in the specified directory.
     :return: A tuple containing the path to the Java executable and the path to the LanguageTool JAR file.
-    :rtype: Tuple[str, str]
+    :rtype: Tuple[Path, Path]
     """
 
-    java_path = which("java")
-    if not java_path:
+    java_path_str = which("java")
+    if not java_path_str:
         err = "can't find Java"
         raise JavaError(err)
+    java_path = Path(java_path_str)
 
     # Use the env var to the jar directory if it is defined
     # otherwise look in the download directory
@@ -237,8 +270,8 @@ def get_jar_info() -> Tuple[str, str]:
     )
     jar_path = None
     for jar_name in JAR_NAMES:
-        for jar_path in glob.glob(os.path.join(jar_dir_name, jar_name)):
-            if os.path.isfile(jar_path):
+        for jar_path in Path(jar_dir_name).glob(jar_name):
+            if jar_path.is_file():
                 logger.debug("Found LanguageTool JAR: %s", jar_path)
                 break
         else:

@@ -2,7 +2,6 @@
 
 import atexit
 import logging
-import os
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -246,6 +245,6 @@ class LanguageToolConfig:
         logger.debug("Created temporary LanguageTool config file at %s", temp_name)
 
         # Remove file when program exits.
-        atexit.register(lambda: os.unlink(temp_name))
+        atexit.register(lambda: Path(temp_name).unlink(missing_ok=True))
 
         return temp_name

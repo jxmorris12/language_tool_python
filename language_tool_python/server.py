@@ -5,13 +5,13 @@ import contextlib
 import http.client
 import json
 import logging
-import os
 import random
 import socket
 import subprocess
 import time
 import urllib.parse
 import warnings
+from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Set
 
 import psutil
@@ -410,7 +410,7 @@ class LanguageTool:
         self.disabled_categories.update(self._spell_checking_categories)
 
     @staticmethod
-    def _get_valid_spelling_file_path() -> str:
+    def _get_valid_spelling_file_path() -> Path:
         """
         Retrieve the valid file path for the spelling file.
         This function constructs the file path for the spelling file used by the
@@ -420,14 +420,19 @@ class LanguageTool:
         :raises FileNotFoundError: If the spelling file does not exist at the
                                    constructed path.
         :return: The valid file path for the spelling file.
-        :rtype: str
+        :rtype: Path
         """
         library_path = get_language_tool_directory()
-        spelling_file_path = os.path.join(
-            library_path,
-            "org/languagetool/resource/en/hunspell/spelling.txt",
+        spelling_file_path = (
+            library_path
+            / "org"
+            / "languagetool"
+            / "resource"
+            / "en"
+            / "hunspell"
+            / "spelling.txt"
         )
-        if not os.path.exists(spelling_file_path):
+        if not spelling_file_path.exists():
             err = (
                 f"Failed to find the spellings file at {spelling_file_path}\n"
                 " Please file an issue at "
