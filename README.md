@@ -3,6 +3,7 @@
 [![language tool python on pypi](https://badge.fury.io/py/language-tool-python.svg)](https://pypi.org/project/language-tool-python/)
 [![Documentation Status](https://readthedocs.org/projects/language-tool-python/badge/?version=latest)](https://language-tool-python.readthedocs.io/en/latest/)
 [![Test with PyTest](https://github.com/jxmorris12/language_tool_python/workflows/Test%20with%20PyTest/badge.svg)](https://github.com/jxmorris12/language_tool_python/actions)
+[![Coverage Status](./coverage-badge.svg)](https://github.com/jxmorris12/language_tool_python/actions)
 [![Downloads](https://static.pepy.tech/badge/language-tool-python)](https://pepy.tech/project/language-tool-python)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 [![Contributions Welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/jxmorris12/language_tool_python/pulls)

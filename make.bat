@@ -19,6 +19,7 @@ exit /b %errorlevel%
 
 :test
 pytest
+uvx --with defusedxml genbadge coverage --input-file coverage.xml --silent
 exit /b %errorlevel%
 
 :doc

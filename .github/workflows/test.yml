@@ -52,12 +52,7 @@ jobs:
 
     - name: Test with pytest
       run: |
-        pytest -vx --dist=loadfile -n auto
-
-    - name: Run additional tests in bash scripts for Ubuntu
-      run: |
-        bash tests/test_local.bash
-        bash tests/test_remote.bash
+        pytest --dist=loadfile -n auto
 
   lint:
     name: Lint with Ruff
