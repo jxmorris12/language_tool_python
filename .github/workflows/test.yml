@@ -38,7 +38,7 @@ jobs:
 
     - name: Install dependencies & build package
       run: |
-        uv pip install setuptools wheel build pytest pytest-cov pytest-xdist --system
+        uv pip install setuptools wheel build pytest pytest-cov pytest-rerunfailures pytest-xdist --system
         uv build
         uv pip install dist/*.whl --system
 

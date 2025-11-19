@@ -20,8 +20,8 @@ prune tests/
 
 exclude .gitignore
 exclude .readthedocs.yaml
-exclude build_and_publish.sh
 exclude CONTRIBUTING.md
+exclude coverage-badge.svg
 exclude make.bat
 exclude Makefile
 exclude pytest.ini
