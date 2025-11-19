@@ -10,7 +10,7 @@ import traceback
 from importlib.metadata import PackageNotFoundError, version
 from logging.config import dictConfig
 from pathlib import Path
-from typing import Any, Optional, Set, Union
+from typing import Any, Optional, Sequence, Set, Union
 
 import toml
 
@@ -37,7 +37,7 @@ with (
 dictConfig(log_config)
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     """
     Parse command line arguments.
 
@@ -121,7 +121,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--remote-port", help="port of the remote LanguageTool server")
     parser.add_argument("--verbose", action="store_true", help="enable verbose output")
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     if args.enabled_only:
         if args.disable:
@@ -219,14 +219,14 @@ def print_exception(exc: Exception, debug: bool) -> None:
         print(exc, file=sys.stderr)
 
 
-def main() -> int:
+def main(argv: Optional[Sequence[str]] = None) -> int:
     """
     Main function to parse arguments, process files, and check text using LanguageTool.
 
     :return: Exit status code
     :rtype: int
     """
-    args = parse_args()
+    args = parse_args(argv)
 
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
@@ -236,16 +236,6 @@ def main() -> int:
     for filename in args.files:
         if len(args.files) > 1:
             print(filename, file=sys.stderr)
-
-        if filename == "-":
-            filename = sys.stdin.fileno()
-            encoding = args.encoding or (
-                sys.stdin.encoding
-                if sys.stdin.isatty()
-                else locale.getpreferredencoding()
-            )
-        else:
-            encoding = args.encoding or "utf-8"
 
         remote_server = None
         if args.remote_host is not None:
@@ -257,11 +247,27 @@ def main() -> int:
             mother_tongue=args.mother_tongue,
             remote_server=remote_server,
         ) as lang_tool:
-            try:
-                text = get_text(filename, encoding, ignore=args.ignore_lines)
-            except (UnicodeError, FileNotFoundError) as exception:
-                print_exception(exception, args.verbose)
-                continue
+            if filename == "-":
+                encoding = args.encoding or (
+                    sys.stdin.encoding
+                    if sys.stdin.isatty()
+                    else locale.getpreferredencoding()
+                )
+                raw = sys.stdin.read()
+                if args.ignore_lines:
+                    text = "".join(
+                        "\n" if re.match(args.ignore_lines, line) else line
+                        for line in raw.splitlines(keepends=True)
+                    )
+                else:
+                    text = raw
+            else:
+                encoding = args.encoding or "utf-8"
+                try:
+                    text = get_text(filename, encoding, ignore=args.ignore_lines)
+                except (UnicodeError, FileNotFoundError) as exception:
+                    print_exception(exception, args.verbose)
+                    continue
 
             if not args.spell_check:
                 lang_tool.disable_spellchecking()
@@ -302,4 +308,5 @@ def main() -> int:
     return status
 
 
-sys.exit(main())
+if __name__ == "__main__":
+    raise SystemExit(main())

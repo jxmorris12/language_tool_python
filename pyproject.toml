@@ -80,7 +80,7 @@ select = ["F", "W", "I", "B", "SIM", "RET", "Q", "N", "S", "BLE"]
 "tests/*.py" = ["S101"]
 
 [tool.mypy]
-files = ["language_tool_python"]
+files = ["language_tool_python", "tests"]
 strict = true
 warn_unused_ignores = true
 warn_redundant_casts = true
