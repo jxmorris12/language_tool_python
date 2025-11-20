@@ -8,6 +8,7 @@ on:
     branches: [ master ]
   pull_request:
     branches: [ master ]
+  workflow_dispatch:
 
 jobs:
   tests:
@@ -38,7 +39,7 @@ jobs:
 
     - name: Install dependencies & build package
       run: |
-        uv pip install setuptools wheel build pytest pytest-cov pytest-rerunfailures pytest-xdist --system
+        uv pip install setuptools wheel build pytest pytest-cov --system
         uv build
         uv pip install dist/*.whl --system
 
@@ -52,7 +53,7 @@ jobs:
 
     - name: Test with pytest
       run: |
-        pytest --dist=loadfile -n auto
+        pytest
 
   lint:
     name: Lint with Ruff
