@@ -533,7 +533,7 @@ wheels = [
 
 [[package]]
 name = "language-tool-python"
-version = "2.9.5"
+version = "3.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "packaging" },
