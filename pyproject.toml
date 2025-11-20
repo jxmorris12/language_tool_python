@@ -1,6 +1,6 @@
 [project]
 name = "language_tool_python"
-version = "2.9.5" # Keep in sync with docs/source/conf.py
+version = "3.0.0" # Keep in sync with docs/source/conf.py
 requires-python = ">=3.9"
 description = "Checks grammar using LanguageTool."
 readme = { file = "README.md", content-type = "text/markdown" }
@@ -37,6 +37,7 @@ dependencies = [
 [project.urls]
 repository = "https://github.com/jxmorris12/language_tool_python.git"
 documentation = "https://language-tool-python.readthedocs.io/en/latest/"
+changelog = "https://github.com/jxmorris12/language_tool_python/blob/master/CHANGELOG.md"
 
 [dependency-groups]
 tests = [
