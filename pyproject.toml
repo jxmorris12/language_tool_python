@@ -43,6 +43,7 @@ tests = [
     "pytest",
     "pytest-xdist",
     "pytest-cov",
+    "pytest-rerunfailures",
     "pytest-runner"
 ]
 

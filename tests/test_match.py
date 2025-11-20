@@ -2,7 +2,10 @@
 
 from typing import Any, Dict, List
 
+import pytest
 
+
+@pytest.mark.flaky(reruns=2)  # type: ignore[misc] # Sometimes LT throws NoClassDefFoundError (500)
 def test_langtool_load() -> None:
     """
     Test the basic functionality of LanguageTool and Match object attributes.

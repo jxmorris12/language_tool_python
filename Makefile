@@ -1,7 +1,7 @@
-.PHONY: default check test doc
+.PHONY: default check test doc publish
 
 default:
-	@echo "Usage: make [check|test|doc]"
+	@echo "Usage: make [check|test|doc|publish]"
 	@exit 1
 
 check:
@@ -15,3 +15,9 @@ test:
 doc:
 	source ./.venv/bin/activate && uv run sphinx-apidoc -o docs/source/references language_tool_python
 	source ./.venv/bin/activate && cd ./docs && make html
+
+publish:
+	rm -rf dist/ language_tool_python.egg-info/
+	uv build
+	uvx twine check dist/*
+	uv publish

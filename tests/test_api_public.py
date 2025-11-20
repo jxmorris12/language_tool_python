@@ -1,6 +1,15 @@
 """Tests for the public API functionality."""
 
+import os
+
+import pytest
+
 from language_tool_python.exceptions import RateLimitError
+
+pytestmark = pytest.mark.skipif(
+    os.getenv("GITHUB_ACTIONS") == "true",
+    reason="Skip public API test on CI (depends on external service).",
+)
 
 
 def test_remote_es() -> None:
