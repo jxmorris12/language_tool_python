@@ -79,6 +79,8 @@ class LanguageTool:
     :type config: Optional[str]
     :param language_tool_download_version: The version of LanguageTool to download if needed.
     :type language_tool_download_version: Optional[str]
+    :param proxies: A dictionary of proxies to use for server requests (e.g., {'http': 'http://proxy:port', 'https': 'https://proxy:port'}).
+    :type proxies: Optional[Dict[str, str]]
     """
 
     _available_ports: List[int]
@@ -141,6 +143,9 @@ class LanguageTool:
     _language: LanguageTag
     """The language to use (used in requests to the server and in other methods)."""
 
+    _proxies: Optional[Dict[str, str]]
+    """A dictionary of proxies to use for server requests."""
+
     def __init__(
         self,
         language: Optional[str] = None,
@@ -151,6 +156,7 @@ class LanguageTool:
         host: Optional[str] = None,
         config: Optional[Dict[str, Any]] = None,
         language_tool_download_version: str = LTP_DOWNLOAD_VERSION,
+        proxies: Optional[Dict[str, str]] = None,
     ) -> None:
         """
         Initialize the LanguageTool server.
@@ -163,10 +169,19 @@ class LanguageTool:
         self._available_ports = random.sample(range(8081, 8999), (8999 - 8081))
         self._port = self._available_ports.pop()
         self._server = None
+        self._proxies = proxies
 
         if remote_server and config is not None:
             err = "Cannot use both remote_server and config parameters."
             raise ValueError(err)
+
+        if proxies is not None and remote_server is None:
+            err = (
+                "Proxies can only be used with a remote server. "
+                "Local LanguageTool servers do not require proxy configuration."
+            )
+            raise ValueError(err)
+
         self.config = LanguageToolConfig(config) if config else None
 
         if remote_server is not None:
@@ -328,6 +343,33 @@ class LanguageTool:
         """
 
         return {"TYPOS"}
+
+    @property
+    def proxies(self) -> Optional[Dict[str, str]]:
+        """
+        Get the proxies used for requests to the server.
+
+        :return: A dictionary of proxies if set, otherwise None.
+        :rtype: Optional[Dict[str, str]]
+        """
+        return self._proxies
+
+    @proxies.setter
+    def proxies(self, proxies: Optional[Dict[str, str]]) -> None:
+        """
+        Set the proxies to be used for requests to the server.
+
+        :param proxies: A dictionary of proxies to set, or None to unset.
+        :type proxies: Optional[Dict[str, str]]
+        :raises ValueError: If trying to set proxies on a local server.
+        """
+        if proxies is not None and not self._remote:
+            err = (
+                "Proxies can only be used with a remote server. "
+                "Local LanguageTool servers do not require proxy configuration."
+            )
+            raise ValueError(err)
+        self._proxies = proxies
 
     def check(self, text: str) -> List[Match]:
         """
@@ -561,6 +603,7 @@ class LanguageTool:
                     url,
                     params=params,
                     timeout=self._TIMEOUT,
+                    proxies=self.proxies,
                 ) as response:
                     try:
                         return response.json()
