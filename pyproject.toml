@@ -42,10 +42,7 @@ changelog = "https://github.com/jxmorris12/language_tool_python/blob/master/CHAN
 [dependency-groups]
 tests = [
     "pytest",
-    "pytest-xdist",
     "pytest-cov",
-    "pytest-rerunfailures",
-    "pytest-runner"
 ]
 
 docs = [
