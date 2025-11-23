@@ -89,6 +89,9 @@ class LanguageTool:
     _TIMEOUT: Literal[300] = 300
     """The timeout for server requests."""
 
+    _SPELL_CHECKING_CATEGORIES: Set[str] = {"TYPOS"}
+    """Categories used for spell checking."""
+
     _remote: bool
     """A flag to indicate if the server is remote."""
 
@@ -110,41 +113,41 @@ class LanguageTool:
     _host: str
     """The host to use for the server."""
 
-    config: Optional[LanguageToolConfig]
-    """The configuration to use for the server."""
+    _config: Optional[LanguageToolConfig]
+    """The server configuration options (used when starting the local server)."""
 
     _url: str
-    """The URL of the server if remote."""
+    """The base URL of the LanguageTool server (used in all server requests)."""
 
     _mother_tongue: Optional[str]
-    """The user's mother tongue (used in requests to the server)."""
+    """The user's mother tongue for better error detection (used in requests to the server)."""
 
-    disabled_rules: Set[str]
-    """A set of disabled rules (used in requests to the server)."""
+    _disabled_rules: Set[str]
+    """A set of disabled grammar/style rules (used in requests to the server)."""
 
-    enabled_rules: Set[str]
-    """A set of enabled rules (used in requests to the server)."""
+    _enabled_rules: Set[str]
+    """A set of explicitly enabled rules (used in requests to the server)."""
 
-    disabled_categories: Set[str]
-    """A set of disabled categories (used in requests to the server)."""
+    _disabled_categories: Set[str]
+    """A set of disabled rule categories (used in requests to the server)."""
 
-    enabled_categories: Set[str]
-    """A set of enabled categories (used in requests to the server)."""
+    _enabled_categories: Set[str]
+    """A set of explicitly enabled categories (used in requests to the server)."""
 
-    enabled_rules_only: bool
-    """A flag to indicate if only enabled rules should be used (used in requests to the server)."""
+    _enabled_rules_only: bool
+    """A flag to use only explicitly enabled rules (used in requests to the server)."""
 
-    preferred_variants: Set[str]
-    """A set of preferred variants (used in requests to the server)."""
+    _preferred_variants: Set[str]
+    """A set of preferred language variants (used in requests to the server)."""
 
-    picky: bool
-    """A flag to indicate if the tool should be picky (used in requests to the server)."""
+    _picky: bool
+    """A flag to enable stricter checking mode (used in requests to the server)."""
 
     _language: LanguageTag
-    """The language to use (used in requests to the server and in other methods)."""
+    """The language to use for text checking (used in requests to the server)."""
 
     _proxies: Optional[Dict[str, str]]
-    """A dictionary of proxies to use for server requests."""
+    """A dictionary of proxies for network requests (used in requests to the server)."""
 
     def __init__(
         self,
@@ -162,7 +165,7 @@ class LanguageTool:
         Initialize the LanguageTool server.
         """
         self._remote = False
-        self.language_tool_download_version = language_tool_download_version
+        self._language_tool_download_version = language_tool_download_version
         self._new_spellings = None
         self._new_spellings_persist = new_spellings_persist
         self._host = host or socket.gethostbyname("localhost")
@@ -182,7 +185,7 @@ class LanguageTool:
             )
             raise ValueError(err)
 
-        self.config = LanguageToolConfig(config) if config else None
+        self._config = LanguageToolConfig(config) if config else None
 
         if remote_server is not None:
             self._remote = True
@@ -202,13 +205,13 @@ class LanguageTool:
             self._register_spellings()
         self._language = LanguageTag(language, self._get_languages())
         self._mother_tongue = mother_tongue
-        self.disabled_rules = set()
-        self.enabled_rules = set()
-        self.disabled_categories = set()
-        self.enabled_categories = set()
-        self.enabled_rules_only = False
-        self.preferred_variants = set()
-        self.picky = False
+        self._disabled_rules = set()
+        self._enabled_rules = set()
+        self._disabled_categories = set()
+        self._enabled_categories = set()
+        self._enabled_rules_only = False
+        self._preferred_variants = set()
+        self._picky = False
 
     def __enter__(self) -> "LanguageTool":
         """
@@ -269,7 +272,7 @@ class LanguageTool:
         :return: A string that includes the class name, language, and mother tongue.
         :rtype: str
         """
-        return f"{self.__class__.__name__}(language={self.language!r}, motherTongue={self.mother_tongue!r})"
+        return f"{self.__class__.__name__}(language={self._language!r}, motherTongue={self._mother_tongue!r})"
 
     def close(self) -> None:
         """
@@ -289,7 +292,7 @@ class LanguageTool:
     @property
     def language(self) -> LanguageTag:
         """
-        Returns the language tag associated with the server.
+        Get the language tag associated with the server.
 
         :return: The language tag.
         :rtype: LanguageTag
@@ -300,20 +303,20 @@ class LanguageTool:
     @language.setter
     def language(self, language: str) -> None:
         """
-        Sets the language for the language tool.
+        Set the language for the language tool.
 
         :param language: The language code to set.
         :type language: str
         """
 
         self._language = LanguageTag(language, self._get_languages())
-        self.disabled_rules.clear()
-        self.enabled_rules.clear()
+        self._disabled_rules.clear()
+        self._enabled_rules.clear()
 
     @property
     def mother_tongue(self) -> Optional[LanguageTag]:
         """
-        Retrieve the mother tongue language tag.
+        Get the mother tongue language tag.
 
         :return: The mother tongue language tag if set, otherwise None.
         :rtype: Optional[LanguageTag]
@@ -325,7 +328,11 @@ class LanguageTool:
     @mother_tongue.setter
     def mother_tongue(self, mother_tongue: Optional[str]) -> None:
         """
-        Sets the mother tongue for the language tool.
+        Set the mother tongue for the language tool.
+
+        The mother tongue helps LanguageTool detect false friends (words that look similar
+        between two languages but have different meanings). This feature works for specific
+        language pairs (e.g., detecting English-like words used incorrectly in German).
 
         :param mother_tongue: The mother tongue language tag as a string. If None, the mother tongue is set to None.
         :type mother_tongue: Optional[str]
@@ -334,20 +341,9 @@ class LanguageTool:
         self._mother_tongue = mother_tongue
 
     @property
-    def _spell_checking_categories(self) -> Set[str]:
-        """
-        Returns a set of categories used for spell checking.
-
-        :return: A set containing the category 'TYPOS'.
-        :rtype: Set[str]
-        """
-
-        return {"TYPOS"}
-
-    @property
     def proxies(self) -> Optional[Dict[str, str]]:
         """
-        Get the proxies used for requests to the server.
+        Get the proxies used for server requests.
 
         :return: A dictionary of proxies if set, otherwise None.
         :rtype: Optional[Dict[str, str]]
@@ -357,9 +353,12 @@ class LanguageTool:
     @proxies.setter
     def proxies(self, proxies: Optional[Dict[str, str]]) -> None:
         """
-        Set the proxies to be used for requests to the server.
+        Set the proxies for server requests.
 
-        :param proxies: A dictionary of proxies to set, or None to unset.
+        Proxies can only be used with remote servers. Local LanguageTool servers
+        do not support proxy configuration.
+
+        :param proxies: A dictionary of proxies (e.g., {'http': 'http://proxy:port'}), or None to unset.
         :type proxies: Optional[Dict[str, str]]
         :raises ValueError: If trying to set proxies on a local server.
         """
@@ -370,6 +369,231 @@ class LanguageTool:
             )
             raise ValueError(err)
         self._proxies = proxies
+
+    @property
+    def disabled_rules(self) -> Set[str]:
+        """
+        Get the set of disabled rules.
+
+        :return: A set of disabled rule IDs.
+        :rtype: Set[str]
+        """
+        return self._disabled_rules
+
+    @disabled_rules.setter
+    def disabled_rules(self, value: Set[str]) -> None:
+        """
+        Set the rules to disable during text checking.
+
+        :param value: A set of rule IDs to disable.
+        :type value: Set[str]
+        """
+        self._disabled_rules = value
+
+    @property
+    def enabled_rules(self) -> Set[str]:
+        """
+        Get the set of enabled rules.
+
+        :return: A set of enabled rule IDs.
+        :rtype: Set[str]
+        """
+        return self._enabled_rules
+
+    @enabled_rules.setter
+    def enabled_rules(self, value: Set[str]) -> None:
+        """
+        Set the rules to explicitly enable during text checking.
+
+        :param value: A set of rule IDs to enable.
+        :type value: Set[str]
+        """
+        self._enabled_rules = value
+
+    @property
+    def disabled_categories(self) -> Set[str]:
+        """
+        Get the set of disabled rule categories.
+
+        :return: A set of disabled category names.
+        :rtype: Set[str]
+        """
+        return self._disabled_categories
+
+    @disabled_categories.setter
+    def disabled_categories(self, value: Set[str]) -> None:
+        """
+        Set the rule categories to disable during text checking.
+
+        :param value: A set of category names to disable.
+        :type value: Set[str]
+        """
+        self._disabled_categories = value
+
+    @property
+    def enabled_categories(self) -> Set[str]:
+        """
+        Get the set of enabled rule categories.
+
+        :return: A set of enabled category names.
+        :rtype: Set[str]
+        """
+        return self._enabled_categories
+
+    @enabled_categories.setter
+    def enabled_categories(self, value: Set[str]) -> None:
+        """
+        Set the rule categories to explicitly enable during text checking.
+
+        :param value: A set of category names to enable.
+        :type value: Set[str]
+        """
+        self._enabled_categories = value
+
+    @property
+    def enabled_rules_only(self) -> bool:
+        """
+        Get whether only enabled rules should be used.
+
+        :return: True if using only enabled rules, False otherwise.
+        :rtype: bool
+        """
+        return self._enabled_rules_only
+
+    @enabled_rules_only.setter
+    def enabled_rules_only(self, value: bool) -> None:
+        """
+        Set whether to use only explicitly enabled rules.
+
+        When set to True, only rules in enabled_rules will be applied.
+
+        :param value: True to use only enabled rules, False to use default rules.
+        :type value: bool
+        """
+        self._enabled_rules_only = value
+
+    @property
+    def preferred_variants(self) -> Set[str]:
+        """
+        Get the set of preferred language variants.
+
+        :return: A set of preferred variant codes.
+        :rtype: Set[str]
+        """
+        return self._preferred_variants
+
+    @preferred_variants.setter
+    def preferred_variants(self, value: Set[str]) -> None:
+        """
+        Set the preferred language variants.
+
+        Preferred variants influence which suggestions LanguageTool provides
+        (e.g., en-US vs en-GB).
+
+        :param value: A set of preferred variant codes.
+        :type value: Set[str]
+        """
+        self._preferred_variants = value
+
+    @property
+    def picky(self) -> bool:
+        """
+        Get whether picky mode is enabled.
+
+        :return: True if picky mode is enabled, False otherwise.
+        :rtype: bool
+        """
+        return self._picky
+
+    @picky.setter
+    def picky(self, value: bool) -> None:
+        """
+        Set whether to enable picky mode for stricter checking.
+
+        Picky mode enables additional style rules that may be too strict for casual writing.
+
+        :param value: True to enable picky mode, False for standard checking.
+        :type value: bool
+        """
+        self._picky = value
+
+    @property
+    def config(self) -> Optional[LanguageToolConfig]:
+        """
+        Get the server configuration.
+
+        This property is read-only as the configuration is set during initialization
+        and cannot be changed while the server is running.
+
+        :return: The configuration object if set, otherwise None.
+        :rtype: Optional[LanguageToolConfig]
+        """
+        return self._config
+
+    @property
+    def language_tool_download_version(self) -> str:
+        """
+        Get the LanguageTool version to download.
+
+        This property is read-only as the version is determined during initialization
+        and the server cannot be re-downloaded with a different version at runtime.
+
+        :return: The LanguageTool version string.
+        :rtype: str
+        """
+        return self._language_tool_download_version
+
+    @property
+    def url(self) -> str:
+        """
+        Get the LanguageTool server URL.
+
+        This property is read-only as the URL is determined during initialization
+        and cannot be changed while the server is running.
+
+        :return: The server URL (e.g., 'http://localhost:8081/v2/').
+        :rtype: str
+        """
+        return self._url
+
+    @property
+    def is_remote(self) -> bool:
+        """
+        Get whether using a remote LanguageTool server.
+
+        This property is read-only as the remote status is determined during initialization
+        and cannot be changed while the server is running.
+
+        :return: True if using a remote server, False if using a local server.
+        :rtype: bool
+        """
+        return self._remote
+
+    @property
+    def host(self) -> str:
+        """
+        Get the local server host address.
+
+        This property is read-only as the host address is determined during initialization
+        and cannot be changed while the server is running.
+
+        :return: The host address (e.g., '127.0.0.1').
+        :rtype: str
+        """
+        return self._host
+
+    @property
+    def port(self) -> int:
+        """
+        Get the local server port number.
+
+        This property is read-only as the port number is determined during initialization
+        and cannot be changed while the server is running.
+
+        :return: The port number (e.g., 8081).
+        :rtype: int
+        """
+        return self._port
 
     def check(self, text: str) -> List[Match]:
         """
@@ -407,22 +631,24 @@ class LanguageTool:
         - 'preferredVariants': A comma-separated list of preferred language variants, if specified.
         - 'level': 'picky' if picky mode is enabled.
         """
-        params = {"language": str(self.language), "text": text}
-        if self.mother_tongue is not None:
+        params = {"language": str(self._language), "text": text}
+        if (
+            self.mother_tongue is not None
+        ):  # accessing via public attr to get LanguageTag and not str
             params["motherTongue"] = self.mother_tongue.tag
-        if self.disabled_rules:
-            params["disabledRules"] = ",".join(self.disabled_rules)
-        if self.enabled_rules:
-            params["enabledRules"] = ",".join(self.enabled_rules)
-        if self.enabled_rules_only:
+        if self._disabled_rules:
+            params["disabledRules"] = ",".join(self._disabled_rules)
+        if self._enabled_rules:
+            params["enabledRules"] = ",".join(self._enabled_rules)
+        if self._enabled_rules_only:
             params["enabledOnly"] = "true"
-        if self.disabled_categories:
-            params["disabledCategories"] = ",".join(self.disabled_categories)
-        if self.enabled_categories:
-            params["enabledCategories"] = ",".join(self.enabled_categories)
-        if self.preferred_variants:
-            params["preferredVariants"] = ",".join(self.preferred_variants)
-        if self.picky:
+        if self._disabled_categories:
+            params["disabledCategories"] = ",".join(self._disabled_categories)
+        if self._enabled_categories:
+            params["enabledCategories"] = ",".join(self._enabled_categories)
+        if self._preferred_variants:
+            params["preferredVariants"] = ",".join(self._preferred_variants)
+        if self._picky:
             params["level"] = "picky"
         return params
 
@@ -441,15 +667,15 @@ class LanguageTool:
         """
         Enable spellchecking by removing spell checking categories from the disabled categories set.
         This method updates the ``disabled_categories`` attribute by removing any categories that are
-        related to spell checking, which are defined in the ``_spell_checking_categories`` attribute.
+        related to spell checking, which are defined in the ``_SPELL_CHECKING_CATEGORIES`` class constant.
         """
-        self.disabled_categories.difference_update(self._spell_checking_categories)
+        self._disabled_categories.difference_update(self._SPELL_CHECKING_CATEGORIES)
 
     def disable_spellchecking(self) -> None:
         """
         Disable spellchecking by updating the disabled categories with spell checking categories.
         """
-        self.disabled_categories.update(self._spell_checking_categories)
+        self._disabled_categories.update(self._SPELL_CHECKING_CATEGORIES)
 
     @staticmethod
     def _get_valid_spelling_file_path() -> Path:
@@ -603,7 +829,7 @@ class LanguageTool:
                     url,
                     params=params,
                     timeout=self._TIMEOUT,
-                    proxies=self.proxies,
+                    proxies=self._proxies,
                 ) as response:
                     try:
                         return response.json()
@@ -663,13 +889,13 @@ class LanguageTool:
         :raises ServerError: If the server fails to start or exits early.
         """
         # Before starting local server, download language tool if needed.
-        download_lt(self.language_tool_download_version)
+        download_lt(self._language_tool_download_version)
         try:
             if self._port:
                 logger.info(
                     "language_tool_python initializing with port: %s", self._port
                 )
-            server_cmd = get_server_cmd(self._port, self.config)
+            server_cmd = get_server_cmd(self._port, self._config)
         except PathError as e:
             err = (
                 "Failed to find LanguageTool. Please ensure it is downloaded correctly."
