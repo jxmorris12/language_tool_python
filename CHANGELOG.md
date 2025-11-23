@@ -1,5 +1,15 @@
 # language_tool_python Changelog
 
+## 3.1.0 (2025-11-23)
+- Added an optional parameter to `LanguageTool` (`proxies`).
+- Added an `proxies` attribute to `LanguageTool` (This attribute is used by the `LanguageTool._query_server` method).
+- Added new read-only properties to `LanguageTool`:
+    - `url`
+    - `is_remote`
+    - `host`
+    - `port`
+- Edited the documentation of the `LanguageTool` class to improve clarity.
+
 ## 3.0.0 (2025-11-20)
 
 ### What's New:
