@@ -1,5 +1,8 @@
 # language_tool_python Changelog
 
+## 3.2.0 (2025-12-18)
+- Added a `check_matching_regions` method in `language_tool_python.server.LanguageTool`.
+
 ## 3.1.0 (2025-11-23)
 - Added an optional parameter to `LanguageTool` (`proxies`).
 - Added an `proxies` attribute to `LanguageTool` (This attribute is used by the `LanguageTool._query_server` method).
