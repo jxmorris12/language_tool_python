@@ -182,3 +182,26 @@ def test_special_char_in_text() -> None:
             tool.correct(text)
             == "The sun was setting 🌅, casting a warm glow over the park. Birds chipped softly 🐦 as the day slowly fade into night."
         )
+
+
+def test_check_with_regex() -> None:
+    """
+    Test the check_matching_regions method for selective grammar checking.
+    This test verifies that LanguageTool can limit its grammar checking to specific
+    regions of text defined by a regular expression, allowing for targeted error detection.
+    Additionally, the test is performed with some special characters in the text to ensure
+    correct handling of offsets.
+
+    :raises AssertionError: If the detected matches do not correspond to the specified regions.
+    """
+    import language_tool_python
+
+    with language_tool_python.LanguageTool("en-US") as tool:
+        text = '❗ He said "❗ I has a problem" but she replied ❗ "It are fine ❗".'
+        matches = tool.check_matching_regions(text, r'"[^"]*"')
+
+        assert len(matches) == 2
+        assert (
+            language_tool_python.utils.correct(text, matches)
+            == '❗ He said "❗ I have a problem" but she replied ❗ "It is fine ❗".'
+        )

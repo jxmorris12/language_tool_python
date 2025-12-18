@@ -6,6 +6,7 @@ import http.client
 import json
 import logging
 import random
+import re
 import socket
 import subprocess
 import time
@@ -609,6 +610,41 @@ class LanguageTool:
         response = self._query_server(url, self._create_params(text))
         matches = response["matches"]
         return [Match(match, text) for match in matches]
+
+    def check_matching_regions(
+        self, text: str, pattern: str, flags: int = 0
+    ) -> List[Match]:
+        """
+        Check only the parts of the text that match a regex pattern.
+        The returned Match objects can be applied to the original text with
+        :func:`language_tool_python.utils.correct`.
+
+        :param text: The full text.
+        :param pattern: Regular expression defining the regions to check
+        :param flags: Regex flags (re.IGNORECASE, re.MULTILINE, etc.)
+        :return: List of Match with offsets adjusted to the original text
+        :rtype: List[Match]
+        """
+
+        # Find all matching regions
+        matches_iter = re.finditer(pattern, text, flags)
+        regions = [(m.start(), m.group()) for m in matches_iter]
+
+        if not regions:
+            return []  # No regions to check
+
+        all_matches: List[Match] = []
+
+        for start_offset, region_text in regions:
+            region_matches = self.check(region_text)
+
+            # Adjust offsets for the original text
+            for match in region_matches:
+                match.offset += start_offset
+
+            all_matches.extend(region_matches)
+
+        return sorted(all_matches, key=lambda m: m.offset)
 
     def _create_params(self, text: str) -> Dict[str, str]:
         """
