@@ -55,9 +55,12 @@ def _kill_processes(processes: List[subprocess.Popen[str]]) -> None:
     :param processes: A list of subprocess.Popen objects representing the running server processes.
     :type processes: List[subprocess.Popen]
     """
-    for pid in [p.pid for p in processes]:
+    for p in processes:
         with contextlib.suppress(psutil.NoSuchProcess):
-            kill_process_force(pid=pid)
+            kill_process_force(pid=p.pid)
+        # Wait to avoid zombies
+        with contextlib.suppress(subprocess.TimeoutExpired):
+            p.wait(timeout=5)
 
 
 class LanguageTool:
