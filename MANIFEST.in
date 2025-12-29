@@ -5,6 +5,7 @@ recursive-include language_tool_python *.py *.toml
 include language_tool_python/py.typed
 
 prune .github/
+prune .mypy_cache/
 prune .pytest-cache/
 prune .ruff_cache/
 prune env/
@@ -16,12 +17,17 @@ prune ENV/
 prune env.bak/
 prune venv.bak/
 prune docs/
+prune htmlcov/
 prune tests/
 
+exclude .coverage
 exclude .gitignore
+exclude .pre-commit-config.yaml
 exclude .readthedocs.yaml
+exclude CHANGELOG.md
 exclude CONTRIBUTING.md
 exclude coverage-badge.svg
+exclude coverage.xml
 exclude make.bat
 exclude Makefile
 exclude pytest.ini

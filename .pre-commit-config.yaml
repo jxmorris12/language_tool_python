@@ -1,0 +1,32 @@
+repos:
+  # Ruff for linting and formatting
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.5 # Keep in sync with GitHub Actions workflow
+    hooks:
+      # Run the linter
+      - id: ruff
+        args: [--fix]
+      # Run the formatter
+      - id: ruff-format
+
+  # mypy for type checking
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.18.2 # Keep in sync with GitHub Actions workflow
+    hooks:
+      - id: mypy
+        args: [--config-file=pyproject.toml]
+        files: ^(language_tool_python|tests)/
+
+  # Standard pre-commit hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+        args: [--maxkb=1000]
+      - id: check-json
+      - id: check-toml
+      - id: mixed-line-ending
+        args: [--fix=lf]
