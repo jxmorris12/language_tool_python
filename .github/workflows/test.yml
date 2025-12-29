@@ -65,6 +65,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v7
 
+      # Keep in sync ruff version with .pre-commit-config.yaml
       - name: Run Ruff Linter
         run: |
           uvx ruff@0.14.5 check .
@@ -90,6 +91,7 @@ jobs:
           uv build
           uv pip install dist/*.whl
 
+      # Keep in sync mypy version with .pre-commit-config.yaml
       - name: Run Mypy Type Checker
         run: | 
           uvx mypy@1.18.2
