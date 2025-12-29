@@ -1,5 +1,8 @@
 # language_tool_python Changelog
 
+## 3.2.1 (2025-12-30)
+- Corrected a bug in `language_tool_python.server._kill_processes` where processes were not being properly waited for after being killed, potentially leading to zombie processes.
+
 ## 3.2.0 (2025-12-18)
 - Added a `check_matching_regions` method in `language_tool_python.server.LanguageTool`.
 
