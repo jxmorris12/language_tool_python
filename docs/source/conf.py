@@ -9,7 +9,7 @@
 project = "language_tool_python"
 copyright = "2025, jxmorris12"
 author = "jxmorris12"
-release = "3.2.0"  # Keep in sync with pyproject.toml
+release = "3.2.1"  # Keep in sync with pyproject.toml
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
