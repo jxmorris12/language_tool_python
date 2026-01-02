@@ -172,7 +172,8 @@ def http_get(
     :param proxies: Optional dictionary of proxies to use for the request.
     :type proxies: Optional[Dict[str, str]]
     :raises TimeoutError: If the request times out.
-    :raises PathError: If the file could not be found at the given URL (HTTP 404).
+    :raises PathError: If the file could not be found at the given URL (HTTP 404),
+                       if access is forbidden (HTTP 403), or for other HTTP errors.
     """
     logger.info("Starting download from %s", url)
     try:
@@ -184,6 +185,12 @@ def http_get(
     total = int(content_length) if content_length is not None else None
     if req.status_code == 404:
         err = f"Could not find at URL {url}. The given version may not exist or is no longer available."
+        raise PathError(err)
+    if req.status_code == 403:
+        err = f"Access forbidden to URL {url}. You may not have permission to access this resource. It may be related to network restrictions (e.g., firewall, proxy settings)."
+        raise PathError(err)
+    if req.status_code != 200:
+        err = f"Failed to download from {url}. HTTP status code: {req.status_code}."
         raise PathError(err)
     version = (
         url.split("/")[-1].split("-")[1].replace("-snapshot", "").replace(".zip", "")
