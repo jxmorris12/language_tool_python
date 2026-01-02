@@ -1,5 +1,8 @@
 # language_tool_python Changelog
 
+## 3.2.2 (2026-01-02)
+- Corrected a bug in `language_tool_python.download_lt.http_get` by adding proper handling of HTTP 403 and other non 200 status codes by raising `language_tool_python.exceptions.PathError`. Previously, in case of such status codes, the function would download an HTML error page instead of the expected zip file, leading to an error when attempting to unzip it.
+
 ## 3.2.1 (2025-12-30)
 - Corrected a bug in `language_tool_python.server._kill_processes` where processes were not being properly waited for after being killed, potentially leading to zombie processes.
 
