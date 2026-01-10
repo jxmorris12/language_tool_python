@@ -82,8 +82,13 @@ def test_session_only_new_spellings() -> None:
     import hashlib
 
     import language_tool_python
+    from language_tool_python.download_lt import LT_SNAPSHOT_CURRENT_VERSION
+    from language_tool_python.utils import get_language_tool_download_path
 
-    library_path = language_tool_python.utils.get_language_tool_directory()
+    library_path = (
+        get_language_tool_download_path()
+        / f"LanguageTool-{LT_SNAPSHOT_CURRENT_VERSION}"
+    )
     spelling_file_path = (
         library_path
         / "org"
