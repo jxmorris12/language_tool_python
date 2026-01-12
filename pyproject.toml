@@ -87,4 +87,4 @@ warn_unreachable = true
 no_implicit_optional = true
 show_error_codes = true
 pretty = true
-disable_error_code = ["import-not-found", "import-untyped"]
+disable_error_code = ["import-not-found", "import-untyped", "unused-ignore"]
