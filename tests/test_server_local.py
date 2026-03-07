@@ -124,6 +124,25 @@ def test_session_only_new_spellings() -> None:
     assert initial_checksum.hexdigest() == subsequent_checksum.hexdigest()
 
 
+def test_new_spellins_in_es() -> None:
+    """
+    Test that new spellings are recognized in Spanish language.
+    This test verifies that when new_spellings are added for the Spanish language,
+    they are correctly recognized by the tool during grammar checking.
+    (This test is important to ensure that the new spellings functionality works
+    across different languages and is not limited to English.)
+
+    :raises AssertionError: If the new spellings are not recognized in Spanish.
+    """
+    import language_tool_python
+
+    with language_tool_python.LanguageTool(
+        "es", new_spellings=["ejempo"], new_spellings_persist=False
+    ) as tool:
+        matches = tool.check("Este es un ejempo sencillo.")
+        assert not matches
+
+
 def test_uk_typo() -> None:
     """
     Test grammar checking and correction with UK English language rules.
