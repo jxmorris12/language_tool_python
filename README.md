@@ -279,15 +279,27 @@ If LanguageTool is already installed on your system, you can defined the followi
 $ export LTP_JAR_DIR_PATH = /path/to/the/language/tool/jar/files
 ```
 
-Overwise, `language_tool_python` can download LanguageTool for you automatically.
+Otherwise, `language_tool_python` can download LanguageTool for you automatically.
 
-To overwrite the host part of URL that is used to download LanguageTool-{version}.zip:
+To overwrite the host part of URL that is used to download LanguageTool, use one of these environment variables depending on your version type:
 
 ```bash
-$ export LTP_DOWNLOAD_HOST = [alternate URL]
+# For snapshot/nightly versions (e.g., 'latest', '20240101')
+$ export LTP_DOWNLOAD_HOST_SNAPSHOT = [alternate snapshot URL]
+
+# For release versions >= 6.0 (e.g., '6.0', '6.5')
+$ export LTP_DOWNLOAD_HOST_RELEASE = [alternate release URL]
+
+# For release versions < 6.0 from the archive
+$ export LTP_DOWNLOAD_HOST_ARCHIVE = [alternate archive URL]
 ```
 
-This can be used to downgrade to an older version, for example, or to download from a mirror.
+The default URLs are:
+- Snapshots: `https://internal1.languagetool.org/snapshots/`
+- Releases: `https://languagetool.org/download/`
+- Archive: `https://languagetool.org/download/archive/`
+
+This can be used to download from a mirror or specify a custom repository.
 
 And to choose the specific folder to download the server to:
 
@@ -300,7 +312,7 @@ The default download path is `~/.cache/language_tool_python/`. The LanguageTool 
 ## Prerequisites
 
 - [Python 3.9+](https://www.python.org)
-- [LanguageTool](https://www.languagetool.org) (Java 8.0 or higher for version <= 6.5, Java 17.0 or higher for version >= 6.6)
+- [LanguageTool](https://www.languagetool.org) (Java 9.0 or higher for version <= 6.5, Java 17.0 or higher for version >= 6.6)
 
 The installation process should take care of downloading LanguageTool (it may
 take a few minutes). Otherwise, you can manually download
@@ -309,7 +321,7 @@ into where the ``language_tool_python`` package resides.
 
 ### LanguageTool Version
 
-LanguageTool versions under 6.0 are no longer downloadable from the LanguageTool website. If you need to use an older version, you can download it from the [LanguageTool GitHub tags page](https://github.com/languagetool-org/languagetool/tags) and build it yourself.
+LanguageTool versions under 4.0 are not supported since it implies a lot of differences in the API.
 
 ### Acknowledgements
 
