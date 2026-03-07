@@ -1,4 +1,4 @@
-# `language_tool_python`: a grammar checker for Python 📝
+# `language_tool_python`: Python wrapper for LanguageTool
 
 [![language tool python on pypi](https://badge.fury.io/py/language-tool-python.svg)](https://pypi.org/project/language-tool-python/)
 [![Documentation Status](https://readthedocs.org/projects/language-tool-python/badge/?version=latest)](https://language-tool-python.readthedocs.io/en/latest/)
@@ -8,322 +8,376 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 [![Contributions Welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/jxmorris12/language_tool_python/pulls)
 
-Current LanguageTool version: **6.8-SNAPSHOT**
+`language_tool_python` is a Python interface/wrapper to [LanguageTool](https://languagetool.org), an open-source grammar, style, and spell checker.
 
-This is a Python wrapper for [LanguageTool](https://languagetool.org). LanguageTool is an open-source grammar tool, also known as the spellchecker for OpenOffice. This library allows you to detect grammar errors and spelling mistakes through a Python script or through a command-line interface.
+It can:
+- run a local LanguageTool Java server,
+- call LanguageTool public API,
+- call your own remote LanguageTool server,
+- be used from Python code and from a CLI.
+
+Default local download target: `latest` snapshot (currently `6.8-SNAPSHOT`).
 
 ## Documentation
 
-The full documentation is available at: [https://language-tool-python.readthedocs.io/en/latest/](https://language-tool-python.readthedocs.io/en/latest/)
+- Docs: <https://language-tool-python.readthedocs.io/en/latest/>
+- Changelog: [CHANGELOG.md](CHANGELOG.md)
+- Contributing: [CONTRIBUTING.md](CONTRIBUTING.md)
 
-## Local and Remote Servers
+## Requirements
 
-By default, `language_tool_python` will download a LanguageTool server `.jar` and run that in the background to detect grammar errors locally. However, LanguageTool also offers a [Public HTTP Proofreading API](https://dev.languagetool.org/public-http-api) that is supported as well. Follow the link for rate limiting details. (Running locally won't have the same restrictions.)
-
-### Using `language_tool_python` locally
-
-Local server is the default setting. To use this, just initialize a LanguageTool object:
-
-```python
-import language_tool_python
-tool = language_tool_python.LanguageTool('en-US')  # use a local server (automatically set up), language English
-```
-
-### Using `language_tool_python` with the public LanguageTool remote server
-
-There is also a built-in class for querying LanguageTool's public servers. Initialize it like this:
-
-```python
-import language_tool_python
-tool = language_tool_python.LanguageToolPublicAPI('es') # use the public API, language Spanish
-```
-
-### Using `language_tool_python` with the another remote server
-
-Finally, you're able to pass in your own remote server as an argument to the `LanguageTool` class:
-
-```python
-import language_tool_python
-tool = language_tool_python.LanguageTool('ca-ES', remote_server='https://language-tool-api.mywebsite.net')  # use a remote server API, language Catalan
-```
-
-### Apply a custom list of matches with `utils.correct`
-
-If you want to decide which `Match` objects to apply to your text, use `tool.check` (to generate the list of matches) in conjunction with `language_tool_python.utils.correct` (to apply the list of matches to text). Here is an example of generating, filtering, and applying a list of matches. In this case, spell-checking suggestions for uppercase words are ignored:
-
-```python
->>> s = "Department of medicine Colombia University closed on August 1 Milinda Samuelli"
->>> is_bad_rule = lambda rule: rule.message == 'Possible spelling mistake found.' and len(rule.replacements) and rule.replacements[0][0].isupper()
->>> import language_tool_python
->>> tool = language_tool_python.LanguageTool('en-US')
->>> matches = tool.check(s)
->>> matches = [rule for rule in matches if not is_bad_rule(rule)]
->>> language_tool_python.utils.correct(s, matches)
-'Department of medicine Colombia University closed on August 1 Melinda Sam'
-```
-
-### Apply a specific suggestion of a match with `Match.select_replacement` and `utils.correct`
-
-If you want to apply a particular suggestion from a `Match`, use `Match.select_replacement` (to select a replacement with its index) in conjunction with `language_tool_python.utils.correct` (to apply selected replacements from the `Match` list to the text). Here is an example of generating, selecting replacements, and applying the list of matches. In this case, the third replacement (book) is selected.
-
-```python
->>> import language_tool_python
->>> s = "There is a bok on the table." 
->>> tool = language_tool_python.LanguageTool('en-US')
->>> matches = tool.check(s)
->>> matches
-[Match({'rule_id': 'MORFOLOGIK_RULE_EN_US', 'message': 'Possible spelling mistake found.', 'replacements': ['BOK', 'OK', 'book', 'box'], 'offset_in_context': 11, 'context': 'There is a bok on the table.', 'offset': 11, 'error_length': 3, 'category': 'TYPOS', 'rule_issue_type': 'misspelling', 'sentence': 'There is a bok on the table.'})]
->>> matches[0].select_replacement(2) 
->>> patched_text = language_tool_python.utils.correct(s, matches)    
->>> patched_text
-'There is a book on the table.'
-```
-
-### Determine whether a text is grammatically correct
-
-If you want to determine whether a text is grammatically correct, you can use the `classify_matches` function from `language_tool_python.utils`. It will return a `TextStatus` enum value indicating whether the text is correct, faulty, or garbage. Here is an example:
-
-```python
->>> import language_tool_python
->>> from language_tool_python.utils import classify_matches
->>> tool = language_tool_python.LanguageTool('en-US')
->>> matches = tool.check('This is a cat.')
->>> matches_1 = tool.check('This is a cats.')
->>> matches_2 = tool.check('fabafbafzabfabfz')
->>> classify_matches(matches)
-<TextStatus.CORRECT: 'correct'>
->>> classify_matches(matches_1)
-<TextStatus.FAULTY: 'faulty'>
->>> classify_matches(matches_2)
-<TextStatus.GARBAGE: 'garbage'>
-```
-
-## Example usage
-
-From the interpreter:
-
-```python
->>> import language_tool_python
->>> tool = language_tool_python.LanguageTool('en-US')
->>> text = 'A sentence with a error in the Hitchhiker’s Guide tot he Galaxy'
->>> matches = tool.check(text)
->>> len(matches)
-2
-...
->>> tool.close() # Call `close()` to shut off the server when you're done.
-```
-
-Check out some ``Match`` object attributes:
-
-```python
->>> matches[0].rule_id, matches[0].replacements # ('EN_A_VS_AN', ['an'])
-('EN_A_VS_AN', ['an'])
->>> matches[1].rule_id, matches[1].replacements
-('TOT_HE', ['to the'])
-```
-
-Print a ``Match`` object:
-
-```python
->>> print(matches[1])
-Line 1, column 51, Rule ID: TOT_HE[1]
-Message: Did you mean 'to the'?
-Suggestion: to the
-...
-```
-
-Automatically apply suggestions to the text:
-
-```python
->>> tool.correct(text)
-'A sentence with an error in the Hitchhiker’s Guide to the Galaxy'
-```
-
-From the command line:
-
-```bash
-$ echo 'This are bad.' > example.txt
-$ language_tool_python example.txt
-example.txt:1:1: THIS_NNS[3]: Did you mean 'these'?
-```
-
-## Closing LanguageTool
-
-`language_tool_python` runs a LanguageTool Java server in the background. It will shut the server off when garbage collected, for example when a created `language_tool_python.LanguageTool` object goes out of scope. However, if garbage collection takes awhile, the process might not get deleted right away. If you're seeing lots of processes get spawned and not get deleted, you can explicitly close them:
-
-
-```python
-import language_tool_python
-tool = language_tool_python.LanguageToolPublicAPI('de-DE') # starts a process
-# do stuff with `tool`
-tool.close() # explicitly shut off the LanguageTool
-```
-
-You can also use a context manager (`with .. as`) to explicitly control when the server is started and stopped:
-
-```python
-import language_tool_python
-
-with language_tool_python.LanguageToolPublicAPI('de-DE') as tool:
-  # do stuff with `tool`
-# no need to call `close() as it will happen at the end of the with statement
-```
-
-## Client-Server Model
-
-You can run LanguageTool on one host and connect to it from another.  This is useful in some distributed scenarios. Here's a simple example:
-
-#### server
-
-```python
->>> import language_tool_python
->>> tool = language_tool_python.LanguageTool('en-US', host='0.0.0.0')
->>> tool._url
-'http://0.0.0.0:8081/v2/'
-```
-
-#### client
-```python
->>> import language_tool_python
->>> lang_tool = language_tool_python.LanguageTool('en-US', remote_server='http://127.0.0.1:8081')
->>>
->>>
->>> lang_tool.check('helo darknes my old frend')
-[Match({'rule_id': 'UPPERCASE_SENTENCE_START', 'message': 'This sentence does not start with an uppercase letter.', 'replacements': ['Helo'], 'offset_in_Context': 0, 'context': 'helo darknes my old frend', 'offset': 0, 'error_length': 4, 'category': 'CASING', 'rule_issue_type': 'typographical', 'sentence': 'helo darknes my old frend'}), Match({'rule_id': 'MORFOLOGIK_RULE_EN_US', 'message': 'Possible spelling mistake found.', 'replacements': ['darkness', 'darkens', 'darkies'], 'offset_in_context': 5, 'context': 'helo darknes my old frend', 'offset': 5, 'error_length': 7, 'category': 'TYPOS', 'rule_issue_type': 'misspelling', 'sentence': 'helo darknes my old frend'}), Match({'rule_id': 'MORFOLOGIK_RULE_EN_US', 'message': 'Possible spelling mistake found.', 'replacements': ['friend', 'trend', 'Fred', 'freed', 'Freud', 'Friend', 'fend', 'fiend', 'frond', 'rend', 'fr end'], 'offset_in_context': 20, 'context': 'helo darknes my old frend', 'offset': 20, 'error_length': 5, 'category': 'TYPOS', 'rule_issue_type': 'misspelling', 'sentence': 'helo darknes my old frend'})]
->>>
-```
-
-## Configuration
-
-LanguageTool offers lots of built-in configuration options.
-
-### Example: Enabling caching
-Here's an example of using the configuration options to enable caching. Some users have reported that this helps performance a lot.
-```python
-import language_tool_python
-tool = language_tool_python.LanguageTool('en-US', config={ 'cacheSize': 1000, 'pipelineCaching': True })
-```
-
-
-### Example: Setting maximum text length
-
-Here's an example showing how to configure LanguageTool to set a maximum length on grammar-checked text. Will throw an error (which propagates to Python as a `language_tool_python.LanguageToolError`) if text is too long.
-```python
-import language_tool_python
-tool = language_tool_python.LanguageTool('en-US', config={ 'maxTextLength': 100 })
-```
-
-### Full list of configuration options
-
-Here's a full list of configuration options:
-
-```
-'maxTextLength' - maximum text length, longer texts will cause an error (optional)
-'maxTextHardLength' - maximum text length, applies even to users with a special secret 'token' parameter (optional)
-'maxCheckTimeMillis' - maximum time in milliseconds allowed per check (optional)
-'maxErrorsPerWordRate' - checking will stop with error if there are more rules matches per word (optional)
-'maxSpellingSuggestions' - only this many spelling errors will have suggestions for performance reasons (optional,
-                          affects Hunspell-based languages only)
-'maxCheckThreads' - maximum number of threads working in parallel (optional)
-'cacheSize' - size of internal cache in number of sentences (optional, default: 0)
-'cacheTTLSeconds' - how many seconds sentences are kept in cache (optional, default: 300 if 'cacheSize' is set)
-'requestLimit' - maximum number of requests per requestLimitPeriodInSeconds (optional)
-'requestLimitInBytes' - maximum aggregated size of requests per requestLimitPeriodInSeconds (optional)
-'timeoutRequestLimit' - maximum number of timeout request (optional)
-'requestLimitPeriodInSeconds' - time period to which requestLimit and timeoutRequestLimit applies (optional)
-'languageModel' - a directory with '1grams', '2grams', '3grams' sub directories per language which contain a Lucene index
-                  each with ngram occurrence counts; activates the confusion rule if supported (optional)
-'fasttextModel' - a model file for better language detection (optional), see
-                  https://fasttext.cc/docs/en/language-identification.html
-'fasttextBinary' - compiled fasttext executable for language detection (optional), see
-                  https://fasttext.cc/docs/en/support.html
-'maxWorkQueueSize' - reject request if request queue gets larger than this (optional)
-'rulesFile' - a file containing rules configuration, such as .languagetool.cfg (optional)
-'blockedReferrers' - a comma-separated list of HTTP referrers (and 'Origin' headers) that are blocked and will not be served (optional)
-'premiumOnly' - activate only the premium rules (optional)
-'disabledRuleIds' - a comma-separated list of rule ids that are turned off for this server (optional)
-'pipelineCaching' - set to 'true' to enable caching of internal pipelines to improve performance
-'maxPipelinePoolSize' - cache size if 'pipelineCaching' is set
-'pipelineExpireTimeInSeconds' - time after which pipeline cache items expire
-'pipelinePrewarming' - set to 'true' to fill pipeline cache on start (can slow down start a lot)
-'trustXForwardForHeader' - set this to 'true' if you run the server behind a reverse proxy and want the
-                           request limit to work on the original IP addresses provided by the 'X-forwarded-for' HTTP header,
-                           usually set by the proxy
-'suggestionsEnabled' - if suggestions should be generated for spell check errors (optional, default: true)
-
-Spellcheck-only languages: You can add simple spellcheck-only support for languages that LT doesn't
-                           support by defining two optional properties:
-  'lang-xx' - set name of the language, use language code instead of 'xx', e.g. lang-tr=Turkish
-  'lang-xx-dictPath' - absolute path to the hunspell .dic file, use language code instead of 'xx', e.g.
-                       lang-tr-dictPath=/path/to/tr.dic. Note that the same directory also needs to
-                       contain a common_words.txt file with the most common 10,000 words (used for
-                       better language detection)
-```
+- Python `>=3.9` (tested up to 3.14)
+- Java (to run local LanguageTool server):
+  - LanguageTool `< 6.6`: Java `>=9`
+  - LanguageTool `>= 6.6` (default): Java `>=17`
 
 ## Installation
 
-To install via pip:
-
 ```bash
-$ pip install --upgrade language_tool_python
+pip install --upgrade language_tool_python
 ```
 
-### What rules does LanguageTool have?
+## Quick Start
 
-Searching for a specific rule to enable or disable? Curious the breadth of rules LanguageTool applies? This page contains a massive list of all 5,000+ grammatical rules that are programmed into LanguageTool: https://community.languagetool.org/rule/list?lang=en&offset=30&max=10
+### Local server
 
-### Customizing Download URL or Path
+```python
+import language_tool_python
 
-If LanguageTool is already installed on your system, you can defined the following environment variable:
-```bash
-$ export LTP_JAR_DIR_PATH = /path/to/the/language/tool/jar/files
+with language_tool_python.LanguageTool("en-US") as tool:
+    text = "A sentence with a error in the Hitchhiker's Guide tot he Galaxy"
+    matches = tool.check(text)
+    print(matches)
+    print(tool.correct(text))
 ```
 
-Otherwise, `language_tool_python` can download LanguageTool for you automatically.
+### Public LanguageTool API
 
-To overwrite the host part of URL that is used to download LanguageTool, use one of these environment variables depending on your version type:
+```python
+import language_tool_python
 
-```bash
-# For snapshot/nightly versions (e.g., 'latest', '20240101')
-$ export LTP_DOWNLOAD_HOST_SNAPSHOT = [alternate snapshot URL]
-
-# For release versions >= 6.0 (e.g., '6.0', '6.5')
-$ export LTP_DOWNLOAD_HOST_RELEASE = [alternate release URL]
-
-# For release versions < 6.0 from the archive
-$ export LTP_DOWNLOAD_HOST_ARCHIVE = [alternate archive URL]
+with language_tool_python.LanguageToolPublicAPI("es") as tool:
+    matches = tool.check("Se a hecho un esfuerzo.")
+    print(matches)
 ```
 
-The default URLs are:
-- Snapshots: `https://internal1.languagetool.org/snapshots/`
-- Releases: `https://languagetool.org/download/`
-- Archive: `https://languagetool.org/download/archive/`
+### Your own remote LanguageTool server
 
-This can be used to download from a mirror or specify a custom repository.
+```python
+import language_tool_python
 
-And to choose the specific folder to download the server to:
-
-```bash
-$ export LTP_PATH = /path/to/save/language/tool
+with language_tool_python.LanguageTool(
+    "en-US",
+    remote_server="https://your-lt-server.example.com",
+) as tool:
+    print(tool.check("This are bad."))
 ```
 
-The default download path is `~/.cache/language_tool_python/`. The LanguageTool server is about 200 MB, so take that into account when choosing your download folder. (Or, if you you can't spare the disk space, use a remote URL!)
+## Constructor Parameters Worth Knowing
 
-## Prerequisites
+### `language_tool_download_version` (local server only)
 
-- [Python 3.9+](https://www.python.org)
-- [LanguageTool](https://www.languagetool.org) (Java 9.0 or higher for version <= 6.5, Java 17.0 or higher for version >= 6.6)
+Use this parameter to force which LanguageTool package is used when running a local server.
 
-The installation process should take care of downloading LanguageTool (it may
-take a few minutes). Otherwise, you can manually download
-[LanguageTool-stable.zip](https://www.languagetool.org/download/LanguageTool-stable.zip) and unzip it
-into where the ``language_tool_python`` package resides.
+```python
+import language_tool_python
 
-### LanguageTool Version
+with language_tool_python.LanguageTool(
+    "en-US",
+    language_tool_download_version="6.7",
+) as tool:
+    print(tool.check("This are bad."))
+```
 
-LanguageTool versions under 4.0 are not supported since it implies a lot of differences in the API.
+Accepted formats:
+- `latest` (default): latest snapshot configured by this package (`6.8-SNAPSHOT` at the moment)
+- `YYYYMMDD`: snapshot by date (example: `20260201`)
+- `X.Y`: release version (example: `6.7`, `4.0`)
 
-### Acknowledgements
+Notes:
+- Only relevant when using a local server (no `remote_server`).
+- Versions below `4.0` are not supported.
 
-This is a fork of https://github.com/myint/language-check/ that produces more easily parsable
-results from the command-line.
+### `proxies` (remote server only)
+
+Use this parameter to pass proxy settings to `requests` when calling a remote LanguageTool server.
+
+```python
+import language_tool_python
+
+with language_tool_python.LanguageTool(
+    "en-US",
+    remote_server="https://your-lt-server.example.com",
+    proxies={
+        "http": "http://proxy.example.com:8080",
+        "https": "http://proxy.example.com:8080",
+    },
+) as tool:
+    print(tool.check("This are bad."))
+```
+
+Notes:
+- `proxies` works only with `remote_server`.
+- Passing `proxies` without `remote_server` raises `ValueError`.
+
+## Core Python API
+
+### Check text
+
+```python
+matches = tool.check("This is noot okay.")
+```
+
+Each item is a `Match` object with these fields:
+- `rule_id`
+- `message`
+- `replacements`
+- `offset_in_context`, `context`, `offset`, `error_length`
+- `category`, `rule_issue_type`
+- `sentence`
+
+### Auto-correct
+
+```python
+corrected = tool.correct("This is noot okay.")
+# Uses first suggestion for each match
+```
+
+### Apply only selected matches
+
+```python
+text = "There is a bok on the table."
+matches = tool.check(text)
+
+# Keep a specific suggestion for first match
+matches[0].select_replacement(2)
+
+patched = language_tool_python.utils.correct(text, matches)
+```
+
+### Check only parts matching a regex
+
+```python
+matches = tool.check_matching_regions(
+    'He said "I has a problem" but she replied "It are fine".',
+    r'"[^"]*"',
+)
+```
+
+### Classify result quality
+
+```python
+from language_tool_python.utils import classify_matches
+
+status = classify_matches(tool.check("This is a cats."))
+# TextStatus.CORRECT / TextStatus.FAULTY / TextStatus.GARBAGE
+```
+
+## Rule and Language Controls
+
+You can tune checks per instance:
+
+```python
+tool.language = "en" # Can also be set from constructor (`LanguageTool("en")`)
+tool.mother_tongue = "fr" # Can also be set from constructor (`LanguageTool("en", mother_tongue="fr")`)
+
+tool.disabled_rules.update({"MORFOLOGIK_RULE_EN_US"})
+tool.enabled_rules.update({"EN_A_VS_AN"})
+tool.enabled_rules_only = False
+
+tool.disabled_categories.update({"CASING"})
+tool.enabled_categories.update({"GRAMMAR"})
+
+tool.preferred_variants.update({"en-GB"})
+tool.picky = True
+```
+
+Spellchecking control:
+
+```python
+tool.disable_spellchecking()
+tool.enable_spellchecking()
+
+# Equivalent to:
+tool.disabled_categories.update({"TYPOS"})
+tool.disabled_categories.difference_update({"TYPOS"})
+```
+
+## Custom Spellings
+
+You can register domain-specific words:
+
+```python
+with language_tool_python.LanguageTool(
+    "en-US",
+    new_spellings=["my_product_name", "my_team_term"],
+    new_spellings_persist=False,
+) as tool:
+    print(tool.check("my_product_name is released"))
+```
+
+- `new_spellings_persist=True` (default): keeps words in the local LT spelling file.
+- `new_spellings_persist=False`: session-only, words are removed on `close()`.
+
+## Local Server Configuration (`config=`)
+
+For local servers only, pass a config dictionary. Example:
+
+```python
+with language_tool_python.LanguageTool(
+    "en-US",
+    config={
+        "cacheSize": 1000,
+        "pipelineCaching": True,
+        "maxTextLength": 50000,
+    },
+) as tool:
+    print(tool.check("Text to inspect"))
+```
+
+Supported keys:
+- `maxTextLength`, `maxTextHardLength`, `maxCheckTimeMillis`
+- `maxErrorsPerWordRate`, `maxSpellingSuggestions`, `maxCheckThreads`
+- `cacheSize`, `cacheTTLSeconds`
+- `requestLimit`, `requestLimitInBytes`, `timeoutRequestLimit`, `requestLimitPeriodInSeconds`
+- `languageModel`, `fasttextModel`, `fasttextBinary`
+- `maxWorkQueueSize`, `rulesFile`, `blockedReferrers`
+- `premiumOnly`, `disabledRuleIds`
+- `pipelineCaching`, `maxPipelinePoolSize`, `pipelineExpireTimeInSeconds`, `pipelinePrewarming`
+- `trustXForwardForHeader`, `suggestionsEnabled`
+- spellcheck-only language keys:
+  - `lang-<code>`
+  - `lang-<code>-dictPath`
+
+Notes:
+- `remote_server` and `config` cannot be used together.
+- `proxies` can only be used with `remote_server`.
+
+## CLI
+
+Entry point:
+
+```bash
+language_tool_python [OPTIONS] FILE [FILE ...]
+```
+
+Use `-` as file to read from stdin.
+
+Examples:
+
+```bash
+# Check a file
+language_tool_python -l en-US README.md
+
+# Check stdin
+echo "This are bad." | language_tool_python -l en-US -
+
+# Auto-apply suggestions
+language_tool_python -l en-US --apply input.txt
+
+# Use only selected rules
+language_tool_python -l en-US --enabled-only --enable MORFOLOGIK_RULE_EN_US input.txt
+
+# Use remote LT server
+language_tool_python -l en-US --remote-host 127.0.0.1 --remote-port 8081 input.txt
+```
+
+Main options:
+- `-l, --language CODE`
+- `-m, --mother-tongue CODE`
+- `-d, --disable RULES`
+- `-e, --enable RULES`
+- `--enabled-only`
+- `-p, --picky`
+- `-a, --apply`
+- `-s, --spell-check-off`
+- `--ignore-lines REGEX`
+- `--remote-host HOST`, `--remote-port PORT`
+- `-c, --encoding`
+- `--verbose`
+- `--version`
+
+Exit codes:
+- `0`: no issues
+- `2`: issues found
+
+## Environment Variables
+
+- `LTP_PATH`: directory used to store downloaded LanguageTool packages.
+    - default: `~/.cache/language_tool_python/`
+- `LTP_JAR_DIR_PATH`: use an existing local LanguageTool directory (skip download).
+- `LTP_DOWNLOAD_HOST_SNAPSHOT`: override snapshot download host.
+    - default: `https://internal1.languagetool.org/snapshots/`
+- `LTP_DOWNLOAD_HOST_RELEASE`: override release download host.
+    - default: `https://languagetool.org/download/`
+- `LTP_DOWNLOAD_HOST_ARCHIVE`: override archive download host.
+    - default: `https://languagetool.org/download/archive/`
+
+Example:
+
+```bash
+export LTP_PATH=/path/to/cache
+export LTP_JAR_DIR_PATH=/path/to/LanguageTool-6.8-SNAPSHOT
+```
+
+## Resource Management
+
+When using a local server, prefer a context manager or explicit `close()`:
+
+```python
+with language_tool_python.LanguageTool("en-US") as tool:
+    ...
+
+# or
+tool = language_tool_python.LanguageTool("en-US")
+...
+tool.close()
+```
+
+## Client/Server Pattern
+
+You can run LT on one process/host and connect from another client:
+
+```python
+# Server side
+server_tool = language_tool_python.LanguageTool("en-US")
+
+# Client side
+client_tool = language_tool_python.LanguageTool(
+    "en-US",
+    remote_server=f"http://127.0.0.1:{server_tool.port}",
+)
+```
+
+## Error Types
+
+Main exceptions in `language_tool_python.exceptions`:
+- `LanguageToolError`
+    - `ServerError`
+    - `JavaError`
+    - `PathError`
+    - `RateLimitError`
+
+## Development
+
+```bash
+# Install dev dependencies
+uv sync --group tests --group docs --group types
+
+# Lint / format / types
+uvx ruff@0.14.5 check .
+uvx ruff@0.14.5 format .
+uvx mypy@1.18.2
+
+# Tests
+pytest
+```
+
+## License
+
+GPL-3.0-only. See [LICENSE](LICENSE).
+
+## Acknowledgements
+
+This project is based on the original `language-check` project:
+<https://github.com/myint/language-check/>

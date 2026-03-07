@@ -9,7 +9,7 @@
 project = "language_tool_python"
 copyright = "2025, jxmorris12"
 author = "jxmorris12"
-release = "3.2.2"  # Keep in sync with pyproject.toml
+release = "3.3.0"  # Keep in sync with pyproject.toml
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -31,6 +31,6 @@ html_static_path = ["_static"]
 autodoc_default_options = {
     "members": True,
     "undoc-members": True,
-    "private-members": True,
+    "private-members": False,
     "show-inheritance": True,
 }

@@ -1,5 +1,25 @@
 # language_tool_python Changelog
 
+## 3.3.0 (2026-03-07)
+- Corrected a bug in `language_tool_python.server.LanguageTool._get_valid_spelling_file_path` where the spelling file was always the one for English, even when the LT instance was configured for a different language.
+- Corrected a bug in `language_tool_python.server.LanguageTool` where, even if you specified a `language_tool_download_version`, the used LT version was always the latest one present on the system (the download was working correctly, but the downloaded version was not used).
+- Corrected the necessary java version for old LT releases (from 1.8 to 1.9).
+- Added an abstract class `LocalLanguageTool` that expose an common interface for subclasses who implements some type of LT download.
+- Added `ReleaseLocalLanguageTool` class (implementation of `LocalLanguageTool`) that implements the downloading of LT from release/archive page.
+- Added `SnapshotLocalLanguageTool` class (implementation of `LocalLanguagetool`) that implements the downloading of LT from snapshot page.
+- Edited the low limit of the supported LT version (now at release 4.0).
+- Deprecated some funcs (they remain available until version 4.0.0):
+    - `language_tool_python.download_lt.get_common_prefix`
+    - `language_tool_python.download_lt.http_get`
+    - `language_tool_python.download_lt.unzip_file`
+    - `language_tool_python.download_lt.download_zip`
+    - `language_tool_python.download_lt.download_lt`
+    - `language_tool_python.utils.find_existing_language_tool_downloads`
+    - `language_tool_python.utils._extract_version`
+    - `language_tool_python.utils.get_language_tool_directory`
+    - `language_tool_python.utils.get_server_cmd`
+    - `language_tool_python.utils.get_jar_info`
+
 ## 3.2.2 (2026-01-02)
 - Corrected a bug in `language_tool_python.download_lt.http_get` by adding proper handling of HTTP 403 and other non 200 status codes by raising `language_tool_python.exceptions.PathError`. Previously, in case of such status codes, the function would download an HTML error page instead of the expected zip file, leading to an error when attempting to unzip it.
 
