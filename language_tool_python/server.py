@@ -207,10 +207,10 @@ class LanguageTool:
                 language = get_locale_language()
             except ValueError:
                 language = FAILSAFE_LANGUAGE
+        self._language = LanguageTag(language, self._get_languages())
         if new_spellings:
             self._new_spellings = new_spellings
             self._register_spellings()
-        self._language = LanguageTag(language, self._get_languages())
         self._mother_tongue = mother_tongue
         self._disabled_rules = set()
         self._enabled_rules = set()
@@ -736,12 +736,24 @@ class LanguageTool:
             raise PathError(err)
         library_path = self._local_language_tool.get_directory_path()
 
+        language = self._language.normalized_tag.split("-")[
+            0
+        ].lower()  # if language is "en-US", we want "en"
+
+        if language == "auto":
+            # Default to English if auto is selected, as the spelling file is needed for new spellings
+            # The new spellings will only be taken into account if the server detects the language as English
+            logger.debug(
+                "Language is set to 'auto'. Defaulting to 'en' for spelling file path."
+            )
+            language = "en"
+
         spelling_file_path = (
             library_path
             / "org"
             / "languagetool"
             / "resource"
-            / "en"
+            / language
             / "hunspell"
             / "spelling.txt"
         )
