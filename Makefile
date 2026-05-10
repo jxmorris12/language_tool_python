@@ -5,9 +5,9 @@ default:
 	@exit 1
 
 check:
-	uvx ruff@0.14.5 check .
-	uvx ruff@0.14.5 format --check .
-	uvx mypy@1.18.2
+	uvx ruff@0.15.12 check language_tool_python tests
+	uvx ruff@0.15.12 format --check language_tool_python tests
+	uvx mypy@2.0.0
 
 test:
 	pytest

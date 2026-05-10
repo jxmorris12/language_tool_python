@@ -7,7 +7,7 @@ from typing import Generator, List, Tuple
 import pytest
 
 
-@pytest.mark.parametrize(  # type: ignore[misc]
+@pytest.mark.parametrize(  # type: ignore[untyped-decorator]
     "argv, stdin, should_succeed",
     [
         (["-l", "en-US", "-"], "This is okay.\n", True),
@@ -62,7 +62,7 @@ def test_cli_exit_codes(
         assert code != 0
 
 
-@pytest.fixture(scope="module")  # type: ignore[misc]
+@pytest.fixture(scope="module")  # type: ignore[untyped-decorator]
 def remote_server() -> Generator[Tuple[str, int], None, None]:
     """
     Fixture that provides a remote LanguageTool server for testing.
