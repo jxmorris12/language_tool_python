@@ -1,5 +1,8 @@
 # language_tool_python Changelog
 
+## 3.3.1 (2026-05-10)
+- Edited the LanguageTool snapshot current version (from 6.8-SNAPSHOT to 6.9-SNAPSHOT) to allow users to retrieve automatically the latest snapshot version of LT.
+
 ## 3.3.0 (2026-03-07)
 - Corrected a bug in `language_tool_python.server.LanguageTool._get_valid_spelling_file_path` where the spelling file was always the one for English, even when the LT instance was configured for a different language.
 - Corrected a bug in `language_tool_python.server.LanguageTool` where, even if you specified a `language_tool_download_version`, the used LT version was always the latest one present on the system (the download was working correctly, but the downloaded version was not used).

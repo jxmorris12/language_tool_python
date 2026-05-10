@@ -6,22 +6,23 @@ alabaster==0.7.16 ; python_full_version < '3.10'
 alabaster==1.0.0 ; python_full_version >= '3.10'
 babel==2.18.0
 beautifulsoup4==4.14.3
-certifi==2026.2.25
-charset-normalizer==3.4.5
+certifi==2026.4.22
+charset-normalizer==3.4.7
 colorama==0.4.6 ; sys_platform == 'win32'
 docutils==0.21.2 ; python_full_version < '3.11'
 docutils==0.22.4 ; python_full_version >= '3.11'
 furo==2025.12.19
-idna==3.11
+idna==3.13
 imagesize==1.5.0 ; python_full_version < '3.10'
 imagesize==2.0.0 ; python_full_version >= '3.10'
 importlib-metadata==8.7.1 ; python_full_version < '3.10'
 jinja2==3.1.6
 markupsafe==3.0.3
-packaging==26.0
+packaging==26.2
 psutil==7.2.2
 pygments==2.20.0
-requests==2.32.5
+requests==2.32.5 ; python_full_version < '3.10'
+requests==2.33.1 ; python_full_version >= '3.10'
 roman-numerals==4.1.0 ; python_full_version >= '3.11'
 snowballstemmer==3.0.1
 soupsieve==2.8.3
@@ -39,8 +40,9 @@ sphinxcontrib-jsmath==1.0.1
 sphinxcontrib-qthelp==2.0.0
 sphinxcontrib-serializinghtml==2.0.0
 toml==0.10.2
-tomli==2.4.0 ; python_full_version < '3.11'
+tomli==2.4.1 ; python_full_version < '3.11'
 tqdm==4.67.3
 typing-extensions==4.15.0
-urllib3==2.6.3
-zipp==3.23.0 ; python_full_version < '3.10'
+urllib3==2.6.3 ; python_full_version < '3.10'
+urllib3==2.7.0 ; python_full_version >= '3.10'
+zipp==3.23.1 ; python_full_version < '3.10'
