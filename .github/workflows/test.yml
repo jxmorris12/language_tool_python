@@ -68,8 +68,8 @@ jobs:
       # Keep in sync ruff version with .pre-commit-config.yaml
       - name: Run Ruff Linter
         run: |
-          uvx ruff@0.14.5 check .
-          uvx ruff@0.14.5 format --check .
+          uvx ruff@0.15.12 check .
+          uvx ruff@0.15.12 format --check .
   
   type_check:
     name: Type Check with Mypy
@@ -94,4 +94,4 @@ jobs:
       # Keep in sync mypy version with .pre-commit-config.yaml
       - name: Run Mypy Type Checker
         run: | 
-          uvx mypy@1.18.2
+          uvx mypy@2.0.0

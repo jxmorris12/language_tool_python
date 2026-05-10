@@ -9,13 +9,13 @@ echo Usage: make.bat [check^|test^|doc^|publish]
 exit /b 1
 
 :check
-uvx ruff@0.14.5 check language_tool_python tests
+uvx ruff@0.15.12 check language_tool_python tests
 if errorlevel 1 exit /b %errorlevel%
 
-uvx ruff@0.14.5 format --check language_tool_python tests
+uvx ruff@0.15.12 format --check language_tool_python tests
 if errorlevel 1 exit /b %errorlevel%
 
-uvx mypy@1.18.2
+uvx mypy@2.0.0
 exit /b %errorlevel%
 
 :test

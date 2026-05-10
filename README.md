@@ -365,9 +365,9 @@ Main exceptions in `language_tool_python.exceptions`:
 uv sync --group tests --group docs --group types
 
 # Lint / format / types
-uvx ruff@0.14.5 check .
-uvx ruff@0.14.5 format .
-uvx mypy@1.18.2
+uvx ruff@0.15.12 check .
+uvx ruff@0.15.12 format .
+uvx mypy@2.0.0
 
 # Tests
 pytest
