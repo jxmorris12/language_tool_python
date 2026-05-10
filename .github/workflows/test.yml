@@ -3,6 +3,9 @@
 
 name: language_tool_python CI
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: [ master ]
@@ -12,8 +15,9 @@ on:
 
 jobs:
   tests:
+    timeout-minutes: 20
     name: Test on Python ${{ matrix.python-version }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -21,27 +25,25 @@ jobs:
 
     steps:
     - name: Clone repository
-      uses: actions/checkout@v6.0.2
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # 6.0.2
     
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v6.2.0
+      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # 6.2.0
       with:
         python-version: ${{ matrix.python-version }}
 
     - name: Install uv
-      uses: astral-sh/setup-uv@v8.0.0
+      uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # 8.1.0
     
     - name: Set up JDK 26
-      uses: actions/setup-java@v5.2.0
+      uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # 5.2.0
       with:
         distribution: 'temurin'
         java-version: '26'
 
-    - name: Install dependencies & build package
+    - name: Install dependencies
       run: |
-        uv pip install setuptools wheel build pytest pytest-cov --system
-        uv build
-        uv pip install dist/*.whl --system
+        uv sync --group tests --frozen
 
     - name: Verify installed packages
       run: |
@@ -49,21 +51,22 @@ jobs:
 
     - name: Import language_tool_python
       run: |
-        printf "import language_tool_python\n" | python
+        printf "import language_tool_python\n" | uv run python
 
     - name: Test with pytest
       run: |
-        pytest
+        uv run pytest
 
   lint:
+    timeout-minutes: 10
     name: Lint with Ruff
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Clone repository
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # 6.0.2
         
       - name: Install uv
-        uses: astral-sh/setup-uv@v8.0.0
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # 8.1.0
 
       # Keep in sync ruff version with .pre-commit-config.yaml
       - name: Run Ruff Linter
@@ -72,25 +75,20 @@ jobs:
           uvx ruff@0.15.12 format --check .
   
   type_check:
+    timeout-minutes: 10
     name: Type Check with Mypy
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Clone repository
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # 6.0.2
         
       - name: Install uv
-        uses: astral-sh/setup-uv@v8.0.0
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # 8.1.0
 
-      - name: Set up venv
-        run: uv venv .venv
-
-      - name: Install dependencies & build package
+      - name: Install dependencies
         run: |
-          . .venv/bin/activate
-          uv pip install setuptools wheel build mypy
-          uv build
-          uv pip install dist/*.whl
-
+          uv sync --group types --frozen
+          
       # Keep in sync mypy version with .pre-commit-config.yaml
       - name: Run Mypy Type Checker
         run: | 
