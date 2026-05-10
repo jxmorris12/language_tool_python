@@ -31,10 +31,10 @@ The documentation style used in the project is **ReStructuredText**. Please, if 
 Before creating your pull request, when you have made all your commits, you need to run this:
 ```shell
 # Run linters (maybe you will have to fix some issues)
-uvx ruff@0.14.5 check .
+uvx ruff@0.14.5 check language_tool_python tests
 
 # Format code
-uvx ruff@0.14.5 format .
+uvx ruff@0.14.5 format language_tool_python tests
 
 # Check types
 uvx mypy@1.18.2
