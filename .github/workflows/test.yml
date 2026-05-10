@@ -21,21 +21,21 @@ jobs:
 
     steps:
     - name: Clone repository
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6.0.2
     
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v6
+      uses: actions/setup-python@v6.2.0
       with:
         python-version: ${{ matrix.python-version }}
 
     - name: Install uv
-      uses: astral-sh/setup-uv@v7
+      uses: astral-sh/setup-uv@v8.0.0
     
-    - name: Set up JDK 25
-      uses: actions/setup-java@v5
+    - name: Set up JDK 26
+      uses: actions/setup-java@v5.2.0
       with:
         distribution: 'temurin'
-        java-version: '25'
+        java-version: '26'
 
     - name: Install dependencies & build package
       run: |
@@ -60,10 +60,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Clone repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6.0.2
         
       - name: Install uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@v8.0.0
 
       # Keep in sync ruff version with .pre-commit-config.yaml
       - name: Run Ruff Linter
@@ -76,10 +76,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Clone repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6.0.2
         
       - name: Install uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@v8.0.0
 
       - name: Set up venv
         run: uv venv .venv
