@@ -48,7 +48,7 @@ BASE_URL_ARCHIVE = os.environ.get(
 FILENAME_RELEASE = "LanguageTool-{version}.zip"
 
 LTP_DOWNLOAD_VERSION = "latest"
-LT_SNAPSHOT_CURRENT_VERSION = "6.8-SNAPSHOT"
+LT_SNAPSHOT_CURRENT_VERSION = "6.9-SNAPSHOT"
 
 JAVA_VERSION_REGEX = re.compile(
     r'^(?:java|openjdk) version "(?P<major1>\d+)(|\.(?P<major2>\d+)\.[^"]+)"',

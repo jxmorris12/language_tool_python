@@ -16,7 +16,7 @@ It can:
 - call your own remote LanguageTool server,
 - be used from Python code and from a CLI.
 
-Default local download target: `latest` snapshot (currently `6.8-SNAPSHOT`).
+Default local download target: `latest` snapshot (currently `6.9-SNAPSHOT`).
 
 ## Documentation
 
@@ -90,7 +90,7 @@ with language_tool_python.LanguageTool(
 ```
 
 Accepted formats:
-- `latest` (default): latest snapshot configured by this package (`6.8-SNAPSHOT` at the moment)
+- `latest` (default): latest snapshot configured by this package (`6.9-SNAPSHOT` at the moment)
 - `YYYYMMDD`: snapshot by date (example: `20260201`)
 - `X.Y`: release version (example: `6.7`, `4.0`)
 
@@ -317,7 +317,7 @@ Example:
 
 ```bash
 export LTP_PATH=/path/to/cache
-export LTP_JAR_DIR_PATH=/path/to/LanguageTool-6.8-SNAPSHOT
+export LTP_JAR_DIR_PATH=/path/to/LanguageTool-6.9-SNAPSHOT
 ```
 
 ## Resource Management
