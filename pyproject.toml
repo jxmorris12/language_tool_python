@@ -70,7 +70,7 @@ build-backend = "setuptools.build_meta"
 packages = { find = { include = ["language_tool_python*"] } }
 
 [tool.setuptools.package-data]
-language_tool_python = ["py.typed", "logging.toml"]
+language_tool_python = ["py.typed", "integrity.toml", "logging.toml"]
 
 [tool.ruff.lint]
 select = ["F", "W", "I", "B", "SIM", "RET", "Q", "N", "S", "BLE"]

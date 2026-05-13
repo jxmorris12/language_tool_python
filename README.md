@@ -312,12 +312,24 @@ Exit codes:
     - default: `https://languagetool.org/download/`
 - `LTP_DOWNLOAD_HOST_ARCHIVE`: override archive download host.
     - default: `https://languagetool.org/download/archive/`
+- `LTP_DOWNLOAD_SHA256_<VERSION>`: version-specific expected SHA-256 for the downloaded LanguageTool archive, for example `LTP_DOWNLOAD_SHA256_6_9_SNAPSHOT`.
+- `LTP_DOWNLOAD_SHA256`: fallback expected SHA-256 for the downloaded LanguageTool archive.
+- `LTP_BYPASS_VERIFIED_DOWNLOADS`: set to `true` to skip SHA-256 verification.
+
+Downloaded zips are verified with SHA-256 when a checksum is available. Checksums are resolved in this order:
+1. `LTP_DOWNLOAD_SHA256_<VERSION>`, where non-alphanumeric characters in the version are replaced with `_` and the name is uppercased.
+2. `LTP_DOWNLOAD_SHA256`.
+3. The bundled `language_tool_python/integrity.toml` manifest.
+
+The bundled manifest covers release/archive downloads. Snapshots are not stable, so provide `LTP_DOWNLOAD_SHA256_<VERSION>` or `LTP_DOWNLOAD_SHA256` if you want to verify a snapshot. If no checksum is available, the download proceeds without SHA-256 verification.
 
 Example:
 
 ```bash
 export LTP_PATH=/path/to/cache
 export LTP_JAR_DIR_PATH=/path/to/LanguageTool-6.9-SNAPSHOT
+export LTP_DOWNLOAD_SHA256_6_9_SNAPSHOT=<sha256>
+# export LTP_BYPASS_VERIFIED_DOWNLOADS=true
 ```
 
 ## Resource Management

@@ -1,12 +1,46 @@
 """Tests for the download/language functionality of LanguageTool."""
 
+import hashlib
 import io
+import re
+import zipfile
+from collections.abc import Iterator
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from language_tool_python.download_lt import LocalLanguageTool
+from language_tool_python.download_lt import (
+    LTP_BYPASS_VERIFIED_DOWNLOADS_ENV_VAR,
+    LTP_DOWNLOAD_SHA256_ENV_VAR,
+    LocalLanguageTool,
+)
 from language_tool_python.exceptions import LanguageToolError, PathError
+
+
+class MockDownloadResponse:
+    """
+    Minimal requests.Response replacement for download tests.
+    """
+
+    def __init__(self, payload: bytes, status_code: int = 200) -> None:
+        self.payload = payload
+        self.status_code = status_code
+        self.headers = {"Content-Length": str(len(payload))}
+
+    def iter_content(self, chunk_size: int) -> Iterator[bytes]:
+        for index in range(0, len(self.payload), chunk_size):
+            yield self.payload[index : index + chunk_size]
+
+
+def make_zip_payload(files: dict[str, bytes]) -> bytes:
+    """
+    Create an in-memory ZIP payload for download tests.
+    """
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as zip_file:
+        for filename, payload in files.items():
+            zip_file.writestr(filename, payload)
+    return buffer.getvalue()
 
 
 def test_install_inexistent_version() -> None:
@@ -99,6 +133,119 @@ def test_http_get_other_error_codes() -> None:
             out_file = io.BytesIO()
             local_language_tool = LocalLanguageTool.from_version_name()
             local_language_tool._get_remote_zip(out_file)
+
+
+def test_http_get_verifies_configured_sha256(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Test that downloads are accepted when the configured SHA-256 matches.
+    """
+    payload = make_zip_payload(
+        {"LanguageTool-6.9-SNAPSHOT/languagetool-server.jar": b"jar"}
+    )
+    local_language_tool = LocalLanguageTool.from_version_name()
+    suffix = (
+        re.sub(r"[^A-Za-z0-9]+", "_", local_language_tool.version_name)
+        .strip("_")
+        .upper()
+    )
+    version_env_var = f"LTP_DOWNLOAD_SHA256_{suffix}"
+    monkeypatch.setenv(
+        version_env_var,
+        hashlib.sha256(payload).hexdigest(),
+    )
+
+    with patch(
+        "language_tool_python.download_lt.requests.get",
+        return_value=MockDownloadResponse(payload),
+    ):
+        out_file = io.BytesIO()
+        with local_language_tool._get_remote_zip(out_file) as zip_file:
+            assert zip_file.namelist() == [
+                "LanguageTool-6.9-SNAPSHOT/languagetool-server.jar"
+            ]
+
+
+def test_http_get_uses_integrity_manifest_sha256(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Test that bundled integrity.toml checksums are used when no env var is set.
+    """
+    payload = make_zip_payload({"LanguageTool-4.0/languagetool-server.jar": b"jar"})
+    local_language_tool = LocalLanguageTool.from_version_name("4.0")
+    monkeypatch.delenv(LTP_BYPASS_VERIFIED_DOWNLOADS_ENV_VAR, raising=False)
+    monkeypatch.delenv(LTP_DOWNLOAD_SHA256_ENV_VAR, raising=False)
+    monkeypatch.delenv("LTP_DOWNLOAD_SHA256_4_0", raising=False)
+
+    with (
+        patch(
+            "language_tool_python.download_lt.requests.get",
+            return_value=MockDownloadResponse(payload),
+        ),
+        pytest.raises(PathError, match="checksum mismatch"),
+    ):
+        local_language_tool._get_remote_zip(io.BytesIO())
+
+
+def test_http_get_rejects_sha256_mismatch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Test that downloads are rejected when the configured SHA-256 mismatches.
+    """
+    payload = make_zip_payload(
+        {"LanguageTool-6.9-SNAPSHOT/languagetool-server.jar": b"jar"}
+    )
+    local_language_tool = LocalLanguageTool.from_version_name()
+    suffix = (
+        re.sub(r"[^A-Za-z0-9]+", "_", local_language_tool.version_name)
+        .strip("_")
+        .upper()
+    )
+    version_env_var = f"LTP_DOWNLOAD_SHA256_{suffix}"
+    monkeypatch.setenv(
+        version_env_var,
+        "0" * 64,
+    )
+
+    with (
+        patch(
+            "language_tool_python.download_lt.requests.get",
+            return_value=MockDownloadResponse(payload),
+        ),
+        pytest.raises(PathError, match="checksum mismatch"),
+    ):
+        out_file = io.BytesIO()
+        local_language_tool._get_remote_zip(out_file)
+
+
+def test_http_get_bypass_skips_sha256_verification(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Test that the bypass disables SHA-256 verification.
+    """
+    payload = make_zip_payload(
+        {"LanguageTool-6.9-SNAPSHOT/languagetool-server.jar": b"jar"}
+    )
+    local_language_tool = LocalLanguageTool.from_version_name()
+    monkeypatch.setenv(LTP_BYPASS_VERIFIED_DOWNLOADS_ENV_VAR, "true")
+    monkeypatch.setenv(LTP_DOWNLOAD_SHA256_ENV_VAR, "0" * 64)
+
+    with (
+        patch(
+            "language_tool_python.download_lt.requests.get",
+            return_value=MockDownloadResponse(payload),
+        ),
+        pytest.warns(RuntimeWarning, match="Verified downloads are bypassed"),
+    ):
+        out_file = io.BytesIO()
+        with local_language_tool._get_remote_zip(out_file) as zip_file:
+            assert zip_file.namelist() == [
+                "LanguageTool-6.9-SNAPSHOT/languagetool-server.jar"
+            ]
 
 
 def test_install_oldest_supported_version() -> None:
