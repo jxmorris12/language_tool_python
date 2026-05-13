@@ -1,6 +1,8 @@
 """LanguageTool download module."""
 
 import contextlib
+import hashlib
+import importlib.resources
 import logging
 import os
 import re
@@ -14,8 +16,10 @@ from pathlib import Path
 from shutil import which
 from typing import IO, Dict, List, Optional, Tuple, Union
 from urllib.parse import urljoin
+from warnings import warn
 
 import requests
+import toml
 import tqdm
 from packaging import version
 from packaging.version import Version
@@ -49,6 +53,16 @@ FILENAME_RELEASE = "LanguageTool-{version}.zip"
 
 LTP_DOWNLOAD_VERSION = "latest"
 LT_SNAPSHOT_CURRENT_VERSION = "6.9-SNAPSHOT"
+LTP_DOWNLOAD_SHA256_ENV_VAR = "LTP_DOWNLOAD_SHA256"
+LTP_BYPASS_VERIFIED_DOWNLOADS_ENV_VAR = "LTP_BYPASS_VERIFIED_DOWNLOADS"
+
+with (
+    importlib.resources.as_file(
+        importlib.resources.files("language_tool_python").joinpath("integrity.toml")
+    ) as hashes_path,
+    open(hashes_path, "rb") as f,
+):
+    EXPECTED_DOWNLOAD_SHA256 = toml.loads(f.read().decode("utf-8"))
 
 JAVA_VERSION_REGEX = re.compile(
     r'^(?:java|openjdk) version "(?P<major1>\d+)(|\.(?P<major2>\d+)\.[^"]+)"',
@@ -60,6 +74,39 @@ JAVA_VERSION_REGEX_UPDATED = re.compile(
     r"^(?:java|openjdk) [version ]?(?P<major1>\d+)\.(?P<major2>\d+)",
     re.MULTILINE,
 )
+
+
+def _get_zip_hash(version_name: str) -> Optional[str]:
+    """Get the expected SHA-256 hash for a given version of LanguageTool.
+    This function checks for environment variables that may specify the expected hash for the given version. It normalizes the version name to construct the environment variable name. If no specific environment variable is found for the version, it falls back to a general environment variable or a manifest lookup. If the bypass environment variable is set, it will skip verification and return None.
+
+    :param version_name: The version name of LanguageTool (e.g., '6.0', '20240101', or 'latest').
+    :type version_name: str
+    :return: The expected SHA-256 hash for the given version, or None if verification is bypassed or no hash is configured.
+    :rtype: Optional[str]
+    """
+    if os.environ.get(LTP_BYPASS_VERIFIED_DOWNLOADS_ENV_VAR, "").lower() == "true":
+        err = (
+            f"Verified downloads are bypassed. No SHA-256 checksum will be used for "
+            f"LanguageTool {version_name}. Set {LTP_BYPASS_VERIFIED_DOWNLOADS_ENV_VAR}=false to re-enable verification."
+        )
+        warn(err, RuntimeWarning, stacklevel=2)
+        return None
+    suffix = re.sub(r"[^A-Za-z0-9]+", "_", version_name).strip("_").upper()
+    version_env_var = f"LTP_DOWNLOAD_SHA256_{suffix}"
+    configured = (
+        (os.environ.get(version_env_var), version_env_var),
+        (os.environ.get(LTP_DOWNLOAD_SHA256_ENV_VAR), LTP_DOWNLOAD_SHA256_ENV_VAR),
+        (EXPECTED_DOWNLOAD_SHA256.get(version_name), f"manifest:{version_name}"),
+    )
+    for checksum, source in configured:
+        if checksum:
+            normalized = checksum.strip().lower()
+            if not re.fullmatch(r"[0-9a-f]{64}", normalized):
+                err = f"Invalid SHA-256 checksum configured by {source}."
+                raise PathError(err)
+            return normalized
+    return None
 
 
 def parse_java_version(version_text: str) -> Tuple[int, int]:
@@ -360,9 +407,11 @@ class LocalLanguageTool(ABC):
         :return: A ZipFile object of the downloaded archive.
         :rtype: zipfile.ZipFile
         :raises TimeoutError: If the download request times out.
-        :raises PathError: If the download fails due to HTTP errors (404, 403, etc.).
+        :raises PathError: If the download fails due to HTTP errors (404, 403, etc.) or if the checksum does not match.
         """
         logger.info("Starting download from %s", self.download_url)
+        expected_sha256 = _get_zip_hash(self.version_name)
+        sha256 = hashlib.sha256()
         try:
             req = requests.get(
                 self.download_url, stream=True, proxies=proxies, timeout=60
@@ -389,9 +438,19 @@ class LocalLanguageTool(ABC):
         )
         for chunk in req.iter_content(chunk_size=1024):
             if chunk:  # filter out keep-alive new chunks
+                sha256.update(chunk)
                 progress.update(len(chunk))
                 downloaded_file.write(chunk)
         progress.close()
+        actual_sha256 = sha256.hexdigest()
+        logger.debug("Download completed. SHA-256: %s", actual_sha256)
+        if expected_sha256 is not None and actual_sha256 != expected_sha256:
+            err = (
+                f"Downloaded LanguageTool archive checksum mismatch. "
+                f"Expected {expected_sha256}, got {actual_sha256}."
+            )
+            raise PathError(err)
+        downloaded_file.seek(0)
         return zipfile.ZipFile(downloaded_file)
 
     @classmethod
