@@ -3,6 +3,7 @@
 import contextlib
 import locale
 import logging
+import math
 import os
 import subprocess
 import urllib.parse
@@ -61,6 +62,66 @@ def parse_url(url_str: str) -> str:
         url_str = "http://" + url_str
 
     return urllib.parse.urlparse(url_str).geturl()
+
+
+def get_env_int(env_var: str, default: int) -> int:
+    """
+    Read a positive integer from the environment.
+
+    :param env_var: Environment variable name.
+    :type env_var: str
+    :param default: Value to use when the environment variable is absent.
+    :type default: int
+    :return: Configured integer value, or the default.
+    :rtype: int
+    :raises PathError: If the configured value is invalid.
+    """
+    configured = os.environ.get(env_var)
+
+    if configured is None:
+        return default
+
+    try:
+        value = int(configured)
+    except ValueError as e:
+        err = f"Invalid integer configured by {env_var}: {configured!r}."
+        raise PathError(err) from e
+
+    if value <= 0:
+        err = f"Invalid integer configured by {env_var}: {configured!r}."
+        raise PathError(err)
+
+    return value
+
+
+def get_env_float(env_var: str, default: float) -> float:
+    """
+    Read a positive float from the environment.
+
+    :param env_var: Environment variable name.
+    :type env_var: str
+    :param default: Value to use when the environment variable is absent.
+    :type default: float
+    :return: Configured float value, or the default.
+    :rtype: float
+    :raises PathError: If the configured value is invalid.
+    """
+    configured = os.environ.get(env_var)
+
+    if configured is None:
+        return default
+
+    try:
+        value = float(configured)
+    except ValueError as e:
+        err = f"Invalid float configured by {env_var}: {configured!r}."
+        raise PathError(err) from e
+
+    if not math.isfinite(value) or value <= 0:
+        err = f"Invalid float configured by {env_var}: {configured!r}."
+        raise PathError(err)
+
+    return value
 
 
 class TextStatus(Enum):

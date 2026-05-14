@@ -27,8 +27,10 @@ from packaging.version import Version
 from ._deprecated import deprecated
 from .config_file import LanguageToolConfig
 from .exceptions import JavaError, PathError
+from .safe_zip import SafeZipExtractor
 from .utils import (
     LTP_JAR_DIR_PATH_ENV_VAR,
+    get_env_int,
     get_language_tool_download_path,
 )
 
@@ -55,6 +57,9 @@ LTP_DOWNLOAD_VERSION = "latest"
 LT_SNAPSHOT_CURRENT_VERSION = "6.9-SNAPSHOT"
 LTP_DOWNLOAD_SHA256_ENV_VAR = "LTP_DOWNLOAD_SHA256"
 LTP_BYPASS_VERIFIED_DOWNLOADS_ENV_VAR = "LTP_BYPASS_VERIFIED_DOWNLOADS"
+LTP_MAX_DOWNLOAD_BYTES_ENV_VAR = "LTP_MAX_DOWNLOAD_BYTES"
+DOWNLOAD_CHUNK_BYTES = 1024 * 1024
+_SAFE_ZIP_EXTRACTOR = SafeZipExtractor()
 
 with (
     importlib.resources.as_file(
@@ -74,6 +79,12 @@ JAVA_VERSION_REGEX_UPDATED = re.compile(
     r"^(?:java|openjdk) [version ]?(?P<major1>\d+)\.(?P<major2>\d+)",
     re.MULTILINE,
 )
+
+
+MAX_DOWNLOAD_BYTES = get_env_int(
+    LTP_MAX_DOWNLOAD_BYTES_ENV_VAR,
+    512 * 1024 * 1024,
+)  # 512 MiB, latest snapshot: 246.58 MiB archive
 
 
 def _get_zip_hash(version_name: str) -> Optional[str]:
@@ -107,6 +118,39 @@ def _get_zip_hash(version_name: str) -> Optional[str]:
                 raise PathError(err)
             return normalized
     return None
+
+
+def _validate_download_size(content_length: Optional[str]) -> Optional[int]:
+    """
+    Validate the HTTP Content-Length header before downloading a ZIP file.
+
+    :param content_length: The Content-Length header value, if present.
+    :type content_length: Optional[str]
+    :return: The parsed content length, or None when the header is missing.
+    :rtype: Optional[int]
+    :raises PathError: If the header is invalid or exceeds the download size limit.
+    """
+    if content_length is None:
+        return None
+
+    try:
+        total = int(content_length)
+    except ValueError as e:
+        err = f"Invalid Content-Length header: {content_length!r}."
+        raise PathError(err) from e
+
+    if total < 0:
+        err = f"Invalid Content-Length header: {content_length!r}."
+        raise PathError(err)
+
+    if total > MAX_DOWNLOAD_BYTES:
+        err = (
+            f"Refusing to download {total} bytes. "
+            f"Maximum allowed download size is {MAX_DOWNLOAD_BYTES} bytes."
+        )
+        raise PathError(err)
+
+    return total
 
 
 def parse_java_version(version_text: str) -> Tuple[int, int]:
@@ -261,8 +305,15 @@ def unzip_file(temp_file_name: str, directory_to_extract_to: Path) -> None:
     """
 
     logger.info("Unzipping %s to %s", temp_file_name, directory_to_extract_to)
-    with zipfile.ZipFile(temp_file_name, "r") as zip_ref:
-        zip_ref.extractall(directory_to_extract_to)
+    with (
+        tempfile.TemporaryDirectory(dir=directory_to_extract_to.parent) as temp_dir,
+        zipfile.ZipFile(temp_file_name, "r") as zip_ref,
+    ):
+        _SAFE_ZIP_EXTRACTOR.extractall(
+            zip_ref,
+            directory_to_extract_to,
+            work_dir=Path(temp_dir),
+        )
 
 
 @deprecated(
@@ -419,8 +470,6 @@ class LocalLanguageTool(ABC):
         except requests.exceptions.Timeout as e:
             err = f"Request to {self.download_url} timed out."
             raise TimeoutError(err) from e
-        content_length = req.headers.get("Content-Length")
-        total = int(content_length) if content_length is not None else None
         if req.status_code == 404:
             err = f"Could not find at URL {self.download_url}. The given version may not exist or is no longer available."
             raise PathError(err)
@@ -430,14 +479,25 @@ class LocalLanguageTool(ABC):
         if req.status_code != 200:
             err = f"Failed to download from {self.download_url}. HTTP status code: {req.status_code}."
             raise PathError(err)
+        content_length = req.headers.get("Content-Length")
+        total = _validate_download_size(content_length)
         progress = tqdm.tqdm(
             unit="B",
             unit_scale=True,
             total=total,
             desc=f"Downloading LanguageTool {self.version_name}",
         )
-        for chunk in req.iter_content(chunk_size=1024):
+        downloaded_bytes = 0
+        for chunk in req.iter_content(chunk_size=DOWNLOAD_CHUNK_BYTES):
             if chunk:  # filter out keep-alive new chunks
+                downloaded_bytes += len(chunk)
+                if downloaded_bytes > MAX_DOWNLOAD_BYTES:
+                    progress.close()
+                    err = (
+                        f"Refusing to download more than {MAX_DOWNLOAD_BYTES} bytes "
+                        f"from {self.download_url}."
+                    )
+                    raise PathError(err)
                 sha256.update(chunk)
                 progress.update(len(chunk))
                 downloaded_file.write(chunk)
@@ -708,13 +768,17 @@ class ReleaseLocalLanguageTool(LocalLanguageTool):
 
         if self not in self.get_installed_versions():
             with (
-                tempfile.TemporaryDirectory() as temp_dir,
+                tempfile.TemporaryDirectory(dir=download_folder) as temp_dir,
                 tempfile.NamedTemporaryFile(
                     suffix=".zip", dir=temp_dir
                 ) as downloaded_file,
                 self._get_remote_zip(downloaded_file) as zip_file,
             ):
-                zip_file.extractall(download_folder)
+                _SAFE_ZIP_EXTRACTOR.extractall(
+                    zip_file,
+                    download_folder,
+                    work_dir=Path(temp_dir),
+                )
 
     @property
     def version_name(self) -> str:
@@ -790,8 +854,7 @@ class SnapshotLocalLanguageTool(LocalLanguageTool):
         Download and install this snapshot version of LanguageTool.
 
         This method checks Java compatibility, downloads the snapshot ZIP file,
-        and extracts it to the download folder. For snapshots, the extracted
-        directory is renamed to match the expected version name if necessary.
+        and extracts it to the download folder using the requested snapshot name.
         """
         confirm_java_compatibility(self._version_name)
 
@@ -803,33 +866,41 @@ class SnapshotLocalLanguageTool(LocalLanguageTool):
             return
 
         if self not in self.get_installed_versions():
-            # For snapshots, pass expected_dirname to rename the extracted folder
             with (
-                tempfile.TemporaryDirectory() as temp_dir,
+                tempfile.TemporaryDirectory(dir=download_folder) as temp_dir,
                 tempfile.NamedTemporaryFile(
                     suffix=".zip", dir=temp_dir
                 ) as downloaded_file,
                 self._get_remote_zip(downloaded_file) as zip_file,
             ):
-                lt_dir = zip_file.infolist()[0].filename
-                expected_dirname = f"LanguageTool-{self.version_name}/"
-                if lt_dir != expected_dirname:
-                    with (
-                        tempfile.NamedTemporaryFile(
-                            suffix=".zip", dir=temp_dir
-                        ) as temp_file,
-                        zipfile.ZipFile(temp_file, "w") as renamed_zip,
-                    ):
-                        for item in zip_file.infolist():
-                            buffer = zip_file.read(item.filename)
-                            new_name = item.filename.replace(
-                                lt_dir, expected_dirname, 1
-                            )
-                            renamed_zip.writestr(new_name, buffer)
-                        temp_file.seek(0)
-                        renamed_zip.extractall(download_folder)
-                else:
-                    zip_file.extractall(download_folder)
+                snapshot_extract_dir = Path(temp_dir) / "snapshot"
+                _SAFE_ZIP_EXTRACTOR.extractall(
+                    zip_file,
+                    snapshot_extract_dir,
+                    work_dir=Path(temp_dir),
+                )
+                extracted_roots = list(snapshot_extract_dir.iterdir())
+                if len(extracted_roots) != 1 or not extracted_roots[0].is_dir():
+                    err = (
+                        "Expected snapshot archive to contain exactly one "
+                        "root directory."
+                    )
+                    raise PathError(err)
+
+                expected_dir = download_folder / f"LanguageTool-{self.version_name}"
+                if expected_dir.exists() or expected_dir.is_symlink():
+                    err = (
+                        "Refusing to overwrite existing LanguageTool snapshot "
+                        f"directory: {expected_dir}."
+                    )
+                    raise PathError(err)
+
+                logger.debug(
+                    "Renaming extracted snapshot directory %s to %s",
+                    extracted_roots[0],
+                    expected_dir,
+                )
+                extracted_roots[0].rename(expected_dir)
 
     @property
     def version_name(self) -> str:

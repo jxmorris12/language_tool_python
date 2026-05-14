@@ -1,17 +1,25 @@
 """Tests for the download/language functionality of LanguageTool."""
 
+import contextlib
 import hashlib
+import importlib
 import io
 import re
+import shutil
+import uuid
 import zipfile
 from collections.abc import Iterator
+from contextlib import contextmanager
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 
+from language_tool_python import download_lt
 from language_tool_python.download_lt import (
     LTP_BYPASS_VERIFIED_DOWNLOADS_ENV_VAR,
     LTP_DOWNLOAD_SHA256_ENV_VAR,
+    LTP_MAX_DOWNLOAD_BYTES_ENV_VAR,
     LocalLanguageTool,
 )
 from language_tool_python.exceptions import LanguageToolError, PathError
@@ -41,6 +49,22 @@ def make_zip_payload(files: dict[str, bytes]) -> bytes:
         for filename, payload in files.items():
             zip_file.writestr(filename, payload)
     return buffer.getvalue()
+
+
+@contextmanager
+def workspace_temp_dir() -> Iterator[Path]:
+    """
+    Create a temporary directory inside the repository workspace.
+    """
+    root = Path.cwd() / ".test_download_tmp"
+    path = root / uuid.uuid4().hex
+    path.mkdir(parents=True)
+    try:
+        yield path
+    finally:
+        shutil.rmtree(path, ignore_errors=True)
+        with contextlib.suppress(OSError):
+            root.rmdir()
 
 
 def test_install_inexistent_version() -> None:
@@ -133,6 +157,111 @@ def test_http_get_other_error_codes() -> None:
             out_file = io.BytesIO()
             local_language_tool = LocalLanguageTool.from_version_name()
             local_language_tool._get_remote_zip(out_file)
+
+
+def test_http_get_rejects_oversized_content_length(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Test that oversized ZIP downloads are rejected before streaming.
+    """
+    payload = make_zip_payload(
+        {"LanguageTool-6.9-SNAPSHOT/languagetool-server.jar": b"jar"}
+    )
+    response = MockDownloadResponse(payload)
+    response.headers["Content-Length"] = "2"
+    monkeypatch.setattr(download_lt, "MAX_DOWNLOAD_BYTES", 1)
+
+    with (
+        patch(
+            "language_tool_python.download_lt.requests.get",
+            return_value=response,
+        ),
+        pytest.raises(PathError, match="Maximum allowed download size"),
+    ):
+        LocalLanguageTool.from_version_name()._get_remote_zip(io.BytesIO())
+
+
+def test_max_download_bytes_uses_env_override(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Test that the download size limit can be configured from the environment.
+    """
+    try:
+        with monkeypatch.context() as env:
+            env.setenv(LTP_MAX_DOWNLOAD_BYTES_ENV_VAR, "123")
+            reloaded_download_lt = importlib.reload(download_lt)
+
+            assert reloaded_download_lt.MAX_DOWNLOAD_BYTES == 123
+    finally:
+        importlib.reload(download_lt)
+
+
+def test_http_get_rejects_oversized_stream(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Test that downloads are still size-limited when Content-Length is missing.
+    """
+    payload = make_zip_payload(
+        {"LanguageTool-6.9-SNAPSHOT/languagetool-server.jar": b"jar"}
+    )
+    response = MockDownloadResponse(payload)
+    response.headers = {}
+    monkeypatch.setattr(download_lt, "MAX_DOWNLOAD_BYTES", len(payload) - 1)
+
+    with (
+        patch(
+            "language_tool_python.download_lt.requests.get",
+            return_value=response,
+        ),
+        pytest.raises(PathError, match="Refusing to download more than"),
+    ):
+        LocalLanguageTool.from_version_name()._get_remote_zip(io.BytesIO())
+
+
+def test_http_get_rejects_oversized_stream_with_small_content_length(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Test that a lying Content-Length cannot bypass the streamed download limit.
+    """
+    payload = make_zip_payload(
+        {"LanguageTool-6.9-SNAPSHOT/languagetool-server.jar": b"jar"}
+    )
+    response = MockDownloadResponse(payload)
+    response.headers["Content-Length"] = "1"
+    monkeypatch.setattr(download_lt, "MAX_DOWNLOAD_BYTES", len(payload) - 1)
+
+    with (
+        patch(
+            "language_tool_python.download_lt.requests.get",
+            return_value=response,
+        ),
+        pytest.raises(PathError, match="Refusing to download more than"),
+    ):
+        LocalLanguageTool.from_version_name()._get_remote_zip(io.BytesIO())
+
+
+@pytest.mark.parametrize("content_length", ["not-a-number", "-1"])  # type: ignore[untyped-decorator]
+def test_http_get_rejects_invalid_content_length(
+    content_length: str,
+) -> None:
+    """
+    Test that invalid Content-Length values are rejected before streaming.
+    """
+    response = MockDownloadResponse(b"")
+    response.headers["Content-Length"] = content_length
+
+    with (
+        patch(
+            "language_tool_python.download_lt.requests.get",
+            return_value=response,
+        ),
+        pytest.raises(PathError, match="Invalid Content-Length"),
+    ):
+        LocalLanguageTool.from_version_name()._get_remote_zip(io.BytesIO())
 
 
 def test_http_get_verifies_configured_sha256(
@@ -246,6 +375,42 @@ def test_http_get_bypass_skips_sha256_verification(
             assert zip_file.namelist() == [
                 "LanguageTool-6.9-SNAPSHOT/languagetool-server.jar"
             ]
+
+
+def test_snapshot_download_renames_archive_root_to_requested_date(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Test that date-pinned snapshots are installed under the requested date name.
+    """
+    requested_snapshot = "20240101"
+    payload = make_zip_payload(
+        {"LanguageTool-6.9-SNAPSHOT/languagetool-server.jar": b"jar"}
+    )
+    local_language_tool = LocalLanguageTool.from_version_name(requested_snapshot)
+    monkeypatch.setattr(download_lt, "confirm_java_compatibility", lambda _: None)
+
+    with (
+        workspace_temp_dir() as temp_dir,
+        patch(
+            "language_tool_python.download_lt.requests.get",
+            return_value=MockDownloadResponse(payload),
+        ),
+    ):
+        monkeypatch.setattr(
+            download_lt, "get_language_tool_download_path", lambda: temp_dir
+        )
+        local_language_tool.download()
+
+        expected_dir = temp_dir / f"LanguageTool-{requested_snapshot}"
+        assert (expected_dir / "languagetool-server.jar").read_bytes() == b"jar"
+        assert not (temp_dir / "LanguageTool-6.9-SNAPSHOT").exists()
+        assert local_language_tool.get_directory_path() == expected_dir
+
+        with patch("language_tool_python.download_lt.requests.get") as get_mock:
+            local_language_tool.download()
+
+        get_mock.assert_not_called()
 
 
 def test_install_oldest_supported_version() -> None:
