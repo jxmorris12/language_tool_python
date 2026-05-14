@@ -315,6 +315,20 @@ Exit codes:
 - `LTP_DOWNLOAD_SHA256_<VERSION>`: version-specific expected SHA-256 for the downloaded LanguageTool archive, for example `LTP_DOWNLOAD_SHA256_6_9_SNAPSHOT`.
 - `LTP_DOWNLOAD_SHA256`: fallback expected SHA-256 for the downloaded LanguageTool archive.
 - `LTP_BYPASS_VERIFIED_DOWNLOADS`: set to `true` to skip SHA-256 verification.
+- `LTP_MAX_DOWNLOAD_BYTES`: maximum downloaded ZIP size in bytes.
+    - default: `536870912` (512 MiB)
+- `LTP_SAFE_ZIP_MAX_ARCHIVE_BYTES`: maximum total compressed member size in bytes.
+    - default: `536870912` (512 MiB)
+- `LTP_SAFE_ZIP_MAX_EXTRACTED_BYTES`: maximum total extracted size in bytes.
+    - default: `805306368` (768 MiB)
+- `LTP_SAFE_ZIP_MAX_MEMBERS`: maximum ZIP member count.
+    - default: `5000`
+- `LTP_SAFE_ZIP_MAX_MEMBER_EXTRACTED_BYTES`: maximum extracted size for a single ZIP member in bytes.
+    - default: `134217728` (128 MiB)
+- `LTP_SAFE_ZIP_MAX_MEMBER_COMPRESSION_RATIO`: maximum compression ratio for a single ZIP member.
+    - default: `100.0`
+- `LTP_SAFE_ZIP_MAX_TOTAL_COMPRESSION_RATIO`: maximum compression ratio for the whole ZIP archive.
+    - default: `10.0`
 
 Downloaded zips are verified with SHA-256 when a checksum is available. Checksums are resolved in this order:
 1. `LTP_DOWNLOAD_SHA256_<VERSION>`, where non-alphanumeric characters in the version are replaced with `_` and the name is uppercased.
