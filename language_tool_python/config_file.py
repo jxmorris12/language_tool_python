@@ -12,6 +12,26 @@ from .exceptions import PathError
 logger = logging.getLogger(__name__)
 
 
+def _reject_line_breaks(field_name: str, value: str) -> None:
+    """
+    Reject values that would break the one-option-per-line config format.
+
+    :param field_name: The name of the configuration field being validated.
+    :type field_name: str
+    :param value: The value of the configuration field to validate.
+    :type value: str
+    :raises ValueError: If the value contains line break characters or ends with an odd number of backslashes.
+    """
+    if "\n" in value or "\r" in value:
+        err = f"config {field_name} cannot contain line breaks"
+        raise ValueError(err)
+
+    trailing_backslashes = len(value) - len(value.rstrip("\\"))
+    if trailing_backslashes % 2 == 1:
+        err = f"config {field_name} cannot end with an odd number of backslashes"
+        raise ValueError(err)
+
+
 @dataclass(frozen=True)
 class OptionSpec:
     """
@@ -176,14 +196,17 @@ def _encode_config(config: Dict[str, Any]) -> Dict[str, str]:
     logger.debug("Encoding LanguageTool config with keys: %s", list(config.keys()))
     encoded: Dict[str, str] = {}
     for key, value in config.items():
+        _reject_line_breaks("key", key)
         if _is_lang_key(key) and key.count("-") == 1:  # lang-<code>
             logger.debug("Encoding language option %s=%r", key, value)
             encoded[key] = str(value)
+            _reject_line_breaks(key, encoded[key])
             continue
         if _is_lang_key(key) and key.count("-") == 2:  # lang-<code>-dictPath
             logger.debug("Encoding language dictPath %s=%r", key, value)
             _path_validator(value)
             encoded[key] = _path_encoder(value)
+            _reject_line_breaks(key, encoded[key])
             continue
 
         spec = CONFIG_SCHEMA.get(key)
@@ -197,6 +220,7 @@ def _encode_config(config: Dict[str, Any]) -> Dict[str, str]:
         if spec.validator is not None:
             spec.validator(value)
         encoded[key] = spec.encoder(value)
+        _reject_line_breaks(key, encoded[key])
     return encoded
 
 
