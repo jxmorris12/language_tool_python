@@ -613,7 +613,7 @@ class LanguageTool:
         """
         url = urllib.parse.urljoin(self._url, "check")
         logger.debug("Sending text to LanguageTool server at %s", url)
-        response = self._query_server(url, self._create_params(text))
+        response = self._query_server(url, self._create_params(text), method="post")
         matches = response["matches"]
         return [Match(match, text) for match in matches]
 
@@ -865,6 +865,7 @@ class LanguageTool:
         url: str,
         params: Optional[Dict[str, str]] = None,
         num_tries: int = 2,
+        method: Literal["get", "post"] = "get",
     ) -> Any:
         """
         Query the server with the given URL and parameters.
@@ -875,6 +876,8 @@ class LanguageTool:
         :type params: Optional[Dict[str, str]], optional
         :param num_tries: The number of times to retry the query in case of failure, defaults to 2.
         :type num_tries: int, optional
+        :param method: HTTP method to use for the request. ``post`` sends params in the request body.
+        :type method: Literal["get", "post"]
         :return: The JSON response from the server.
         :rtype: Any
         :raises LanguageToolError: If the server returns an invalid JSON response or if the query fails after the specified number of retries.
@@ -882,12 +885,21 @@ class LanguageTool:
         logger.debug("_query_server url: %s", url)
         for n in range(num_tries):
             try:
-                with requests.get(
-                    url,
-                    params=params,
-                    timeout=self._TIMEOUT,
-                    proxies=self._proxies,
-                ) as response:
+                if method == "post":
+                    response_context = requests.post(
+                        url,
+                        data=params,
+                        timeout=self._TIMEOUT,
+                        proxies=self._proxies,
+                    )
+                else:
+                    response_context = requests.get(
+                        url,
+                        params=params,
+                        timeout=self._TIMEOUT,
+                        proxies=self._proxies,
+                    )
+                with response_context as response:
                     try:
                         return response.json()
                     except json.decoder.JSONDecodeError as e:
