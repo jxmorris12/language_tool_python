@@ -43,6 +43,10 @@ BASE_URL_SNAPSHOT = os.environ.get(
     "https://internal1.languagetool.org/snapshots/",
 )
 FILENAME_SNAPSHOT = "LanguageTool-{version}-snapshot.zip"
+BASE_URL_NEW_RELEASES = os.environ.get(
+    "LTP_DOWNLOAD_HOST_NEW_RELEASES",
+    "https://github.com/jxmorris12/language_tool_python/releases/download/LanguageTool-{version}/",
+)
 BASE_URL_RELEASE = os.environ.get(
     "LTP_DOWNLOAD_HOST_RELEASE",
     "https://languagetool.org/download/",
@@ -806,7 +810,8 @@ class ReleaseLocalLanguageTool(LocalLanguageTool):
         Get the download URL for this release version.
 
         URLs are constructed based on version:
-        - Versions >= 6.0 are downloaded from the main release page
+        - Versions >= 6.7 are downloaded from the new release page
+        - Versions 6.0 - 6.6 are downloaded from the main release page
         - Versions 4.0 - 5.9 are downloaded from the archive
         - Versions < 4.0 are not supported
 
@@ -815,9 +820,13 @@ class ReleaseLocalLanguageTool(LocalLanguageTool):
         :raises PathError: If the version is below 4.0 (unsupported).
         """
         version_num = Version(self._version_name)
+        filename = FILENAME_RELEASE.format(version=self._version_name)
+        # Versions >= 6.7 from new release page
+        if version_num >= Version("6.7"):
+            base_url = BASE_URL_NEW_RELEASES.format(version=self._version_name)
+            return urljoin(base_url, filename)
         # Versions >= 6.0 from main download page
         if version_num >= Version("6.0"):
-            filename = FILENAME_RELEASE.format(version=self._version_name)
             return urljoin(BASE_URL_RELEASE, filename)
         if version_num < Version("4.0"):
             err = (
@@ -826,7 +835,6 @@ class ReleaseLocalLanguageTool(LocalLanguageTool):
             )
             raise PathError(err)
         # Versions < 6.0 from archive
-        filename = FILENAME_RELEASE.format(version=self._version_name)
         return urljoin(BASE_URL_ARCHIVE, filename)
 
 
