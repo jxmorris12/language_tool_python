@@ -1,5 +1,29 @@
 # language_tool_python Changelog
 
+## 3.4.0 (2026-05-15)
+- Corrected a bug in `language_tool_python.server.LanguageTool.check` where the LT `/check` endpoint was queried with GET instead of POST.
+- Corrected a bug in `language_tool_python.config_file.LanguageToolConfig` where config keys and values could contain line breaks or end with an odd number of backslashes.
+- Corrected the default LT download version (from `latest` snapshot to release `6.8`).
+- Added SHA-256 verification for downloaded LT zip files.
+- Added a bundled `language_tool_python/integrity.toml` manifest containing SHA-256 checksums for LT release/archive downloads.
+- Added new env variables for LT download verification:
+    - `LTP_DOWNLOAD_SHA256_<VERSION>`
+    - `LTP_DOWNLOAD_SHA256`
+    - `LTP_BYPASS_VERIFIED_DOWNLOADS`
+- Added a maximum download size limit for LT zip files, configurable with `LTP_MAX_DOWNLOAD_BYTES`.
+- Added `language_tool_python.safe_zip.SafeZipExtractor` and `language_tool_python.safe_zip.SafeZipLimits` to extract ZIP files safely.
+- Edited LT ZIP extraction to reject unsafe paths, symlinks, unsupported member types, duplicate paths, file/directory conflicts, oversized archives/members, suspicious compression ratios and overwrites of existing paths.
+- Added new env variables for safe ZIP extraction limits:
+    - `LTP_SAFE_ZIP_MAX_ARCHIVE_BYTES`
+    - `LTP_SAFE_ZIP_MAX_EXTRACTED_BYTES`
+    - `LTP_SAFE_ZIP_MAX_MEMBERS`
+    - `LTP_SAFE_ZIP_MAX_MEMBER_EXTRACTED_BYTES`
+    - `LTP_SAFE_ZIP_MAX_MEMBER_COMPRESSION_RATIO`
+    - `LTP_SAFE_ZIP_MAX_TOTAL_COMPRESSION_RATIO`
+- Added the possibility to download LT releases 6.7 and newer from the new release page.
+- Added `LTP_DOWNLOAD_HOST_NEW_RELEASES` to override the new LT release download host.
+- Added `language_tool_python.utils.get_env_int` and `language_tool_python.utils.get_env_float`.
+
 ## 3.3.1 (2026-05-10)
 - Edited the LanguageTool snapshot current version (from 6.8-SNAPSHOT to 6.9-SNAPSHOT) to allow users to retrieve automatically the latest snapshot version of LT.
 
