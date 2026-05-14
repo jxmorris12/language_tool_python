@@ -264,6 +264,29 @@ def test_http_get_rejects_invalid_content_length(
         LocalLanguageTool.from_version_name()._get_remote_zip(io.BytesIO())
 
 
+def test_latest_snapshot_uses_latest_download_url_and_current_date(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Test that latest remains a snapshot alias installed under the current date.
+    """
+    monkeypatch.setattr(
+        download_lt,
+        "BASE_URL_SNAPSHOT",
+        "https://example.test/snapshots/",
+    )
+
+    with patch("language_tool_python.download_lt.datetime") as datetime_mock:
+        datetime_mock.now.return_value.strftime.return_value = "20240514"
+        local_language_tool = LocalLanguageTool.from_version_name("latest")
+
+    assert local_language_tool.version_name == "20240514"
+    assert (
+        local_language_tool.download_url
+        == "https://example.test/snapshots/LanguageTool-latest-snapshot.zip"
+    )
+
+
 @pytest.mark.parametrize("release_version", ["6.7", "6.8"])  # type: ignore[untyped-decorator]
 def test_release_download_url_uses_new_release_base_from_6_7(
     release_version: str,
@@ -487,6 +510,44 @@ def test_snapshot_download_renames_archive_root_to_requested_date(
         local_language_tool.download()
 
         expected_dir = temp_dir / f"LanguageTool-{requested_snapshot}"
+        assert (expected_dir / "languagetool-server.jar").read_bytes() == b"jar"
+        assert not (temp_dir / "LanguageTool-6.9-SNAPSHOT").exists()
+        assert local_language_tool.get_directory_path() == expected_dir
+
+        with patch("language_tool_python.download_lt.requests.get") as get_mock:
+            local_language_tool.download()
+
+        get_mock.assert_not_called()
+
+
+def test_latest_snapshot_download_renames_archive_root_to_current_date(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Test that latest snapshots are installed under the current date name.
+    """
+    current_snapshot_date = "20240514"
+    payload = make_zip_payload(
+        {"LanguageTool-6.9-SNAPSHOT/languagetool-server.jar": b"jar"}
+    )
+    with patch("language_tool_python.download_lt.datetime") as datetime_mock:
+        datetime_mock.now.return_value.strftime.return_value = current_snapshot_date
+        local_language_tool = LocalLanguageTool.from_version_name("latest")
+    monkeypatch.setattr(download_lt, "confirm_java_compatibility", lambda _: None)
+
+    with (
+        workspace_temp_dir() as temp_dir,
+        patch(
+            "language_tool_python.download_lt.requests.get",
+            return_value=MockDownloadResponse(payload),
+        ),
+    ):
+        monkeypatch.setattr(
+            download_lt, "get_language_tool_download_path", lambda: temp_dir
+        )
+        local_language_tool.download()
+
+        expected_dir = temp_dir / f"LanguageTool-{current_snapshot_date}"
         assert (expected_dir / "languagetool-server.jar").read_bytes() == b"jar"
         assert not (temp_dir / "LanguageTool-6.9-SNAPSHOT").exists()
         assert local_language_tool.get_directory_path() == expected_dir

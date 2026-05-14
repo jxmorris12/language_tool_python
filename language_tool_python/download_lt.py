@@ -57,8 +57,8 @@ BASE_URL_ARCHIVE = os.environ.get(
 )
 FILENAME_RELEASE = "LanguageTool-{version}.zip"
 
-LTP_DOWNLOAD_VERSION = "latest"
-LT_SNAPSHOT_CURRENT_VERSION = "6.9-SNAPSHOT"
+LTP_DOWNLOAD_VERSION = "6.8"
+LT_SNAPSHOT_LATEST_VERSION = "latest"
 LTP_DOWNLOAD_SHA256_ENV_VAR = "LTP_DOWNLOAD_SHA256"
 LTP_BYPASS_VERIFIED_DOWNLOADS_ENV_VAR = "LTP_BYPASS_VERIFIED_DOWNLOADS"
 LTP_MAX_DOWNLOAD_BYTES_ENV_VAR = "LTP_MAX_DOWNLOAD_BYTES"
@@ -399,13 +399,16 @@ class LocalLanguageTool(ABC):
         This factory method determines the appropriate subclass (ReleaseLocalLanguageTool
         or SnapshotLocalLanguageTool) based on the version name format.
 
-        :param version_name: The version name (e.g., '6.0', '20240101', or 'latest').
+        :param version_name: The version name (e.g., '6.8', '20240101', or 'latest').
         :type version_name: str
         :return: An instance of the appropriate LocalLanguageTool subclass.
         :rtype: LocalLanguageTool
         :raises ValueError: If the version name format is not recognized.
         """
-        if re.match(r"^\d{8}$", version_name) or version_name == LTP_DOWNLOAD_VERSION:
+        if (
+            re.match(r"^\d{8}$", version_name)
+            or version_name == LT_SNAPSHOT_LATEST_VERSION
+        ):
             return SnapshotLocalLanguageTool(version_name)
         if re.match(r"^\d+\.\d+$", version_name):
             return ReleaseLocalLanguageTool(version_name)
@@ -430,11 +433,7 @@ class LocalLanguageTool(ABC):
             err = f"Could not determine LanguageTool version from path: {path}"
             raise ValueError(err)
         version_name = match.group(1)
-        return cls.from_version_name(
-            version_name
-            if version_name != LT_SNAPSHOT_CURRENT_VERSION
-            else LTP_DOWNLOAD_VERSION
-        )
+        return cls.from_version_name(version_name)
 
     @abstractmethod
     def download(self) -> None:
@@ -856,6 +855,11 @@ class SnapshotLocalLanguageTool(LocalLanguageTool):
         Initialize a SnapshotLocalLanguageTool instance.
         """
         self._version_name = version_name
+        self._install_version_name = (
+            datetime.now().strftime("%Y%m%d")
+            if version_name == LT_SNAPSHOT_LATEST_VERSION
+            else version_name
+        )
 
     def download(self) -> None:
         """
@@ -915,15 +919,13 @@ class SnapshotLocalLanguageTool(LocalLanguageTool):
         """
         Get the snapshot version name.
 
-        Returns the current snapshot version string if 'latest' was specified,
-        otherwise returns the specified date string.
+        Returns the current date if 'latest' was specified, otherwise returns the
+        specified date string.
 
         :return: The snapshot version string.
         :rtype: str
         """
-        if self._version_name == LTP_DOWNLOAD_VERSION:
-            return LT_SNAPSHOT_CURRENT_VERSION
-        return self._version_name
+        return self._install_version_name
 
     @property
     def version_into(self) -> datetime:
@@ -936,11 +938,7 @@ class SnapshotLocalLanguageTool(LocalLanguageTool):
         :return: A datetime object representing the snapshot date.
         :rtype: datetime
         """
-        if self._version_name == LTP_DOWNLOAD_VERSION:
-            date_str = datetime.now().strftime("%Y%m%d")
-        else:
-            date_str = self._version_name
-        return datetime.strptime(date_str, "%Y%m%d")
+        return datetime.strptime(self.version_name, "%Y%m%d")
 
     @property
     def download_url(self) -> str:
