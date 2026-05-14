@@ -264,6 +264,90 @@ def test_http_get_rejects_invalid_content_length(
         LocalLanguageTool.from_version_name()._get_remote_zip(io.BytesIO())
 
 
+@pytest.mark.parametrize("release_version", ["6.7", "6.8"])  # type: ignore[untyped-decorator]
+def test_release_download_url_uses_new_release_base_from_6_7(
+    release_version: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Test that releases 6.7 and newer include the version in the base URL.
+    """
+    monkeypatch.setattr(
+        download_lt,
+        "BASE_URL_NEW_RELEASES",
+        "https://example.test/releases/LanguageTool-{version}/",
+    )
+
+    local_language_tool = LocalLanguageTool.from_version_name(release_version)
+
+    expected_url = (
+        f"https://example.test/releases/LanguageTool-{release_version}/"
+        f"LanguageTool-{release_version}.zip"
+    )
+
+    assert local_language_tool.download_url == expected_url
+
+
+def test_release_download_url_keeps_main_release_base_for_6_6(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Test that release 6.6 keeps using the versioned filename.
+    """
+    monkeypatch.setattr(
+        download_lt,
+        "BASE_URL_RELEASE",
+        "https://example.test/download/",
+    )
+
+    local_language_tool = LocalLanguageTool.from_version_name("6.6")
+
+    assert (
+        local_language_tool.download_url
+        == "https://example.test/download/LanguageTool-6.6.zip"
+    )
+
+
+def test_release_download_url_keeps_main_release_base_before_6_7(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Test that earlier 6.x releases keep using the versioned filename.
+    """
+    monkeypatch.setattr(
+        download_lt,
+        "BASE_URL_RELEASE",
+        "https://example.test/download/",
+    )
+
+    local_language_tool = LocalLanguageTool.from_version_name("6.5")
+
+    assert (
+        local_language_tool.download_url
+        == "https://example.test/download/LanguageTool-6.5.zip"
+    )
+
+
+def test_release_download_url_keeps_archive_base_before_6_0(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Test that older supported releases keep using the archive base URL.
+    """
+    monkeypatch.setattr(
+        download_lt,
+        "BASE_URL_ARCHIVE",
+        "https://example.test/archive/",
+    )
+
+    local_language_tool = LocalLanguageTool.from_version_name("5.9")
+
+    assert (
+        local_language_tool.download_url
+        == "https://example.test/archive/LanguageTool-5.9.zip"
+    )
+
+
 def test_http_get_verifies_configured_sha256(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
