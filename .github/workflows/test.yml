@@ -41,21 +41,9 @@ jobs:
         distribution: 'temurin'
         java-version: '26'
 
-    - name: Install dependencies
-      run: |
-        uv sync --group tests --frozen
-
-    - name: Verify installed packages
-      run: |
-        uv pip list
-
-    - name: Import language_tool_python
-      run: |
-        printf "import language_tool_python\n" | uv run python
-
     - name: Test with pytest
       run: |
-        uv run pytest
+        make test
 
   lint:
     timeout-minutes: 10
@@ -71,8 +59,7 @@ jobs:
       # Keep in sync ruff version with .pre-commit-config.yaml
       - name: Run Ruff Linter
         run: |
-          uvx ruff@0.15.12 check .
-          uvx ruff@0.15.12 format --check .
+          make ruff-check
   
   type_check:
     timeout-minutes: 10
@@ -84,12 +71,8 @@ jobs:
         
       - name: Install uv
         uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # 8.1.0
-
-      - name: Install dependencies
-        run: |
-          uv sync --group types --frozen
           
       # Keep in sync mypy version with .pre-commit-config.yaml
       - name: Run Mypy Type Checker
         run: | 
-          uvx mypy@2.0.0
+          make mypy-check

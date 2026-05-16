@@ -178,7 +178,7 @@ def test_disabled_rule_in_config() -> None:
         assert len(matches) == 0
 
 
-@pytest.mark.parametrize(  # type: ignore[untyped-decorator]
+@pytest.mark.parametrize(
     "config",
     [
         {"blockedReferrers": "example.com\ntrustXForwardForHeader=true"},
@@ -195,7 +195,7 @@ def test_config_rejects_line_break_injection(config: dict[str, object]) -> None:
         LanguageToolConfig(config)
 
 
-@pytest.mark.parametrize(  # type: ignore[untyped-decorator]
+@pytest.mark.parametrize(
     "config",
     [
         {"blockedReferrers": "example.com\\"},

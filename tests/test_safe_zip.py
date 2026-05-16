@@ -141,7 +141,7 @@ def test_safe_zip_limits_use_env_overrides(
         importlib.reload(safe_zip)
 
 
-@pytest.mark.parametrize("configured", ["nan", "inf"])  # type: ignore[untyped-decorator]
+@pytest.mark.parametrize("configured", ["nan", "inf"])
 def test_safe_zip_float_env_rejects_non_finite_values(
     monkeypatch: pytest.MonkeyPatch,
     configured: str,
@@ -156,7 +156,7 @@ def test_safe_zip_float_env_rejects_non_finite_values(
         utils.get_env_float(env_var, 1.0)
 
 
-@pytest.mark.parametrize(  # type: ignore[untyped-decorator]
+@pytest.mark.parametrize(
     "filename",
     [
         "../outside.txt",
