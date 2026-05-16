@@ -63,14 +63,11 @@ types = [
 language_tool_python = "language_tool_python.__main__:main"
 
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["uv_build>=0.11.14,<0.12"]
+build-backend = "uv_build"
 
-[tool.setuptools]
-packages = { find = { include = ["language_tool_python*"] } }
-
-[tool.setuptools.package-data]
-language_tool_python = ["py.typed", "integrity.toml", "logging.toml"]
+[tool.uv.build-backend]
+module-root = "" # uv expects the code to be in a "src/" directory by default, but our code is in the the current dir
 
 [tool.ruff.lint]
 select = ["F", "W", "I", "B", "SIM", "RET", "Q", "N", "S", "BLE"]
