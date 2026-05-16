@@ -9,7 +9,7 @@ from language_tool_python._deprecated import deprecated
 def test_deprecated_emits_warning() -> None:
     """Test that the deprecated decorator emits a DeprecationWarning."""
 
-    @deprecated("This function is deprecated")  # type: ignore
+    @deprecated("This function is deprecated")  # type: ignore[untyped-decorator, unused-ignore]
     def old_function() -> str:
         return "result"
 
@@ -26,7 +26,7 @@ def test_deprecated_emits_warning() -> None:
 def test_deprecated_with_custom_category() -> None:
     """Test that the deprecated decorator can use a custom warning category."""
 
-    @deprecated("This is a user warning", category=UserWarning)  # type: ignore
+    @deprecated("This is a user warning", category=UserWarning)  # type: ignore[untyped-decorator, unused-ignore]
     def old_function() -> int:
         return 42
 
@@ -43,7 +43,7 @@ def test_deprecated_with_custom_category() -> None:
 def test_deprecated_preserves_function_signature() -> None:
     """Test that the deprecated decorator preserves function metadata."""
 
-    @deprecated("Old function")  # type: ignore
+    @deprecated("Old function")  # type: ignore[untyped-decorator, unused-ignore]
     def my_function(x: int, y: int) -> int:
         """Add two numbers."""
         return x + y
@@ -58,7 +58,7 @@ def test_deprecated_preserves_function_signature() -> None:
 def test_deprecated_with_multiple_calls() -> None:
     """Test that warning is emitted on each call."""
 
-    @deprecated("Deprecated function")  # type: ignore
+    @deprecated("Deprecated function")  # type: ignore[untyped-decorator, unused-ignore]
     def func() -> str:
         return "value"
 
@@ -75,7 +75,7 @@ def test_deprecated_with_multiple_calls() -> None:
 def test_deprecated_with_args_and_kwargs() -> None:
     """Test that deprecated decorator works with functions that have args and kwargs."""
 
-    @deprecated("This function is obsolete")  # type: ignore
+    @deprecated("This function is obsolete")  # type: ignore[untyped-decorator, unused-ignore]
     def complex_function(
         a: int, b: int, *args: int, c: Optional[int] = None, **kwargs: int
     ) -> Tuple[int, int, Tuple[int, ...], Optional[int], Dict[str, int]]:

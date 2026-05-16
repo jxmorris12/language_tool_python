@@ -388,15 +388,16 @@ Main exceptions in `language_tool_python.exceptions`:
 
 ```bash
 # Install dev dependencies
-uv sync --group tests --group docs --group types
+make install
+
+# Format code
+make format
 
 # Lint / format / types
-uvx ruff@0.15.12 check .
-uvx ruff@0.15.12 format .
-uvx mypy@2.0.0
+make check
 
 # Tests
-pytest
+make test
 ```
 
 ## License

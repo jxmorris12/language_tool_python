@@ -8,7 +8,7 @@ The custom decorator also issues a DeprecationWarning when the decorated object 
 """
 
 try:
-    from warnings import deprecated  # type: ignore [attr-defined]
+    from warnings import deprecated  # type: ignore [attr-defined, unused-ignore]
 except ImportError:
     import functools
     from typing import Any, Callable, Optional, Type, TypeVar, cast
@@ -16,7 +16,7 @@ except ImportError:
 
     F = TypeVar("F", bound=Callable[..., Any])
 
-    def deprecated(
+    def deprecated(  # type: ignore [no-redef, unused-ignore]
         message: str,
         /,
         *,

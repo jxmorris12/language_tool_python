@@ -244,7 +244,7 @@ def test_http_get_rejects_oversized_stream_with_small_content_length(
         LocalLanguageTool.from_version_name()._get_remote_zip(io.BytesIO())
 
 
-@pytest.mark.parametrize("content_length", ["not-a-number", "-1"])  # type: ignore[untyped-decorator]
+@pytest.mark.parametrize("content_length", ["not-a-number", "-1"])
 def test_http_get_rejects_invalid_content_length(
     content_length: str,
 ) -> None:
@@ -287,7 +287,7 @@ def test_latest_snapshot_uses_latest_download_url_and_current_date(
     )
 
 
-@pytest.mark.parametrize("release_version", ["6.7", "6.8"])  # type: ignore[untyped-decorator]
+@pytest.mark.parametrize("release_version", ["6.7", "6.8"])
 def test_release_download_url_uses_new_release_base_from_6_7(
     release_version: str,
     monkeypatch: pytest.MonkeyPatch,

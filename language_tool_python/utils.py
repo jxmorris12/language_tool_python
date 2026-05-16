@@ -205,7 +205,7 @@ def get_language_tool_download_path() -> Path:
 @deprecated(
     "This function is no longer used internally and will be removed in 4.0.\nReplace its usage by an inline alternative.",
     stacklevel=2,
-)  # type: ignore
+)  # type: ignore[untyped-decorator, unused-ignore]
 def find_existing_language_tool_downloads(download_folder: Path) -> List[Path]:
     """
     Find existing LanguageTool downloads in the specified folder.
@@ -226,7 +226,7 @@ def find_existing_language_tool_downloads(download_folder: Path) -> List[Path]:
 @deprecated(
     "This function is no longer used internally and will be removed in 4.0.",
     stacklevel=2,
-)  # type: ignore
+)  # type: ignore[untyped-decorator, unused-ignore]
 def _extract_version(path: Path) -> version.Version:
     """
     Extract the version number from a LanguageTool directory path.
@@ -256,7 +256,7 @@ def _extract_version(path: Path) -> version.Version:
 @deprecated(
     "This function is no longer used internally and will be removed in 4.0.\nUse instead language_tool_python.download_lt.LocalLanguageTool.get_latest_installed_version.",
     stacklevel=2,
-)  # type: ignore
+)  # type: ignore[untyped-decorator, unused-ignore]
 def get_language_tool_directory() -> Path:
     """
     Get the directory path of the LanguageTool installation.
@@ -277,7 +277,7 @@ def get_language_tool_directory() -> Path:
     if not download_folder.is_dir():
         err = f"LanguageTool directory path is not a valid directory {download_folder}."
         raise NotADirectoryError(err)
-    language_tool_path_list = find_existing_language_tool_downloads(download_folder)  # type: ignore
+    language_tool_path_list = find_existing_language_tool_downloads(download_folder)
 
     if not len(language_tool_path_list):
         err = f"LanguageTool not found in {download_folder}."
@@ -286,7 +286,7 @@ def get_language_tool_directory() -> Path:
     # Return the latest version found in the directory.
     latest: Path = max(
         language_tool_path_list,
-        key=_extract_version,  # type: ignore
+        key=_extract_version,
     )
     logger.debug("Using LanguageTool directory: %s", latest)
     return latest
@@ -295,7 +295,7 @@ def get_language_tool_directory() -> Path:
 @deprecated(
     "This function is no longer used internally and will be removed in 4.0.\nUse instead language_tool_python.download_lt.LocalLanguageTool.get_server_cmd.",
     stacklevel=2,
-)  # type: ignore
+)  # type: ignore[untyped-decorator, unused-ignore]
 def get_server_cmd(
     port: Optional[int] = None,
     config: Optional[LanguageToolConfig] = None,
@@ -313,7 +313,7 @@ def get_server_cmd(
     .. deprecated:: 3.3.0
         This function is no longer used internally and will be removed in 4.0.
     """
-    java_path, jar_path = get_jar_info()  # type: ignore
+    java_path, jar_path = get_jar_info()
     cmd = [
         str(java_path),
         "-cp",
@@ -334,7 +334,7 @@ def get_server_cmd(
 @deprecated(
     "This function is no longer used internally and will be removed in 4.0.",
     stacklevel=2,
-)  # type: ignore
+)  # type: ignore[untyped-decorator, unused-ignore]
 def get_jar_info() -> Tuple[Path, Path]:
     """
     Retrieve the path to the Java executable and the LanguageTool JAR file.
@@ -361,7 +361,7 @@ def get_jar_info() -> Tuple[Path, Path]:
     # otherwise look in the download directory
     jar_dir_name = os.environ.get(
         LTP_JAR_DIR_PATH_ENV_VAR,
-        get_language_tool_directory(),  # type: ignore
+        get_language_tool_directory(),
     )
     jar_path = None
     for jar_name in JAR_NAMES:

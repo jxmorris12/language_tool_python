@@ -242,7 +242,7 @@ def confirm_java_compatibility(
 @deprecated(
     "This function is no longer used internally and will be removed in 4.0.",
     stacklevel=2,
-)  # type: ignore
+)  # type: ignore[untyped-decorator, unused-ignore]
 def get_common_prefix(z: zipfile.ZipFile) -> Optional[str]:
     """
     Determine the common prefix of all file names in a zip archive.
@@ -265,7 +265,7 @@ def get_common_prefix(z: zipfile.ZipFile) -> Optional[str]:
 @deprecated(
     "This function is no longer used internally and will be removed in 4.0.",
     stacklevel=2,
-)  # type: ignore
+)  # type: ignore[untyped-decorator, unused-ignore]
 def http_get(
     url: str,
     out_file: IO[bytes],
@@ -287,14 +287,14 @@ def http_get(
         # Fallback to default behavior if the extracted version is not supported
         local_lt = LocalLanguageTool.from_version_name(LTP_DOWNLOAD_VERSION)
 
-    with local_lt._get_remote_zip(out_file, proxies=proxies):  #  type: ignore
+    with local_lt._get_remote_zip(out_file, proxies=proxies):
         pass
 
 
 @deprecated(
     "This function is no longer used internally and will be removed in 4.0.",
     stacklevel=2,
-)  # type: ignore
+)  # type: ignore[untyped-decorator, unused-ignore]
 def unzip_file(temp_file_name: str, directory_to_extract_to: Path) -> None:
     """
     Unzips a zip file to a specified directory.
@@ -323,7 +323,7 @@ def unzip_file(temp_file_name: str, directory_to_extract_to: Path) -> None:
 @deprecated(
     "This function is no longer used internally and will be removed in 4.0.",
     stacklevel=2,
-)  # type: ignore
+)  # type: ignore[untyped-decorator, unused-ignore]
 def download_zip(url: str, directory: Path) -> None:
     """
     Downloads a ZIP file from the given URL and extracts it to the specified directory.
@@ -339,10 +339,10 @@ def download_zip(url: str, directory: Path) -> None:
     logger.info("Downloading from %s to %s", url, directory)
     # Download file using a context manager.
     with tempfile.NamedTemporaryFile(suffix=".zip", delete=False) as downloaded_file:
-        http_get(url, downloaded_file)  # type: ignore
+        http_get(url, downloaded_file)
         temp_name = downloaded_file.name
     # Extract zip file to path.
-    unzip_file(temp_name, directory)  # type: ignore
+    unzip_file(temp_name, directory)
     # Remove the temporary file.
     Path(temp_name).unlink(missing_ok=True)
 
@@ -350,7 +350,7 @@ def download_zip(url: str, directory: Path) -> None:
 @deprecated(
     "This function is no longer used internally and will be removed in 4.0.\nUse instead language_tool_python.download_lt.LocalLanguageTool.download.",
     stacklevel=2,
-)  # type: ignore
+)  # type: ignore[untyped-decorator, unused-ignore]
 def download_lt(language_tool_version: str = LTP_DOWNLOAD_VERSION) -> None:
     """
     Downloads and extracts the specified version of LanguageTool.
@@ -731,7 +731,11 @@ class LocalLanguageTool(ABC):
         # At this point, both objects are the same type, so version_into will be the same type
         self_version = self.version_into
         other_version = other.version_into
-        return self_version < other_version  # type: ignore
+        if isinstance(self_version, Version) and isinstance(other_version, Version):
+            return self_version < other_version
+        if isinstance(self_version, datetime) and isinstance(other_version, datetime):
+            return self_version < other_version
+        return NotImplemented
 
 
 class ReleaseLocalLanguageTool(LocalLanguageTool):

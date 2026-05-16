@@ -58,6 +58,13 @@ types = [
     "types-toml",
 ]
 
+quality = [
+    # Keep in sync mypy version with .pre-commit-config.yaml
+    "mypy==2.0.0; python_version >= '3.10'", # mypy checks must be run with Python >= 3.10
+    # Keep in sync ruff version with .pre-commit-config.yaml
+    "ruff==0.15.12",
+]
+
 
 [project.scripts]
 language_tool_python = "language_tool_python.__main__:main"
@@ -84,4 +91,3 @@ warn_unreachable = true
 no_implicit_optional = true
 show_error_codes = true
 pretty = true
-disable_error_code = ["import-not-found", "import-untyped", "unused-ignore"]

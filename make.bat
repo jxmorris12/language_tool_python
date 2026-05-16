@@ -1,42 +1,76 @@
 @echo off
 
+where uv >nul 2>nul
+if errorlevel 1 (
+    echo uv not found. Install uv to use make.bat targets:
+    echo powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+    exit /b 1
+)
+
+if "%1"=="install" goto install
+if "%1"=="format" goto format
+if "%1"=="fix" goto fix
+if "%1"=="ruff-check" goto ruff-check
+if "%1"=="mypy-check" goto mypy-check
 if "%1"=="check" goto check
 if "%1"=="test" goto test
 if "%1"=="doc" goto doc
 if "%1"=="publish" goto publish
 
-echo Usage: make.bat [check^|test^|doc^|publish]
+echo Usage: make.bat [install^|format^|fix^|ruff-check^|mypy-check^|check^|test^|doc^|publish]
 exit /b 1
 
+:install
+uv sync --all-groups --locked
+exit /b %errorlevel%
+
+:format
+uv run --group quality --locked ruff format language_tool_python tests
+exit /b %errorlevel%
+
+:fix
+uv run --group quality --locked ruff check --fix language_tool_python tests
+exit /b %errorlevel%
+
+:ruff-check
+uv run --group quality --locked ruff check language_tool_python tests
+if errorlevel 1 exit /b %errorlevel%
+
+uv run --group quality --locked ruff format --check language_tool_python tests
+exit /b %errorlevel%
+
+:mypy-check
+uv run --locked python -c "import operator, sys; raise SystemExit(0 if operator.ge(sys.version_info[:2], (3, 10)) else 1)"
+if errorlevel 1 (
+    echo Skipping mypy: Python 3.10 or newer is required.
+    exit /b 0
+)
+
+uv run --group tests --group types --group quality --locked mypy
+exit /b %errorlevel%
+
 :check
-uvx ruff@0.15.12 check language_tool_python tests
+call :ruff-check
 if errorlevel 1 exit /b %errorlevel%
-
-uvx ruff@0.15.12 format --check language_tool_python tests
-if errorlevel 1 exit /b %errorlevel%
-
-uvx mypy@2.0.0
+call :mypy-check
 exit /b %errorlevel%
 
 :test
-pytest
+uv run --group tests --locked pytest
 if errorlevel 1 exit /b %errorlevel%
 
 uvx --with defusedxml genbadge coverage --input-file coverage.xml --silent
 exit /b %errorlevel%
 
 :doc
-uv sync --group tests --group docs --group types
-
-call .venv\Scripts\activate && uv run sphinx-apidoc -o docs\source\references language_tool_python
+call uv run --group docs --locked sphinx-apidoc -o docs\source\references language_tool_python
 if errorlevel 1 exit /b %errorlevel%
 
-call .venv\Scripts\activate && call docs\make.bat html
+call uv run --group docs --locked sphinx-build -M html docs/source docs/build
 exit /b %errorlevel%
 
 :publish
 if exist dist\ rmdir /s /q dist\
-if exist language_tool_python.egg-info\ rmdir /s /q language_tool_python.egg-info\
 
 uv build
 if errorlevel 1 exit /b %errorlevel%
