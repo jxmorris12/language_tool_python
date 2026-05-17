@@ -10,11 +10,13 @@ import uuid
 import zipfile
 from collections.abc import Iterator
 from contextlib import contextmanager
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 
+import language_tool_python
 from language_tool_python import download_lt
 from language_tool_python.download_lt import (
     LTP_BYPASS_VERIFIED_DOWNLOADS_ENV_VAR,
@@ -24,26 +26,32 @@ from language_tool_python.download_lt import (
 )
 from language_tool_python.exceptions import LanguageToolError, PathError
 
+EXPECTED_DOWNLOAD_BYTES_OVERRIDE = 123
+
 
 class MockDownloadResponse:
-    """
-    Minimal requests.Response replacement for download tests.
-    """
+    """Minimal requests.Response replacement for download tests."""
 
     def __init__(self, payload: bytes, status_code: int = 200) -> None:
+        """Initialize the mock response with the given payload and status code."""
         self.payload = payload
         self.status_code = status_code
         self.headers = {"Content-Length": str(len(payload))}
 
     def iter_content(self, chunk_size: int) -> Iterator[bytes]:
+        """Simulate streaming content by yielding chunks of the payload.
+
+        :param chunk_size: The size of each chunk to yield.
+        :type chunk_size: int
+        :return: An iterator that yields chunks of the payload.
+        :rtype: Iterator[bytes]
+        """
         for index in range(0, len(self.payload), chunk_size):
             yield self.payload[index : index + chunk_size]
 
 
 def make_zip_payload(files: dict[str, bytes]) -> bytes:
-    """
-    Create an in-memory ZIP payload for download tests.
-    """
+    """Create an in-memory ZIP payload for download tests."""
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w") as zip_file:
         for filename, payload in files.items():
@@ -53,9 +61,7 @@ def make_zip_payload(files: dict[str, bytes]) -> bytes:
 
 @contextmanager
 def workspace_temp_dir() -> Iterator[Path]:
-    """
-    Create a temporary directory inside the repository workspace.
-    """
+    """Create a temporary directory inside the repository workspace."""
     root = Path.cwd() / ".test_download_tmp"
     path = root / uuid.uuid4().hex
     path.mkdir(parents=True)
@@ -68,52 +74,50 @@ def workspace_temp_dir() -> Iterator[Path]:
 
 
 def test_install_inexistent_version() -> None:
-    """
-    Test that attempting to download a non-existent LanguageTool version raises an error.
-    This test verifies that the tool correctly handles invalid version numbers by raising
-    a LanguageToolError when trying to initialize with a version that does not exist.
+    """Test errors when downloading a non-existent LanguageTool version.
+
+    This test verifies that the tool correctly handles invalid version numbers by
+    raising a LanguageToolError when trying to initialize with a version that does not
+    exist.
 
     :raises AssertionError: If LanguageToolError is not raised for an invalid version.
     """
-    import language_tool_python
-
     with pytest.raises(LanguageToolError):
         language_tool_python.LanguageTool(language_tool_download_version="0.0")
 
 
 def test_install_too_old_version() -> None:
-    """
-    Test that attempting to download a too-old LanguageTool version raises an error.
-    This test verifies that the tool correctly handles versions that are no longer supported
-    by raising a PathError when trying to initialize with an outdated version.
+    """Test that attempting to download a too-old LanguageTool version raises an error.
+
+    This test verifies that the tool correctly handles versions that are no longer
+    supported by raising a PathError when trying to initialize with an outdated version.
 
     :raises AssertionError: If PathError is not raised for a too-old version.
     """
-    import language_tool_python
-
     with pytest.raises(PathError):
         language_tool_python.LanguageTool(language_tool_download_version="3.9")
 
 
 def test_inexistent_language() -> None:
-    """
-    Test that creating a LanguageTag with an invalid language code raises an error.
-    This test verifies that the LanguageTag constructor correctly validates language codes
-    and raises a ValueError when given a language code that is not supported.
+    """Test that creating a LanguageTag with an invalid language code raises an error.
+
+    This test verifies that the LanguageTag constructor correctly validates language
+    codes and raises a ValueError when given a language code that is not supported.
 
     :raises AssertionError: If ValueError is not raised for an invalid language code.
     """
-    import language_tool_python
-
-    with language_tool_python.LanguageTool("en-US") as tool, pytest.raises(ValueError):
+    with (
+        language_tool_python.LanguageTool("en-US") as tool,
+        pytest.raises(ValueError, match="unsupported language"),
+    ):
         language_tool_python.LanguageTag("xx-XX", tool._get_languages())
 
 
 def test_http_get_403_forbidden() -> None:
-    """
-    Test that http_get raises PathError when receiving a 403 Forbidden status code.
-    This test verifies that the function correctly handles forbidden access errors
-    when attempting to download files.
+    """Test that http_get raises PathError when receiving a 403 Forbidden status code.
+
+    This test verifies that the function correctly handles forbidden access errors when
+    attempting to download files.
 
     :raises AssertionError: If PathError is not raised for a 403 status code.
     """
@@ -121,20 +125,21 @@ def test_http_get_403_forbidden() -> None:
     mock_response.status_code = 403
     mock_response.headers = {}
 
+    out_file = io.BytesIO()
+    local_language_tool = LocalLanguageTool.from_version_name()
     with (
         patch(
-            "language_tool_python.download_lt.requests.get", return_value=mock_response
+            "language_tool_python.download_lt.requests.get",
+            return_value=mock_response,
         ),
         pytest.raises(PathError, match="Access forbidden to URL"),
     ):
-        out_file = io.BytesIO()
-        local_language_tool = LocalLanguageTool.from_version_name()
         local_language_tool._get_remote_zip(out_file)
 
 
 def test_http_get_other_error_codes() -> None:
-    """
-    Test that http_get raises PathError for various HTTP error codes (other than 404 and 403).
+    """Test PathError handling for unexpected HTTP status codes.
+
     This test verifies that the function correctly handles different HTTP error codes
     like 500 (Internal Server Error), 503 (Service Unavailable), etc.
 
@@ -147,6 +152,8 @@ def test_http_get_other_error_codes() -> None:
         mock_response.status_code = error_code
         mock_response.headers = {}
 
+        out_file = io.BytesIO()
+        local_language_tool = LocalLanguageTool.from_version_name()
         with (
             patch(
                 "language_tool_python.download_lt.requests.get",
@@ -154,19 +161,15 @@ def test_http_get_other_error_codes() -> None:
             ),
             pytest.raises(PathError, match=f"Failed to download.*{error_code}"),
         ):
-            out_file = io.BytesIO()
-            local_language_tool = LocalLanguageTool.from_version_name()
             local_language_tool._get_remote_zip(out_file)
 
 
 def test_http_get_rejects_oversized_content_length(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """
-    Test that oversized ZIP downloads are rejected before streaming.
-    """
+    """Test that oversized ZIP downloads are rejected before streaming."""
     payload = make_zip_payload(
-        {"LanguageTool-6.9-SNAPSHOT/languagetool-server.jar": b"jar"}
+        {"LanguageTool-6.9-SNAPSHOT/languagetool-server.jar": b"jar"},
     )
     response = MockDownloadResponse(payload)
     response.headers["Content-Length"] = "2"
@@ -185,15 +188,18 @@ def test_http_get_rejects_oversized_content_length(
 def test_max_download_bytes_uses_env_override(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """
-    Test that the download size limit can be configured from the environment.
-    """
+    """Test that the download size limit can be configured from the environment."""
     try:
         with monkeypatch.context() as env:
-            env.setenv(LTP_MAX_DOWNLOAD_BYTES_ENV_VAR, "123")
+            env.setenv(
+                LTP_MAX_DOWNLOAD_BYTES_ENV_VAR, str(EXPECTED_DOWNLOAD_BYTES_OVERRIDE)
+            )
             reloaded_download_lt = importlib.reload(download_lt)
 
-            assert reloaded_download_lt.MAX_DOWNLOAD_BYTES == 123
+            assert (
+                reloaded_download_lt.MAX_DOWNLOAD_BYTES
+                == EXPECTED_DOWNLOAD_BYTES_OVERRIDE
+            )
     finally:
         importlib.reload(download_lt)
 
@@ -201,11 +207,9 @@ def test_max_download_bytes_uses_env_override(
 def test_http_get_rejects_oversized_stream(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """
-    Test that downloads are still size-limited when Content-Length is missing.
-    """
+    """Test that downloads are still size-limited when Content-Length is missing."""
     payload = make_zip_payload(
-        {"LanguageTool-6.9-SNAPSHOT/languagetool-server.jar": b"jar"}
+        {"LanguageTool-6.9-SNAPSHOT/languagetool-server.jar": b"jar"},
     )
     response = MockDownloadResponse(payload)
     response.headers = {}
@@ -224,11 +228,9 @@ def test_http_get_rejects_oversized_stream(
 def test_http_get_rejects_oversized_stream_with_small_content_length(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """
-    Test that a lying Content-Length cannot bypass the streamed download limit.
-    """
+    """Test that a lying Content-Length cannot bypass the streamed download limit."""
     payload = make_zip_payload(
-        {"LanguageTool-6.9-SNAPSHOT/languagetool-server.jar": b"jar"}
+        {"LanguageTool-6.9-SNAPSHOT/languagetool-server.jar": b"jar"},
     )
     response = MockDownloadResponse(payload)
     response.headers["Content-Length"] = "1"
@@ -248,9 +250,7 @@ def test_http_get_rejects_oversized_stream_with_small_content_length(
 def test_http_get_rejects_invalid_content_length(
     content_length: str,
 ) -> None:
-    """
-    Test that invalid Content-Length values are rejected before streaming.
-    """
+    """Test that invalid Content-Length values are rejected before streaming."""
     response = MockDownloadResponse(b"")
     response.headers["Content-Length"] = content_length
 
@@ -267,9 +267,7 @@ def test_http_get_rejects_invalid_content_length(
 def test_latest_snapshot_uses_latest_download_url_and_current_date(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """
-    Test that latest remains a snapshot alias installed under the current date.
-    """
+    """Test that latest remains a snapshot alias installed under the current date."""
     monkeypatch.setattr(
         download_lt,
         "BASE_URL_SNAPSHOT",
@@ -292,9 +290,7 @@ def test_release_download_url_uses_new_release_base_from_6_7(
     release_version: str,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """
-    Test that releases 6.7 and newer include the version in the base URL.
-    """
+    """Test that releases 6.7 and newer include the version in the base URL."""
     monkeypatch.setattr(
         download_lt,
         "BASE_URL_NEW_RELEASES",
@@ -314,9 +310,7 @@ def test_release_download_url_uses_new_release_base_from_6_7(
 def test_release_download_url_keeps_main_release_base_for_6_6(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """
-    Test that release 6.6 keeps using the versioned filename.
-    """
+    """Test that release 6.6 keeps using the versioned filename."""
     monkeypatch.setattr(
         download_lt,
         "BASE_URL_RELEASE",
@@ -334,9 +328,7 @@ def test_release_download_url_keeps_main_release_base_for_6_6(
 def test_release_download_url_keeps_main_release_base_before_6_7(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """
-    Test that earlier 6.x releases keep using the versioned filename.
-    """
+    """Test that earlier 6.x releases keep using the versioned filename."""
     monkeypatch.setattr(
         download_lt,
         "BASE_URL_RELEASE",
@@ -354,9 +346,7 @@ def test_release_download_url_keeps_main_release_base_before_6_7(
 def test_release_download_url_keeps_archive_base_before_6_0(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """
-    Test that older supported releases keep using the archive base URL.
-    """
+    """Test that older supported releases keep using the archive base URL."""
     monkeypatch.setattr(
         download_lt,
         "BASE_URL_ARCHIVE",
@@ -374,11 +364,9 @@ def test_release_download_url_keeps_archive_base_before_6_0(
 def test_http_get_verifies_configured_sha256(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """
-    Test that downloads are accepted when the configured SHA-256 matches.
-    """
+    """Test that downloads are accepted when the configured SHA-256 matches."""
     payload = make_zip_payload(
-        {"LanguageTool-6.9-SNAPSHOT/languagetool-server.jar": b"jar"}
+        {"LanguageTool-6.9-SNAPSHOT/languagetool-server.jar": b"jar"},
     )
     local_language_tool = LocalLanguageTool.from_version_name()
     suffix = (
@@ -399,16 +387,14 @@ def test_http_get_verifies_configured_sha256(
         out_file = io.BytesIO()
         with local_language_tool._get_remote_zip(out_file) as zip_file:
             assert zip_file.namelist() == [
-                "LanguageTool-6.9-SNAPSHOT/languagetool-server.jar"
+                "LanguageTool-6.9-SNAPSHOT/languagetool-server.jar",
             ]
 
 
 def test_http_get_uses_integrity_manifest_sha256(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """
-    Test that bundled integrity.toml checksums are used when no env var is set.
-    """
+    """Test that bundled integrity.toml checksums are used when no env var is set."""
     payload = make_zip_payload({"LanguageTool-4.0/languagetool-server.jar": b"jar"})
     local_language_tool = LocalLanguageTool.from_version_name("4.0")
     monkeypatch.delenv(LTP_BYPASS_VERIFIED_DOWNLOADS_ENV_VAR, raising=False)
@@ -428,11 +414,9 @@ def test_http_get_uses_integrity_manifest_sha256(
 def test_http_get_rejects_sha256_mismatch(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """
-    Test that downloads are rejected when the configured SHA-256 mismatches.
-    """
+    """Test that downloads are rejected when the configured SHA-256 mismatches."""
     payload = make_zip_payload(
-        {"LanguageTool-6.9-SNAPSHOT/languagetool-server.jar": b"jar"}
+        {"LanguageTool-6.9-SNAPSHOT/languagetool-server.jar": b"jar"},
     )
     local_language_tool = LocalLanguageTool.from_version_name()
     suffix = (
@@ -446,6 +430,7 @@ def test_http_get_rejects_sha256_mismatch(
         "0" * 64,
     )
 
+    out_file = io.BytesIO()
     with (
         patch(
             "language_tool_python.download_lt.requests.get",
@@ -453,46 +438,41 @@ def test_http_get_rejects_sha256_mismatch(
         ),
         pytest.raises(PathError, match="checksum mismatch"),
     ):
-        out_file = io.BytesIO()
         local_language_tool._get_remote_zip(out_file)
 
 
 def test_http_get_bypass_skips_sha256_verification(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """
-    Test that the bypass disables SHA-256 verification.
-    """
+    """Test that the bypass disables SHA-256 verification."""
     payload = make_zip_payload(
-        {"LanguageTool-6.9-SNAPSHOT/languagetool-server.jar": b"jar"}
+        {"LanguageTool-6.9-SNAPSHOT/languagetool-server.jar": b"jar"},
     )
     local_language_tool = LocalLanguageTool.from_version_name()
     monkeypatch.setenv(LTP_BYPASS_VERIFIED_DOWNLOADS_ENV_VAR, "true")
     monkeypatch.setenv(LTP_DOWNLOAD_SHA256_ENV_VAR, "0" * 64)
 
+    out_file = io.BytesIO()
     with (
         patch(
             "language_tool_python.download_lt.requests.get",
             return_value=MockDownloadResponse(payload),
         ),
         pytest.warns(RuntimeWarning, match="Verified downloads are bypassed"),
+        local_language_tool._get_remote_zip(out_file) as zip_file,
     ):
-        out_file = io.BytesIO()
-        with local_language_tool._get_remote_zip(out_file) as zip_file:
-            assert zip_file.namelist() == [
-                "LanguageTool-6.9-SNAPSHOT/languagetool-server.jar"
-            ]
+        assert zip_file.namelist() == [
+            "LanguageTool-6.9-SNAPSHOT/languagetool-server.jar",
+        ]
 
 
 def test_snapshot_download_renames_archive_root_to_requested_date(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """
-    Test that date-pinned snapshots are installed under the requested date name.
-    """
+    """Test that date-pinned snapshots are installed under the requested date name."""
     requested_snapshot = "20240101"
     payload = make_zip_payload(
-        {"LanguageTool-6.9-SNAPSHOT/languagetool-server.jar": b"jar"}
+        {"LanguageTool-6.9-SNAPSHOT/languagetool-server.jar": b"jar"},
     )
     local_language_tool = LocalLanguageTool.from_version_name(requested_snapshot)
     monkeypatch.setattr(download_lt, "confirm_java_compatibility", lambda _: None)
@@ -505,7 +485,9 @@ def test_snapshot_download_renames_archive_root_to_requested_date(
         ),
     ):
         monkeypatch.setattr(
-            download_lt, "get_language_tool_download_path", lambda: temp_dir
+            download_lt,
+            "get_language_tool_download_path",
+            lambda: temp_dir,
         )
         local_language_tool.download()
 
@@ -523,12 +505,10 @@ def test_snapshot_download_renames_archive_root_to_requested_date(
 def test_latest_snapshot_download_renames_archive_root_to_current_date(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """
-    Test that latest snapshots are installed under the current date name.
-    """
+    """Test that latest snapshots are installed under the current date name."""
     current_snapshot_date = "20240514"
     payload = make_zip_payload(
-        {"LanguageTool-6.9-SNAPSHOT/languagetool-server.jar": b"jar"}
+        {"LanguageTool-6.9-SNAPSHOT/languagetool-server.jar": b"jar"},
     )
     with patch("language_tool_python.download_lt.datetime") as datetime_mock:
         datetime_mock.now.return_value.strftime.return_value = current_snapshot_date
@@ -543,7 +523,9 @@ def test_latest_snapshot_download_renames_archive_root_to_current_date(
         ),
     ):
         monkeypatch.setattr(
-            download_lt, "get_language_tool_download_path", lambda: temp_dir
+            download_lt,
+            "get_language_tool_download_path",
+            lambda: temp_dir,
         )
         local_language_tool.download()
 
@@ -559,18 +541,18 @@ def test_latest_snapshot_download_renames_archive_root_to_current_date(
 
 
 def test_install_oldest_supported_version() -> None:
-    """
-    Test that downloading the oldest supported LanguageTool version works correctly.
-    This test verifies that the tool can successfully download and initialize
-    with the oldest version that is still supported.
+    """Test that downloading the oldest supported LanguageTool version works correctly.
 
-    :raises AssertionError: If the tool fails to initialize with the oldest supported version.
-    """
-    import language_tool_python
+    This test verifies that the tool can successfully download and initialize with the
+    oldest version that is still supported.
 
+    :raises AssertionError: If the tool fails to initialize with the oldest supported
+        version.
+    """
     try:
         with language_tool_python.LanguageTool(
-            "en-US", language_tool_download_version="4.0"
+            "en-US",
+            language_tool_download_version="4.0",
         ) as tool:
             assert tool is not None
     except LanguageToolError:
@@ -578,26 +560,25 @@ def test_install_oldest_supported_version() -> None:
 
 
 def test_install_snapshot_version() -> None:
-    """
-    Test that downloading the snapshot version of LanguageTool works correctly.
-    This test verifies that the tool can successfully download and initialize
-    with the snapshot of yesterday.
+    """Test that downloading the snapshot version of LanguageTool works correctly.
+
+    This test verifies that the tool can successfully download and initialize with the
+    snapshot of yesterday.
 
     :raises AssertionError: If the tool fails to initialize with the snapshot version.
     """
-    from datetime import datetime, timedelta
-
-    import language_tool_python
-
     try:
         with language_tool_python.LanguageTool(
             "en-US",
             language_tool_download_version=(
-                (datetime.now() - timedelta(days=3)).strftime("%Y%m%d")
+                (datetime.now(timezone.utc) - timedelta(days=3)).strftime("%Y%m%d")
             ),
         ) as tool:
             assert tool is not None
     except LanguageToolError:
         pytest.skip(
-            "Failed to download or initialize the snapshot version. This may be due to a missing snapshot for the expected date."
+            (
+                "Failed to download or initialize the snapshot version. This may be "
+                "due to a missing snapshot for the expected date."
+            ),
         )

@@ -1,45 +1,51 @@
 """LanguageTool command line."""
 
+from __future__ import annotations
+
 import argparse
 import importlib.resources
-import locale
 import logging
 import re
 import sys
 import traceback
+from collections.abc import Sequence
 from importlib.metadata import PackageNotFoundError, version
 from logging.config import dictConfig
 from pathlib import Path
-from typing import Any, Optional, Sequence, Set, Union
+from typing import TYPE_CHECKING, cast
 
 import toml
 
 from .exceptions import LanguageToolError
 from .server import LanguageTool
 
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
 try:
     __version__ = version("language_tool_python")
-except PackageNotFoundError:  # If the package is not installed in the environment, read the version from pyproject.toml
+    # If the package is not installed in the environment,
+    # read the version from pyproject.toml
+except PackageNotFoundError:
     project_root = Path(__file__).resolve().parent.parent
     pyproject = project_root / "pyproject.toml"
-    with open(pyproject, "rb") as f:
+    with pyproject.open("rb") as f:
         __version__ = toml.loads(f.read().decode("utf-8"))["project"]["version"]
 
 
 logger = logging.getLogger(__name__)
 with (
     importlib.resources.as_file(
-        importlib.resources.files("language_tool_python").joinpath("logging.toml")
+        importlib.resources.files("language_tool_python").joinpath("logging.toml"),
     ) as config_path,
-    open(config_path, "rb") as f,
+    config_path.open("rb") as f,
 ):
     log_config = toml.loads(f.read().decode("utf-8"))
 dictConfig(log_config)
 
 
-def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
-    """
-    Parse command line arguments.
+def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
+    """Parse command line arguments.
 
     :return: parsed arguments
     :rtype: argparse.Namespace
@@ -134,11 +140,11 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
 
 
 class RulesAction(argparse.Action):
-    """
-    Custom argparse action to update a set of rules in the namespace.
-    This action is used to modify the set of rules stored in the argparse
-    namespace when the action is triggered. It updates the attribute specified
-    by 'self.dest' with the provided values.
+    """Custom argparse action to update a set of rules in the namespace.
+
+    This action is used to modify the set of rules stored in the argparse namespace when
+    the action is triggered. It updates the attribute specified by 'self.dest' with the
+    provided values.
     """
 
     dest: str
@@ -146,67 +152,66 @@ class RulesAction(argparse.Action):
 
     def __call__(
         self,
-        parser: argparse.ArgumentParser,
-        namespace: Any,
-        values: Any,
-        option_string: Optional[str] = None,
+        _parser: argparse.ArgumentParser,
+        namespace: argparse.Namespace,
+        values: str | Sequence[object] | None,
+        _option_string: str | None = None,
     ) -> None:
-        """
-        This method is called when the action is triggered. It updates the set of rules
-        in the namespace with the provided values. The method is invoked automatically
-        by argparse when the corresponding command-line argument is encountered.
+        """Update the namespace rule set when the action is triggered.
 
-        :param parser: The ArgumentParser object which contains this action.
-        :type parser: argparse.ArgumentParser
+        The method updates the set of rules in the namespace with the provided values.
+        It is invoked automatically by argparse when the corresponding command-line
+        argument is encountered.
+
+        :param _parser: The ArgumentParser object which contains this action.
+        :type _parser: argparse.ArgumentParser
         :param namespace: The namespace object that will be returned by parse_args().
-        :type namespace: Any
+        :type namespace: argparse.Namespace
         :param values: The argument values associated with the action.
-        :type values: Any
-        :param option_string: The option string that was used to invoke this action.
-        :type option_string: Optional[str]
+        :type values: str | Sequence[object] | None
+        :param _option_string: The option string that was used to invoke this action.
+        :type _option_string: str | None
         """
-        getattr(namespace, self.dest).update(values)
+        getattr(namespace, self.dest).update(
+            cast("set[str]", values),
+        )
 
 
-def get_rules(rules: str) -> Set[str]:
-    """
-    Parse a string of rules and return a set of rule IDs.
+def get_rules(rules: str) -> set[str]:
+    """Parse a string of rules and return a set of rule IDs.
 
     :param rules: A string containing rule IDs separated by non-word characters.
     :type rules: str
     :return: A set of rule IDs.
-    :rtype: Set[str]
+    :rtype: set[str]
     """
     return {rule.upper() for rule in re.findall(r"[\w\-]+", rules)}
 
 
 def get_text(
-    filename: Union[str, int],
-    encoding: Optional[str],
-    ignore: Optional[str],
+    filename: str | int,
+    encoding: str | None,
+    ignore: str | None,
 ) -> str:
-    """
-    Read the content of a file and return it as a string, optionally ignoring lines that match a regular expression.
+    """Read a file and optionally ignore lines matching a regex.
 
     :param filename: The name of the file to read or file descriptor.
-    :type filename: Union[str, int]
+    :type filename: str | int
     :param encoding: The encoding to use for reading the file.
-    :type encoding: Optional[str]
+    :type encoding: str | None
     :param ignore: A regular expression pattern to match lines that should be ignored.
-    :type ignore: Optional[str]
+    :type ignore: str | None
     :return: The content of the file as a string.
     :rtype: str
     """
-    with open(filename, encoding=encoding) as f:
+    with open(filename, encoding=encoding) as f:  # noqa: PTH123  # Need to use classic open() here to support file descriptors
         return "".join(
-            "\n" if (ignore and re.match(ignore, line)) else line
-            for line in f.readlines()
+            "\n" if (ignore and re.match(ignore, line)) else line for line in f
         )
 
 
 def print_exception(exc: Exception, debug: bool) -> None:
-    """
-    Print an exception message to stderr, optionally including a stack trace.
+    """Print an exception message to stderr, optionally including a stack trace.
 
     :param exc: The exception to print.
     :type exc: Exception
@@ -219,55 +224,78 @@ def print_exception(exc: Exception, debug: bool) -> None:
         print(exc, file=sys.stderr)
 
 
-def main(argv: Optional[Sequence[str]] = None) -> int:
-    """
-    Main function to parse arguments, process files, and check text using LanguageTool.
+def get_remote_server(args: argparse.Namespace) -> str | None:
+    """Build the remote server address from parsed arguments.
 
-    :return: Exit status code
+    :param args: Parsed command-line arguments.
+    :type args: argparse.Namespace
+    :return: The remote server address in the format "host:port" or None if no remote
+        host is specified.
+    :rtype: str | None
+    """
+    if args.remote_host is None:
+        return None
+
+    remote_server: str = args.remote_host
+    if args.remote_port is not None:
+        remote_server += f":{args.remote_port}"
+
+    return remote_server
+
+
+def get_input_text(filename: str, args: argparse.Namespace) -> str:
+    """Read input text from a file or stdin.
+
+    :param filename: The name of the file to read or "-" for stdin.
+    :type filename: str
+    :param args: Parsed command-line arguments.
+    :type args: argparse.Namespace
+    :return: The input text as a string.
+    :rtype: str
+    """
+    if filename == "-":
+        raw = sys.stdin.read()
+        if args.ignore_lines:
+            return "".join(
+                "\n" if re.match(args.ignore_lines, line) else line
+                for line in raw.splitlines(keepends=True)
+            )
+        return raw
+
+    encoding = args.encoding or "utf-8"
+    return get_text(filename, encoding, ignore=args.ignore_lines)
+
+
+def process_file(
+    filename: str,
+    args: argparse.Namespace,
+    remote_server: str | None,
+) -> int:
+    """Check a single input file and return the resulting status.
+
+    :param filename: The name of the file to check or "-" for stdin.
+    :type filename: str
+    :param args: Parsed command-line arguments.
+    :type args: argparse.Namespace
+    :param remote_server: The remote server address or None.
+    :type remote_server: str | None
+    :return: The resulting status.
     :rtype: int
     """
-    args = parse_args(argv)
+    if len(args.files) > 1:
+        print(filename, file=sys.stderr)
 
-    if args.verbose:
-        logging.getLogger().setLevel(logging.DEBUG)
-
-    status = 0
-
-    for filename in args.files:
-        if len(args.files) > 1:
-            print(filename, file=sys.stderr)
-
-        remote_server = None
-        if args.remote_host is not None:
-            remote_server = args.remote_host
-            if args.remote_port is not None:
-                remote_server += f":{args.remote_port}"
+    try:
         with LanguageTool(
             language=args.language,
             mother_tongue=args.mother_tongue,
             remote_server=remote_server,
         ) as lang_tool:
-            if filename == "-":
-                encoding = args.encoding or (
-                    sys.stdin.encoding
-                    if sys.stdin.isatty()
-                    else locale.getpreferredencoding()
-                )
-                raw = sys.stdin.read()
-                if args.ignore_lines:
-                    text = "".join(
-                        "\n" if re.match(args.ignore_lines, line) else line
-                        for line in raw.splitlines(keepends=True)
-                    )
-                else:
-                    text = raw
-            else:
-                encoding = args.encoding or "utf-8"
-                try:
-                    text = get_text(filename, encoding, ignore=args.ignore_lines)
-                except (UnicodeError, FileNotFoundError) as exception:
-                    print_exception(exception, args.verbose)
-                    continue
+            try:
+                text = get_input_text(filename, args)
+            except (UnicodeError, FileNotFoundError) as exception:
+                print_exception(exception, args.verbose)
+                return 0
 
             if not args.spell_check:
                 lang_tool.disable_spellchecking()
@@ -279,32 +307,55 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             if args.picky:
                 lang_tool.picky = True
 
-            try:
-                if args.apply:
-                    print(lang_tool.correct(text))
-                else:
-                    for match in lang_tool.check(text):
-                        rule_id = match.rule_id
+            if args.apply:
+                print(lang_tool.correct(text))
+                return 0
 
-                        replacement_text = ", ".join(
-                            f"'{word}'" for word in match.replacements
-                        ).strip()
+            status = 0
+            for match in lang_tool.check(text):
+                rule_id = match.rule_id
 
-                        message = match.message
+                replacement_text = ", ".join(
+                    f"'{word}'" for word in match.replacements
+                ).strip()
 
-                        # Messages that end with punctuation already include the
-                        # suggestion.
-                        if replacement_text and not message.endswith("?"):
-                            message += " Suggestions: " + replacement_text
+                message = match.message
 
-                        line, column = match.get_line_and_column(text)
+                # Messages that end with punctuation already include the
+                # suggestion.
+                if replacement_text and not message.endswith("?"):
+                    message += " Suggestions: " + replacement_text
 
-                        print(f"{filename}:{line}:{column}: {rule_id}: {message}")
+                line, column = match.get_line_and_column(text)
 
-                        status = 2
-            except LanguageToolError as exception:
-                print_exception(exception, args.verbose)
-                continue
+                print(f"{filename}:{line}:{column}: {rule_id}: {message}")
+
+                status = 2
+
+            return status
+    except LanguageToolError as exception:
+        print_exception(exception, args.verbose)
+        return 0
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    """Parse arguments, process files, and check text using LanguageTool.
+
+    :param argv: Command-line arguments to parse, or None to use sys.argv.
+    :type argv: Sequence[str] | None
+    :return: Exit status code
+    :rtype: int
+    """
+    args = parse_args(argv)
+
+    if args.verbose:
+        logging.getLogger().setLevel(logging.DEBUG)
+
+    status = 0
+    remote_server = get_remote_server(args)
+
+    for filename in args.files:
+        status = max(status, process_file(filename, args, remote_server))
     return status
 
 

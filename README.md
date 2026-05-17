@@ -308,9 +308,11 @@ Exit codes:
 - `LTP_JAR_DIR_PATH`: use an existing local LanguageTool directory (skip download).
 - `LTP_DOWNLOAD_HOST_SNAPSHOT`: override snapshot download host.
     - default: `https://internal1.languagetool.org/snapshots/`
-- `LTP_DOWNLOAD_HOST_RELEASE`: override release download host.
+- `LTP_DOWNLOAD_HOST_NEW_RELEASES`: override release download host for LanguageTool `>= 6.7`.
+    - default: `https://github.com/jxmorris12/language_tool_python/releases/download/LanguageTool-{version}/`
+- `LTP_DOWNLOAD_HOST_RELEASE`: override release download host for LanguageTool `6.0` to `6.6`.
     - default: `https://languagetool.org/download/`
-- `LTP_DOWNLOAD_HOST_ARCHIVE`: override archive download host.
+- `LTP_DOWNLOAD_HOST_ARCHIVE`: override archive download host for LanguageTool `4.0` to `5.9`.
     - default: `https://languagetool.org/download/archive/`
 - `LTP_DOWNLOAD_SHA256_<VERSION>`: version-specific expected SHA-256 for the downloaded LanguageTool archive, for example `LTP_DOWNLOAD_SHA256_6_9_SNAPSHOT`.
 - `LTP_DOWNLOAD_SHA256`: fallback expected SHA-256 for the downloaded LanguageTool archive.

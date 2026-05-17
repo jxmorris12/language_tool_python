@@ -1,10 +1,13 @@
 """LanguageTool server management module."""
 
+from __future__ import annotations
+
 import atexit
 import contextlib
 import http.client
 import json
 import logging
+import os
 import random
 import re
 import socket
@@ -12,13 +15,16 @@ import subprocess
 import time
 import urllib.parse
 import warnings
-from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Set
+from typing import TYPE_CHECKING, ClassVar, Literal, cast
 
 import psutil
 import requests
 from packaging.version import Version
 
+from .api_types import (
+    is_check_response,
+    is_language_info,
+)
 from .config_file import LanguageToolConfig
 from .download_lt import LTP_DOWNLOAD_VERSION, LocalLanguageTool
 from .exceptions import (
@@ -35,24 +41,38 @@ from .utils import (
     get_locale_language,
     kill_process_force,
     parse_url,
-    startupinfo,
 )
+
+startupinfo: object = None
+if os.name == "nt":
+    from .utils import startupinfo
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
+    from pathlib import Path
+    from types import TracebackType
+
+    from .api_types import CheckResponse, LanguageInfo
+    from .config_file import ConfigValue
 
 logger = logging.getLogger(__name__)
 
+HTTP_STATUS_RATE_LIMIT = 426
+
 # Keep track of running server PIDs in a global list. This way,
 # we can ensure they're killed on exit.
-RUNNING_SERVER_PROCESSES: List[subprocess.Popen[str]] = []
+RUNNING_SERVER_PROCESSES: list[subprocess.Popen[str]] = []
 
 
-def _kill_processes(processes: List[subprocess.Popen[str]]) -> None:
-    """
-    Kill all running server processes.
-    This function iterates over the list of running server processes and
-    forcefully kills each process by its PID.
+def _kill_processes(processes: list[subprocess.Popen[str]]) -> None:
+    """Kill all running server processes.
 
-    :param processes: A list of subprocess.Popen objects representing the running server processes.
-    :type processes: List[subprocess.Popen]
+    This function iterates over the list of running server processes and forcefully
+    kills each process by its PID.
+
+    :param processes: A list of subprocess.Popen objects representing the running server
+        processes.
+    :type processes: list[subprocess.Popen[str]]
     """
     for p in processes:
         with contextlib.suppress(psutil.NoSuchProcess):
@@ -63,36 +83,54 @@ def _kill_processes(processes: List[subprocess.Popen[str]]) -> None:
 
 
 class LanguageTool:
-    """
-    A class to interact with the LanguageTool server for text checking and correction.
+    """Interact with the LanguageTool server for text checking and correction.
 
-    :param language: The language to be used by the LanguageTool server. If None, it will try to detect the system language.
-    :type language: Optional[str]
+    :param language: The language to be used by the LanguageTool server. If None, it
+        will try to detect the system language.
+    :type language: str | None
     :param mother_tongue: The mother tongue of the user.
-    :type mother_tongue: Optional[str]
-    :param remote_server: URL of a remote LanguageTool server. If provided, the local server will not be started.
-    :type remote_server: Optional[str]
+    :type mother_tongue: str | None
+    :param remote_server: URL of a remote LanguageTool server. If provided, the local
+        server will not be started.
+    :type remote_server: str | None
     :param new_spellings: Custom spellings to be added to the LanguageTool server.
-    :type new_spellings: Optional[List[str]]
-    :param new_spellings_persist: Whether the new spellings should persist across sessions.
-    :type new_spellings_persist: Optional[bool]
+    :type new_spellings: list[str] | None
+    :param new_spellings_persist: Whether the new spellings should persist across
+        sessions.
+    :type new_spellings_persist: bool
     :param host: The host address for the LanguageTool server. Defaults to 'localhost'.
-    :type host: Optional[str]
-    :param config: Path to a configuration file for the LanguageTool server.
-    :type config: Optional[str]
-    :param language_tool_download_version: The version of LanguageTool to download if needed.
-    :type language_tool_download_version: Optional[str]
-    :param proxies: A dictionary of proxies to use for server requests (e.g., {'http': 'http://proxy:port', 'https': 'https://proxy:port'}).
-    :type proxies: Optional[Dict[str, str]]
+    :type host: str | None
+    :param config: Configuration options for the local LanguageTool server.
+    :type config: Mapping[str, ConfigValue] | None
+    :param language_tool_download_version: The version of LanguageTool to download if
+        needed.
+    :type language_tool_download_version: str
+    :param proxies: A dictionary of proxies to use for server requests (e.g., {'http':
+        'http://proxy:port', 'https': 'https://proxy:port'}).
+    :type proxies: dict[str, str] | None
+    :raises ValueError: If incompatible constructor parameters are combined or the
+        language tag is unsupported.
+    :raises TypeError: If a config value has an unsupported type.
+    :raises PathError: If config paths are invalid, the local LanguageTool
+        installation cannot be prepared, or custom spellings are requested without a
+        local LanguageTool installation.
+    :raises ModuleNotFoundError: If no Java installation is detected for a local
+        server.
+    :raises SystemError: If the detected Java version is incompatible with the
+        requested LanguageTool version.
+    :raises TimeoutError: If the LanguageTool download request times out.
+    :raises ServerError: If the server does not become ready or returns an invalid
+        response while initializing.
+    :raises LanguageToolError: If the server cannot be queried while initializing.
     """
 
-    _available_ports: List[int]
+    _available_ports: list[int]
     """A list of available ports for the server, shuffled randomly."""
 
     _TIMEOUT: Literal[300] = 300
     """The timeout for server requests."""
 
-    _SPELL_CHECKING_CATEGORIES: Set[str] = {"TYPOS"}
+    _SPELL_CHECKING_CATEGORIES: ClassVar[set[str]] = {"TYPOS"}
     """Categories used for spell checking."""
 
     _remote: bool
@@ -101,16 +139,16 @@ class LanguageTool:
     _port: int
     """The port number to use for the server."""
 
-    _server: Optional[subprocess.Popen[str]]
+    _server: subprocess.Popen[str] | None
     """The server process."""
 
     _language_tool_download_version: str
     """The version of LanguageTool to download."""
 
-    _local_language_tool: Optional[LocalLanguageTool]
+    _local_language_tool: LocalLanguageTool | None
     """The LocalLanguageTool instance."""
 
-    _new_spellings: Optional[List[str]]
+    _new_spellings: list[str] | None
     """A list of new spellings to register."""
 
     _new_spellings_persist: bool
@@ -119,31 +157,32 @@ class LanguageTool:
     _host: str
     """The host to use for the server."""
 
-    _config: Optional[LanguageToolConfig]
+    _config: LanguageToolConfig | None
     """The server configuration options (used when starting the local server)."""
 
     _url: str
     """The base URL of the LanguageTool server (used in all server requests)."""
 
-    _mother_tongue: Optional[str]
-    """The user's mother tongue for better error detection (used in requests to the server)."""
+    _mother_tongue: str | None
+    """The user's mother tongue for better error detection (used in requests to the
+    server)."""
 
-    _disabled_rules: Set[str]
+    _disabled_rules: set[str]
     """A set of disabled grammar/style rules (used in requests to the server)."""
 
-    _enabled_rules: Set[str]
+    _enabled_rules: set[str]
     """A set of explicitly enabled rules (used in requests to the server)."""
 
-    _disabled_categories: Set[str]
+    _disabled_categories: set[str]
     """A set of disabled rule categories (used in requests to the server)."""
 
-    _enabled_categories: Set[str]
+    _enabled_categories: set[str]
     """A set of explicitly enabled categories (used in requests to the server)."""
 
     _enabled_rules_only: bool
     """A flag to use only explicitly enabled rules (used in requests to the server)."""
 
-    _preferred_variants: Set[str]
+    _preferred_variants: set[str]
     """A set of preferred language variants (used in requests to the server)."""
 
     _picky: bool
@@ -152,23 +191,37 @@ class LanguageTool:
     _language: LanguageTag
     """The language to use for text checking (used in requests to the server)."""
 
-    _proxies: Optional[Dict[str, str]]
+    _proxies: dict[str, str] | None
     """A dictionary of proxies for network requests (used in requests to the server)."""
 
-    def __init__(
+    def __init__(  # noqa: PLR0913  # Too many arguments, but they are all necessary for configuring the server. Maybe refactor in a future breaking release to use a configuration object instead of individual parameters.
         self,
-        language: Optional[str] = None,
-        mother_tongue: Optional[str] = None,
-        remote_server: Optional[str] = None,
-        new_spellings: Optional[List[str]] = None,
+        language: str | None = None,
+        mother_tongue: str | None = None,
+        remote_server: str | None = None,
+        new_spellings: list[str] | None = None,
         new_spellings_persist: bool = True,
-        host: Optional[str] = None,
-        config: Optional[Dict[str, Any]] = None,
+        host: str | None = None,
+        config: Mapping[str, ConfigValue] | None = None,
         language_tool_download_version: str = LTP_DOWNLOAD_VERSION,
-        proxies: Optional[Dict[str, str]] = None,
+        proxies: dict[str, str] | None = None,
     ) -> None:
-        """
-        Initialize the LanguageTool server.
+        """Initialize the LanguageTool server.
+
+        :raises ValueError: If incompatible parameters are combined or the language
+            tag is unsupported.
+        :raises TypeError: If a config value has an unsupported type.
+        :raises PathError: If config paths are invalid, the local LanguageTool
+            installation cannot be prepared, or custom spellings are requested without
+            a local LanguageTool installation.
+        :raises ModuleNotFoundError: If no Java installation is detected for a local
+            server.
+        :raises SystemError: If the detected Java version is incompatible with the
+            requested LanguageTool version.
+        :raises TimeoutError: If the LanguageTool download request times out.
+        :raises ServerError: If the server does not become ready or returns an invalid
+            response while initializing.
+        :raises LanguageToolError: If the server cannot be queried while initializing.
         """
         self._remote = False
         self._language_tool_download_version = language_tool_download_version
@@ -220,9 +273,8 @@ class LanguageTool:
         self._preferred_variants = set()
         self._picky = False
 
-    def __enter__(self) -> "LanguageTool":
-        """
-        Enter the runtime context related to this object.
+    def __enter__(self) -> LanguageTool:
+        """Enter the runtime context related to this object.
 
         This method is called when execution flow enters the context of the
         ``with`` statement using this object. It returns the object itself.
@@ -234,35 +286,35 @@ class LanguageTool:
 
     def __exit__(
         self,
-        exc_type: Optional[type],
-        exc_val: Optional[BaseException],
-        exc_tb: Optional[Any],
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
     ) -> None:
-        """
-        Exit the runtime context related to this object.
+        """Exit the runtime context related to this object.
+
         This method is called when the runtime context is exited. It can be used to
         clean up any resources that were allocated during the context. The parameters
-        describe the exception that caused the context to be exited. If the context
-        was exited without an exception, all three arguments will be None.
+        describe the exception that caused the context to be exited. If the context was
+        exited without an exception, all three arguments will be None.
 
-        :param exc_type: The exception type of the exception that caused the context
-                         to be exited, or None if no exception occurred.
-        :type exc_type: Optional[type]
-        :param exc_val: The exception instance that caused the context to be exited,
-                        or None if no exception occurred.
-        :type exc_val: Optional[BaseException]
-        :param exc_tb: The traceback object associated with the exception, or None
-                       if no exception occurred.
-        :type exc_tb: Optional[Any]
+        :param exc_type: The exception type of the exception that caused the context to
+            be exited, or None if no exception occurred.
+        :type exc_type: type[BaseException] | None
+        :param exc_val: The exception instance that caused the context to be exited, or
+            None if no exception occurred.
+        :type exc_val: BaseException | None
+        :param exc_tb: The traceback object associated with the exception, or None if no
+            exception occurred.
+        :type exc_tb: TracebackType | None
         """
         self.close()
 
     def __del__(self) -> None:
-        """
-        Destructor method that ensures the server is properly closed.
-        This method is called when the instance is about to be destroyed. It
-        ensures that the ``close`` method is called to release any resources
-        or perform any necessary cleanup.
+        """Destructor method that ensures the server is properly closed.
+
+        This method is called when the instance is about to be destroyed. It ensures
+        that the ``close`` method is called to release any resources or perform any
+        necessary cleanup.
         """
         if self._server_is_alive():
             warnings.warn("unclosed server", ResourceWarning, stacklevel=2)
@@ -273,17 +325,18 @@ class LanguageTool:
             self.close()
 
     def __repr__(self) -> str:
-        """
-        Return a string representation of the server instance.
+        """Return a string representation of the server instance.
 
         :return: A string that includes the class name, language, and mother tongue.
         :rtype: str
         """
-        return f"{self.__class__.__name__}(language={self._language!r}, motherTongue={self._mother_tongue!r})"
+        return (
+            f"{self.__class__.__name__}(language={self._language!r}"
+            f", motherTongue={self._mother_tongue!r})"
+        )
 
     def close(self) -> None:
-        """
-        Closes the server and performs necessary cleanup operations.
+        """Close the server and perform necessary cleanup operations.
 
         This method performs the following actions:
         1. Checks if the server is alive, not remote and terminates it if necessary.
@@ -298,75 +351,75 @@ class LanguageTool:
 
     @property
     def language(self) -> LanguageTag:
-        """
-        Get the language tag associated with the server.
+        """Get the language tag associated with the server.
 
         :return: The language tag.
         :rtype: LanguageTag
         """
-
         return self._language
 
     @language.setter
     def language(self, language: str) -> None:
-        """
-        Set the language for the language tool.
+        """Set the language for the language tool.
 
         :param language: The language code to set.
         :type language: str
+        :raises ValueError: If the language tag is unsupported.
+        :raises LanguageToolError: If supported languages cannot be fetched from the
+            server.
         """
-
         self._language = LanguageTag(language, self._get_languages())
         self._disabled_rules.clear()
         self._enabled_rules.clear()
 
     @property
-    def mother_tongue(self) -> Optional[LanguageTag]:
-        """
-        Get the mother tongue language tag.
+    def mother_tongue(self) -> LanguageTag | None:
+        """Get the mother tongue language tag.
 
         :return: The mother tongue language tag if set, otherwise None.
-        :rtype: Optional[LanguageTag]
+        :rtype: LanguageTag | None
+        :raises ValueError: If the mother tongue tag is unsupported.
+        :raises LanguageToolError: If supported languages cannot be fetched from the
+            server.
         """
         if self._mother_tongue is not None:
             return LanguageTag(self._mother_tongue, self._get_languages())
         return None
 
     @mother_tongue.setter
-    def mother_tongue(self, mother_tongue: Optional[str]) -> None:
+    def mother_tongue(self, mother_tongue: str | None) -> None:
+        """Set the mother tongue for the language tool.
+
+        The mother tongue helps LanguageTool detect false friends (words that look
+        similar between two languages but have different meanings). This feature works
+        for specific language pairs (e.g., detecting English-like words used incorrectly
+        in German).
+
+        :param mother_tongue: The mother tongue language tag as a string. If None, the
+            mother tongue is set to None.
+        :type mother_tongue: str | None
         """
-        Set the mother tongue for the language tool.
-
-        The mother tongue helps LanguageTool detect false friends (words that look similar
-        between two languages but have different meanings). This feature works for specific
-        language pairs (e.g., detecting English-like words used incorrectly in German).
-
-        :param mother_tongue: The mother tongue language tag as a string. If None, the mother tongue is set to None.
-        :type mother_tongue: Optional[str]
-        """
-
         self._mother_tongue = mother_tongue
 
     @property
-    def proxies(self) -> Optional[Dict[str, str]]:
-        """
-        Get the proxies used for server requests.
+    def proxies(self) -> dict[str, str] | None:
+        """Get the proxies used for server requests.
 
         :return: A dictionary of proxies if set, otherwise None.
-        :rtype: Optional[Dict[str, str]]
+        :rtype: dict[str, str] | None
         """
         return self._proxies
 
     @proxies.setter
-    def proxies(self, proxies: Optional[Dict[str, str]]) -> None:
-        """
-        Set the proxies for server requests.
+    def proxies(self, proxies: dict[str, str] | None) -> None:
+        """Set the proxies for server requests.
 
-        Proxies can only be used with remote servers. Local LanguageTool servers
-        do not support proxy configuration.
+        Proxies can only be used with remote servers. Local LanguageTool servers do not
+        support proxy configuration.
 
-        :param proxies: A dictionary of proxies (e.g., {'http': 'http://proxy:port'}), or None to unset.
-        :type proxies: Optional[Dict[str, str]]
+        :param proxies: A dictionary of proxies (e.g., {'http': 'http://proxy:port'}),
+            or None to unset.
+        :type proxies: dict[str, str] | None
         :raises ValueError: If trying to set proxies on a local server.
         """
         if proxies is not None and not self._remote:
@@ -378,89 +431,80 @@ class LanguageTool:
         self._proxies = proxies
 
     @property
-    def disabled_rules(self) -> Set[str]:
-        """
-        Get the set of disabled rules.
+    def disabled_rules(self) -> set[str]:
+        """Get the set of disabled rules.
 
         :return: A set of disabled rule IDs.
-        :rtype: Set[str]
+        :rtype: set[str]
         """
         return self._disabled_rules
 
     @disabled_rules.setter
-    def disabled_rules(self, value: Set[str]) -> None:
-        """
-        Set the rules to disable during text checking.
+    def disabled_rules(self, value: set[str]) -> None:
+        """Set the rules to disable during text checking.
 
         :param value: A set of rule IDs to disable.
-        :type value: Set[str]
+        :type value: set[str]
         """
         self._disabled_rules = value
 
     @property
-    def enabled_rules(self) -> Set[str]:
-        """
-        Get the set of enabled rules.
+    def enabled_rules(self) -> set[str]:
+        """Get the set of enabled rules.
 
         :return: A set of enabled rule IDs.
-        :rtype: Set[str]
+        :rtype: set[str]
         """
         return self._enabled_rules
 
     @enabled_rules.setter
-    def enabled_rules(self, value: Set[str]) -> None:
-        """
-        Set the rules to explicitly enable during text checking.
+    def enabled_rules(self, value: set[str]) -> None:
+        """Set the rules to explicitly enable during text checking.
 
         :param value: A set of rule IDs to enable.
-        :type value: Set[str]
+        :type value: set[str]
         """
         self._enabled_rules = value
 
     @property
-    def disabled_categories(self) -> Set[str]:
-        """
-        Get the set of disabled rule categories.
+    def disabled_categories(self) -> set[str]:
+        """Get the set of disabled rule categories.
 
         :return: A set of disabled category names.
-        :rtype: Set[str]
+        :rtype: set[str]
         """
         return self._disabled_categories
 
     @disabled_categories.setter
-    def disabled_categories(self, value: Set[str]) -> None:
-        """
-        Set the rule categories to disable during text checking.
+    def disabled_categories(self, value: set[str]) -> None:
+        """Set the rule categories to disable during text checking.
 
         :param value: A set of category names to disable.
-        :type value: Set[str]
+        :type value: set[str]
         """
         self._disabled_categories = value
 
     @property
-    def enabled_categories(self) -> Set[str]:
-        """
-        Get the set of enabled rule categories.
+    def enabled_categories(self) -> set[str]:
+        """Get the set of enabled rule categories.
 
         :return: A set of enabled category names.
-        :rtype: Set[str]
+        :rtype: set[str]
         """
         return self._enabled_categories
 
     @enabled_categories.setter
-    def enabled_categories(self, value: Set[str]) -> None:
-        """
-        Set the rule categories to explicitly enable during text checking.
+    def enabled_categories(self, value: set[str]) -> None:
+        """Set the rule categories to explicitly enable during text checking.
 
         :param value: A set of category names to enable.
-        :type value: Set[str]
+        :type value: set[str]
         """
         self._enabled_categories = value
 
     @property
     def enabled_rules_only(self) -> bool:
-        """
-        Get whether only enabled rules should be used.
+        """Get whether only enabled rules should be used.
 
         :return: True if using only enabled rules, False otherwise.
         :rtype: bool
@@ -469,8 +513,7 @@ class LanguageTool:
 
     @enabled_rules_only.setter
     def enabled_rules_only(self, value: bool) -> None:
-        """
-        Set whether to use only explicitly enabled rules.
+        """Set whether to use only explicitly enabled rules.
 
         When set to True, only rules in enabled_rules will be applied.
 
@@ -480,32 +523,29 @@ class LanguageTool:
         self._enabled_rules_only = value
 
     @property
-    def preferred_variants(self) -> Set[str]:
-        """
-        Get the set of preferred language variants.
+    def preferred_variants(self) -> set[str]:
+        """Get the set of preferred language variants.
 
         :return: A set of preferred variant codes.
-        :rtype: Set[str]
+        :rtype: set[str]
         """
         return self._preferred_variants
 
     @preferred_variants.setter
-    def preferred_variants(self, value: Set[str]) -> None:
-        """
-        Set the preferred language variants.
+    def preferred_variants(self, value: set[str]) -> None:
+        """Set the preferred language variants.
 
-        Preferred variants influence which suggestions LanguageTool provides
-        (e.g., en-US vs en-GB).
+        Preferred variants influence which suggestions LanguageTool provides (e.g., en-
+        US vs en-GB).
 
         :param value: A set of preferred variant codes.
-        :type value: Set[str]
+        :type value: set[str]
         """
         self._preferred_variants = value
 
     @property
     def picky(self) -> bool:
-        """
-        Get whether picky mode is enabled.
+        """Get whether picky mode is enabled.
 
         :return: True if picky mode is enabled, False otherwise.
         :rtype: bool
@@ -514,10 +554,10 @@ class LanguageTool:
 
     @picky.setter
     def picky(self, value: bool) -> None:
-        """
-        Set whether to enable picky mode for stricter checking.
+        """Set whether to enable picky mode for stricter checking.
 
-        Picky mode enables additional style rules that may be too strict for casual writing.
+        Picky mode enables additional style rules that may be too strict for casual
+        writing.
 
         :param value: True to enable picky mode, False for standard checking.
         :type value: bool
@@ -525,22 +565,20 @@ class LanguageTool:
         self._picky = value
 
     @property
-    def config(self) -> Optional[LanguageToolConfig]:
-        """
-        Get the server configuration.
+    def config(self) -> LanguageToolConfig | None:
+        """Get the server configuration.
 
-        This property is read-only as the configuration is set during initialization
-        and cannot be changed while the server is running.
+        This property is read-only as the configuration is set during initialization and
+        cannot be changed while the server is running.
 
         :return: The configuration object if set, otherwise None.
-        :rtype: Optional[LanguageToolConfig]
+        :rtype: LanguageToolConfig | None
         """
         return self._config
 
     @property
     def language_tool_download_version(self) -> str:
-        """
-        Get the LanguageTool version to download.
+        """Get the LanguageTool version to download.
 
         This property is read-only as the version is determined during initialization
         and the server cannot be re-downloaded with a different version at runtime.
@@ -552,11 +590,10 @@ class LanguageTool:
 
     @property
     def url(self) -> str:
-        """
-        Get the LanguageTool server URL.
+        """Get the LanguageTool server URL.
 
-        This property is read-only as the URL is determined during initialization
-        and cannot be changed while the server is running.
+        This property is read-only as the URL is determined during initialization and
+        cannot be changed while the server is running.
 
         :return: The server URL (e.g., 'http://localhost:8081/v2/').
         :rtype: str
@@ -565,11 +602,10 @@ class LanguageTool:
 
     @property
     def is_remote(self) -> bool:
-        """
-        Get whether using a remote LanguageTool server.
+        """Get whether using a remote LanguageTool server.
 
-        This property is read-only as the remote status is determined during initialization
-        and cannot be changed while the server is running.
+        This property is read-only as the remote status is determined during
+        initialization and cannot be changed while the server is running.
 
         :return: True if using a remote server, False if using a local server.
         :rtype: bool
@@ -578,11 +614,10 @@ class LanguageTool:
 
     @property
     def host(self) -> str:
-        """
-        Get the local server host address.
+        """Get the local server host address.
 
-        This property is read-only as the host address is determined during initialization
-        and cannot be changed while the server is running.
+        This property is read-only as the host address is determined during
+        initialization and cannot be changed while the server is running.
 
         :return: The host address (e.g., '127.0.0.1').
         :rtype: str
@@ -591,47 +626,65 @@ class LanguageTool:
 
     @property
     def port(self) -> int:
-        """
-        Get the local server port number.
+        """Get the local server port number.
 
-        This property is read-only as the port number is determined during initialization
-        and cannot be changed while the server is running.
+        This property is read-only as the port number is determined during
+        initialization and cannot be changed while the server is running.
 
         :return: The port number (e.g., 8081).
         :rtype: int
         """
         return self._port
 
-    def check(self, text: str) -> List[Match]:
-        """
-        Checks the given text for language issues using the LanguageTool server.
+    def check(self, text: str) -> list[Match]:
+        """Check the given text for language issues using the LanguageTool server.
 
         :param text: The text to be checked for language issues.
         :type text: str
         :return: A list of Match objects representing the issues found in the text.
-        :rtype: List[Match]
+        :rtype: list[Match]
+        :raises ServerError: If no response is received from the LanguageTool server or
+            if the response shape is invalid.
+        :raises ValueError: If the configured mother tongue tag is unsupported.
+        :raises RateLimitError: If the public LanguageTool API rate limit is exceeded.
+        :raises LanguageToolError: If the server query fails.
         """
         url = urllib.parse.urljoin(self._url, "check")
         logger.debug("Sending text to LanguageTool server at %s", url)
-        response = self._query_server(url, self._create_params(text), method="post")
+        raw_response = self._query_server(url, self._create_params(text), method="post")
+        if raw_response is None:
+            err = "No response received from the LanguageTool server."
+            raise ServerError(err)
+        if not is_check_response(raw_response):
+            err = (
+                f"Invalid response received from the "
+                f"LanguageTool server: {raw_response}"
+            )
+            raise ServerError(err)
+        response = cast("CheckResponse", raw_response)
         matches = response["matches"]
         return [Match(match, text) for match in matches]
 
     def check_matching_regions(
-        self, text: str, pattern: str, flags: int = 0
-    ) -> List[Match]:
-        """
-        Check only the parts of the text that match a regex pattern.
+        self,
+        text: str,
+        pattern: str,
+        flags: int = 0,
+    ) -> list[Match]:
+        """Check only the parts of the text that match a regex pattern.
+
         The returned Match objects can be applied to the original text with
         :func:`language_tool_python.utils.correct`.
 
         :param text: The full text.
         :param pattern: Regular expression defining the regions to check
         :param flags: Regex flags (re.IGNORECASE, re.MULTILINE, etc.)
-        :return: List of Match with offsets adjusted to the original text
-        :rtype: List[Match]
+        :return: A list of Match objects with offsets adjusted to the original text.
+        :rtype: list[Match]
+        :raises ValueError: If the configured mother tongue tag is unsupported.
+        :raises RateLimitError: If the public LanguageTool API rate limit is exceeded.
+        :raises LanguageToolError: If the server query fails.
         """
-
         # Find all matching regions
         matches_iter = re.finditer(pattern, text, flags)
         regions = [(m.start(), m.group()) for m in matches_iter]
@@ -639,7 +692,7 @@ class LanguageTool:
         if not regions:
             return []  # No regions to check
 
-        all_matches: List[Match] = []
+        all_matches: list[Match] = []
 
         for start_offset, region_text in regions:
             region_matches = self.check(region_text)
@@ -652,14 +705,13 @@ class LanguageTool:
 
         return sorted(all_matches, key=lambda m: m.offset)
 
-    def _create_params(self, text: str) -> Dict[str, str]:
-        """
-        Create a dictionary of parameters for the language tool server request.
+    def _create_params(self, text: str) -> dict[str, str]:
+        """Create a dictionary of parameters for the language tool server request.
 
         :param text: The text to be checked.
         :type text: str
         :return: A dictionary containing the parameters for the request.
-        :rtype: Dict[str, str]
+        :rtype: dict[str, str]
 
         The dictionary may contain the following keys:
         - 'language': The language code.
@@ -668,9 +720,12 @@ class LanguageTool:
         - 'disabledRules': A comma-separated list of disabled rules, if specified.
         - 'enabledRules': A comma-separated list of enabled rules, if specified.
         - 'enabledOnly': 'true' if only enabled rules should be used.
-        - 'disabledCategories': A comma-separated list of disabled categories, if specified.
-        - 'enabledCategories': A comma-separated list of enabled categories, if specified.
-        - 'preferredVariants': A comma-separated list of preferred language variants, if specified.
+        - 'disabledCategories': A comma-separated list of disabled categories,
+         if specified.
+        - 'enabledCategories': A comma-separated list of enabled categories,
+         if specified.
+        - 'preferredVariants': A comma-separated list of preferred language variants,
+         if specified.
         - 'level': 'picky' if picky mode is enabled.
         """
         params = {"language": str(self._language), "text": text}
@@ -695,39 +750,42 @@ class LanguageTool:
         return params
 
     def correct(self, text: str) -> str:
-        """
-        Corrects the given text by applying language tool suggestions. Applies only the first suggestion for each issue.
+        """Corrects the given text by applying language tool suggestions.
 
+        Applies only the first suggestion for each issue.
         :param text: The text to be corrected.
         :type text: str
         :return: The corrected text.
         :rtype: str
+        :raises ValueError: If the configured mother tongue tag is unsupported.
+        :raises RateLimitError: If the public LanguageTool API rate limit is exceeded.
+        :raises LanguageToolError: If the server query fails.
         """
         return correct(text, self.check(text))
 
     def enable_spellchecking(self) -> None:
-        """
-        Enable spellchecking by removing spell checking categories from the disabled categories set.
-        This method updates the ``disabled_categories`` attribute by removing any categories that are
-        related to spell checking, which are defined in the ``_SPELL_CHECKING_CATEGORIES`` class constant.
+        """Enable spellchecking by removing spellcheck category exclusions.
+
+        This method updates the ``disabled_categories`` attribute by removing any
+        categories that are related to spell checking, which are defined in the
+        ``_SPELL_CHECKING_CATEGORIES`` class constant.
         """
         self._disabled_categories.difference_update(self._SPELL_CHECKING_CATEGORIES)
 
     def disable_spellchecking(self) -> None:
-        """
-        Disable spellchecking by updating the disabled categories with spell checking categories.
-        """
+        """Disable spellchecking by adding spellcheck categories to exclusions."""
         self._disabled_categories.update(self._SPELL_CHECKING_CATEGORIES)
 
     def _get_valid_spelling_file_path(self) -> Path:
-        """
-        Retrieve the valid file path for the spelling file.
+        """Retrieve the valid file path for the spelling file.
+
         This function constructs the file path for the spelling file used by the
-        language tool. It checks if the file exists at the constructed path and
-        raises a FileNotFoundError if the file is not found.
+        language tool. It checks if the file exists at the constructed path and raises a
+        FileNotFoundError if the file is not found.
 
         :raises FileNotFoundError: If the spelling file does not exist at the
-                                   constructed path.
+            constructed path.
+        :raises PathError: If the local LanguageTool instance is not initialized.
         :return: The valid file path for the spelling file.
         :rtype: Path
         """
@@ -741,10 +799,12 @@ class LanguageTool:
         ].lower()  # if language is "en-US", we want "en"
 
         if language == "auto":
-            # Default to English if auto is selected, as the spelling file is needed for new spellings
-            # The new spellings will only be taken into account if the server detects the language as English
+            # Default to English if auto is selected, as the spelling file is needed
+            # for new spellings
+            # The new spellings will only be taken into account if the server detects
+            # the language as English
             logger.debug(
-                "Language is set to 'auto'. Defaulting to 'en' for spelling file path."
+                "Language is set to 'auto'. Defaulting to 'en' for spelling file path.",
             )
             language = "en"
 
@@ -767,20 +827,19 @@ class LanguageTool:
         return spelling_file_path
 
     def _register_spellings(self) -> None:
-        """
-        Registers new spellings by adding them to the spelling file.
-        This method reads the existing spellings from the spelling file,
-        filters out the new spellings that are already present, and appends
-        the remaining new spellings to the file. If the DEBUG_MODE is enabled,
-        it prints a message indicating the file where the new spellings were registered.
-        """
+        """Register new spellings by adding them to the spelling file.
 
+        This method reads the existing spellings from the spelling file, filters out the
+        new spellings that are already present, and appends the remaining new spellings
+        to the file. If the DEBUG_MODE is enabled, it prints a message indicating the
+        file where the new spellings were registered.
+        """
         if self._new_spellings is None:
             return
 
         spelling_file_path = self._get_valid_spelling_file_path()
         logger.debug("Registering new spellings at %s", spelling_file_path)
-        with open(spelling_file_path, "r+", encoding="utf-8") as spellings_file:
+        with spelling_file_path.open("r+", encoding="utf-8") as spellings_file:
             existing_spellings = {line.strip() for line in spellings_file.readlines()}
             new_spellings = [
                 word for word in self._new_spellings if word not in existing_spellings
@@ -792,8 +851,8 @@ class LanguageTool:
                 spellings_file.write("\n".join(new_spellings))
 
     def _unregister_spellings(self) -> None:
-        """
-        Unregister new spellings from the spelling file.
+        """Unregister new spellings from the spelling file.
+
         This method reads the current spellings from the spelling file, removes any
         spellings that are present in the ``_new_spellings`` attribute, and writes the
         updated list back to the file.
@@ -804,7 +863,7 @@ class LanguageTool:
         spelling_file_path = self._get_valid_spelling_file_path()
         logger.debug("Unregistering new spellings at %s", spelling_file_path)
 
-        with open(spelling_file_path, "r", encoding="utf-8") as spellings_file:
+        with spelling_file_path.open("r", encoding="utf-8") as spellings_file:
             lines = spellings_file.readlines()
 
         updated_lines = [
@@ -813,46 +872,67 @@ class LanguageTool:
         if updated_lines and updated_lines[-1].endswith("\n"):
             updated_lines[-1] = updated_lines[-1].strip()
 
-        with open(
-            spelling_file_path,
-            "w",
-            encoding="utf-8",
-            newline="\n",
+        with spelling_file_path.open(
+            "w", encoding="utf-8", newline="\n"
         ) as spellings_file:
             spellings_file.writelines(updated_lines)
 
-    def _get_languages(self) -> Set[str]:
-        """
-        Retrieve the set of supported languages from the server.
+    def _get_languages(self) -> set[str]:
+        """Retrieve the set of supported languages from the server.
+
         This method starts the server if it is not already running, constructs the URL
         for querying the supported languages, and sends a request to the server. It then
-        processes the server's response to extract the language codes and adds them to
-        a set. The special code "auto" is also added to the set before returning it.
+        processes the server's response to extract the language codes and adds them to a
+        set. The special code "auto" is also added to the set before returning it.
 
         :return: A set of language codes supported by the server.
-        :rtype: Set[str]
+        :rtype: set[str]
+        :raises ServerError: If no response is received or if the response shape is
+            invalid.
+        :raises LanguageToolError: If the server query fails.
         """
         self._start_server_if_needed()
         url = urllib.parse.urljoin(self._url, "languages")
-        languages: Set[str] = set()
-        for e in self._query_server(url, num_tries=1):
-            languages.add(e.get("code"))
-            languages.add(e.get("longCode"))
+        languages: set[str] = set()
+        raw_languages_response = self._query_server(url, num_tries=1)
+        if raw_languages_response is None:
+            err = (
+                "No response received from the LanguageTool server when "
+                "fetching languages."
+            )
+            raise ServerError(err)
+        if isinstance(raw_languages_response, list):
+            for raw_lang in raw_languages_response:
+                if not is_language_info(raw_lang):
+                    err = (
+                        "Unexpected response format when fetching languages from the "
+                        "LanguageTool server."
+                    )
+                    raise ServerError(err)
+                lang = cast("LanguageInfo", raw_lang)
+                languages.add(lang["code"])
+                languages.add(lang["longCode"])
+        else:
+            err = (
+                "Unexpected response format when fetching languages from the "
+                "LanguageTool server."
+            )
+            raise ServerError(err)
         languages.add("auto")
         return languages
 
     def _start_server_if_needed(self) -> None:
-        """
-        Starts the server if it is not already running and if it is not a remote server.
-        This method checks if the server is alive and if it is not a remote server.
-        If the server is not alive and it is not remote, it starts the server on a free port.
+        """Start the server unless it is already running or remote.
+
+        This method checks if the server is alive and if it is not a remote server. If
+        the server is not alive and it is not remote, it starts the server on a free
+        port.
         """
         if not self._server_is_alive() and self._remote is False:
             self._start_server_on_free_port()
 
     def _update_remote_server_config(self, url: str) -> None:
-        """
-        Update the configuration to use a remote server.
+        """Update the configuration to use a remote server.
 
         :param url: The URL of the remote server.
         :type url: str
@@ -863,24 +943,27 @@ class LanguageTool:
     def _query_server(
         self,
         url: str,
-        params: Optional[Dict[str, str]] = None,
+        params: dict[str, str] | None = None,
         num_tries: int = 2,
         method: Literal["get", "post"] = "get",
-    ) -> Any:
-        """
-        Query the server with the given URL and parameters.
+    ) -> object | None:
+        """Query the server with the given URL and parameters.
 
         :param url: The URL to query.
         :type url: str
         :param params: The parameters to include in the query, defaults to None.
-        :type params: Optional[Dict[str, str]], optional
-        :param num_tries: The number of times to retry the query in case of failure, defaults to 2.
+        :type params: dict[str, str] | None, optional
+        :param num_tries: The number of times to retry the query in case of failure,
+            defaults to 2.
         :type num_tries: int, optional
-        :param method: HTTP method to use for the request. ``post`` sends params in the request body.
+        :param method: HTTP method to use for the request. ``post`` sends params in the
+            request body.
         :type method: Literal["get", "post"]
         :return: The JSON response from the server.
-        :rtype: Any
-        :raises LanguageToolError: If the server returns an invalid JSON response or if the query fails after the specified number of retries.
+        :rtype: object | None
+        :raises RateLimitError: If the public LanguageTool API rate limit is exceeded.
+        :raises LanguageToolError: If the server returns an invalid JSON response or if
+            the query fails after the specified number of retries.
         """
         logger.debug("_query_server url: %s", url)
         for n in range(num_tries):
@@ -901,7 +984,7 @@ class LanguageTool:
                     )
                 with response_context as response:
                     try:
-                        return response.json()
+                        data: object = response.json()
                     except json.decoder.JSONDecodeError as e:
                         logger.debug(
                             "URL %s returned invalid JSON response: %s",
@@ -909,14 +992,16 @@ class LanguageTool:
                             e,
                         )
                         logger.debug("Status code: %s", response.status_code)
-                        if response.status_code == 426:
+                        if response.status_code == HTTP_STATUS_RATE_LIMIT:
                             err = (
                                 "You have exceeded the rate limit for the free "
                                 "LanguageTool API. Please try again later."
                             )
                             raise RateLimitError(err) from e
                         raise LanguageToolError(response.content.decode()) from e
-            except (IOError, http.client.HTTPException) as e:
+                    else:
+                        return data
+            except (OSError, http.client.HTTPException) as e:  # noqa: PERF203  # it is intentional to catch exceptions in a loop, to retry the request in case of transient errors
                 if self._remote is False:
                     self._terminate_server()
                     self._start_local_server()
@@ -926,13 +1011,14 @@ class LanguageTool:
         return None
 
     def _start_server_on_free_port(self) -> None:
-        """
-        Attempt to start the server on a free port within the specified range.
-        This method continuously tries to start the local server on the current host and port.
-        If the port is already in use, it increments the port number and tries again until a free port is found
-        or the maximum port number is reached.
+        """Attempt to start the server on a free port within the specified range.
 
-        :raises ServerError: If the server cannot be started and the maximum port number is reached.
+        This method continuously tries to start the local server on the current host and
+        port. If the port is already in use, it increments the port number and tries
+        again until a free port is found or the maximum port number is reached.
+
+        :raises ServerError: If the server cannot be started and the maximum port number
+            is reached.
         """
         while True:
             try:
@@ -947,29 +1033,36 @@ class LanguageTool:
                     raise
 
     def _start_local_server(self) -> None:
-        """
-        Start the local LanguageTool server.
-        This method starts a local instance of the LanguageTool server. If the
-        LanguageTool is not already downloaded, it will download the specified
-        version. It handles the server initialization, including setting up
-        the server command and managing the server process.
+        """Start the local LanguageTool server.
 
-        :raises PathError: If the path to LanguageTool cannot be found.
-        :raises ServerError: If the server fails to start or exits early.
+        This method starts a local instance of the LanguageTool server. If the
+        LanguageTool is not already downloaded, it will download the specified version.
+        It handles the server initialization, including setting up the server command
+        and managing the server process.
+
+        :raises ModuleNotFoundError: If no Java installation is detected.
+        :raises SystemError: If the detected Java version is incompatible.
+        :raises TimeoutError: If the LanguageTool download request times out.
+        :raises JavaError: If the Java executable cannot be found.
+        :raises PathError: If the path to LanguageTool cannot be found or the download
+            cannot be prepared safely.
+        :raises ServerError: If the local server process does not become ready.
         """
         # Before starting local server, download language tool if needed.
 
         self._local_language_tool = LocalLanguageTool.from_version_name(
-            self._language_tool_download_version
+            self._language_tool_download_version,
         )
         self._local_language_tool.download()
         try:
             if self._port:
                 logger.info(
-                    "language_tool_python initializing with port: %s", self._port
+                    "language_tool_python initializing with port: %s",
+                    self._port,
                 )
             server_cmd = self._local_language_tool.get_server_cmd(
-                self._port, self._config
+                self._port,
+                self._config,
             )
         except PathError as e:
             err = (
@@ -985,28 +1078,23 @@ class LanguageTool:
                 text=True,
                 startupinfo=startupinfo,
             )
-            global RUNNING_SERVER_PROCESSES
             RUNNING_SERVER_PROCESSES.append(self._server)
 
             self._wait_for_server_ready()
 
-        if not self._server:
-            err = "Failed to start LanguageTool server."
-            raise ServerError(err)
-
     def _wait_for_server_ready(self, timeout: int = 15) -> None:
-        """
-        Wait for the LanguageTool server to become ready and responsive.
+        """Wait for the LanguageTool server to become ready and responsive.
+
         This method polls the server's ``/healthcheck`` endpoint until it responds
         successfully or until the timeout is reached. It also monitors the server
         process to detect early exits.
 
         :param timeout: Maximum time in seconds to wait for the server to become ready.
-                        Defaults to 15 seconds.
+            Defaults to 15 seconds.
         :type timeout: int
-        :raises ServerError: If the server process exits early with a non-zero code,
-                             or if the server does not become ready within the specified
-                             timeout period or if the server process is not initialized.
+        :raises ServerError: If the server process exits early with a non-zero code, or
+            if the server does not become ready within the specified timeout period or
+            if the server process is not initialized.
         """
         if self._server is None:
             err = "Server process is not initialized."
@@ -1045,8 +1133,8 @@ class LanguageTool:
         raise ServerError(err)
 
     def _server_is_alive(self) -> bool:
-        """
-        Check if the server is alive.
+        """Check if the server is alive.
+
         This method checks if the server instance exists and is currently running.
 
         :return: True if the server is alive (exists and running), False otherwise.
@@ -1055,8 +1143,8 @@ class LanguageTool:
         return bool(self._server and self._server.poll() is None)
 
     def _terminate_server(self) -> None:
-        """
-        Terminates the server process.
+        """Terminates the server process.
+
         This method performs the following steps:
         1. Attempts to terminate the server process gracefully.
         2. Closes associated file descriptor (stdin).
@@ -1074,31 +1162,51 @@ class LanguageTool:
 
 
 class LanguageToolPublicAPI(LanguageTool):
-    """
-    A class to interact with the public LanguageTool API.
-    This class extends the ``LanguageTool`` class and initializes it with the
-    remote server set to the public LanguageTool API endpoint.
+    """A class to interact with the public LanguageTool API.
 
-    :param args: Positional arguments passed to the parent class initializer.
-    :type args: Any
-    :param kwargs: Keyword arguments passed to the parent class initializer.
-    :type kwargs: Any
+    This class extends the ``LanguageTool`` class and initializes it with the remote
+    server set to the public LanguageTool API endpoint.
+
+    :param language: The language code to use for checking text (e.g., 'en-US').
+    :type language: str | None
+    :param mother_tongue: The mother tongue language code, if specified (e.g., 'en').
+    :type mother_tongue: str | None
+    :param new_spellings: A list of new spellings to register, if any.
+    :type new_spellings: list[str] | None
+    :param new_spellings_persist: Whether to persist new spellings across sessions.
+    :type new_spellings_persist: bool
+    :param proxies: A dictionary of proxies to use for requests to the remote server.
+    :type proxies: dict[str, str] | None
+    :raises ValueError: If the language tag is unsupported.
+    :raises PathError: If custom spellings are requested for the remote public API.
+    :raises LanguageToolError: If the public API cannot be queried while initializing.
     """
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """
-        Initialize the server with the given arguments.
-        """
-        kwargs.setdefault("remote_server", "https://languagetool.org/api/")
-        super().__init__(*args, **kwargs)
+    def __init__(
+        self,
+        language: str | None = None,
+        mother_tongue: str | None = None,
+        new_spellings: list[str] | None = None,
+        new_spellings_persist: bool = True,
+        proxies: dict[str, str] | None = None,
+    ) -> None:
+        """Initialize the LanguageToolPublicAPI server."""
+        super().__init__(
+            language=language,
+            mother_tongue=mother_tongue,
+            remote_server="https://languagetool.org/api/",
+            new_spellings=new_spellings,
+            new_spellings_persist=new_spellings_persist,
+            proxies=proxies,
+        )
 
 
 @atexit.register
 def terminate_server() -> None:
-    """
-    Terminates all running server processes.
-    This function iterates over the list of running server processes and
-    forcefully kills each process by its PID.
+    """Terminates all running server processes.
+
+    This function iterates over the list of running server processes and forcefully
+    kills each process by its PID.
     """
     if RUNNING_SERVER_PROCESSES:
         logger.info(

@@ -99,6 +99,6 @@
     - `download_folder` in `utils.find_existing_language_tool_downloads` from `str` to `Path`
 - Edited return types of some methods/functions:
     - from `str` to `Path` in `utils.get_language_tool_download_path`
-    - from `List[str]` to `List[Path]` in `utils.find_existing_language_tool_downloads`
+    - from `list[str]` to `list[Path]` in `utils.find_existing_language_tool_downloads`
     - from `str` to `Path` in `utils.get_language_tool_directory`
-    - from `Tuple[str, str]` to `Tuple[Path, Path]` in `utils.get_jar_info`
+    - from `tuple[str, str]` to `tuple[Path, Path]` in `utils.get_jar_info`

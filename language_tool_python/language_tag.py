@@ -2,21 +2,21 @@
 
 import logging
 import re
+from collections.abc import Iterable
 from functools import total_ordering
-from typing import Any, Iterable
 
 logger = logging.getLogger(__name__)
 
 
 @total_ordering
 class LanguageTag:
-    """
-    A class to represent and normalize language tags.
+    """A class to represent and normalize language tags.
 
     :param tag: The language tag.
     :type tag: str
     :param languages: An iterable of supported language tags.
     :type languages: Iterable[str]
+    :raises ValueError: If the tag is empty or unsupported.
     """
 
     tag: str
@@ -28,42 +28,46 @@ class LanguageTag:
     normalized_tag: str
     """The normalized language tag."""
 
-    _LANGUAGE_RE = re.compile(r"^([a-z]{2,3})(?:[_-]([a-z]{2}))?$", re.I)
+    _LANGUAGE_RE = re.compile(r"^([a-z]{2,3})(?:[_-]([a-z]{2}))?$", re.IGNORECASE)
     """A regular expression to match language tags."""
 
     def __init__(self, tag: str, languages: Iterable[str]) -> None:
-        """
-        Initialize a LanguageTag instance.
+        """Initialize a LanguageTag instance.
+
+        :raises ValueError: If the tag is empty or unsupported.
         """
         self.tag = tag
         self.languages = languages
         self.normalized_tag = self._normalize(tag)
 
-    def __eq__(self, other: Any) -> bool:
-        """
-        Compare this LanguageTag object with another for equality.
+    def __eq__(self, other: object) -> bool:
+        """Compare this LanguageTag object with another for equality.
 
         :param other: The other object to compare with.
-        :type other: Any
+        :type other: object
         :return: True if the normalized tags are equal, False otherwise.
         :rtype: bool
+        :raises ValueError: If ``other`` is a string with an unsupported language tag.
         """
-        return self.normalized_tag == self._normalize(other)
+        if not isinstance(other, (str, LanguageTag)):
+            return NotImplemented
+        return self.normalized_tag == self._normalize(str(other))
 
-    def __lt__(self, other: Any) -> bool:
-        """
-        Compare this object with another for less-than ordering.
+    def __lt__(self, other: object) -> bool:
+        """Compare this object with another for less-than ordering.
 
         :param other: The object to compare with.
-        :type other: Any
+        :type other: object
         :return: True if this object is less than the other, False otherwise.
         :rtype: bool
+        :raises ValueError: If ``other`` is a string with an unsupported language tag.
         """
-        return str(self) < self._normalize(other)
+        if not isinstance(other, (str, LanguageTag)):
+            return NotImplemented
+        return str(self) < self._normalize(str(other))
 
     def __str__(self) -> str:
-        """
-        Returns the string representation of the object.
+        """Return the string representation of the object.
 
         :return: The normalized tag as a string.
         :rtype: str
@@ -71,17 +75,25 @@ class LanguageTag:
         return self.normalized_tag
 
     def __repr__(self) -> str:
-        """
-        Return a string representation of the LanguageTag instance.
+        """Return a string representation of the LanguageTag instance.
 
         :return: A string in the format '<LanguageTag "language_tag_string">'
         :rtype: str
         """
-        return f'<LanguageTag "{str(self)}">'
+        return f'<LanguageTag "{self!s}">'
+
+    def __hash__(self) -> int:
+        """Return the hash of the LanguageTag instance.
+
+        If the normalized tag is modified, the hash will change.
+
+        :return: The hash of the normalized tag.
+        :rtype: int
+        """
+        return hash(self.normalized_tag)
 
     def _normalize(self, tag: str) -> str:
-        """
-        Normalize a language tag to a standard format.
+        """Normalize a language tag to a standard format.
 
         :param tag: The language tag to normalize.
         :type tag: str

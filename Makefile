@@ -13,14 +13,14 @@ install:
 	uv sync --all-groups --locked
 
 format:
-	uv run --group quality --locked ruff format language_tool_python tests
+	uv run --group quality --locked ruff format
 
 fix:
-	uv run --group quality --locked ruff check --fix language_tool_python tests
+	uv run --group quality --locked ruff check --fix
 
 ruff-check:
-	uv run --group quality --locked ruff check language_tool_python tests
-	uv run --group quality --locked ruff format --check language_tool_python tests
+	uv run --group quality --locked ruff check
+	uv run --group quality --locked ruff format --check
 
 mypy-check:
 	@if uv run --locked python -c 'import sys; raise SystemExit(0 if sys.version_info >= (3, 10) else 1)'; then \
