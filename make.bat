@@ -25,18 +25,18 @@ uv sync --all-groups --locked
 exit /b %errorlevel%
 
 :format
-uv run --group quality --locked ruff format language_tool_python tests
+uv run --group quality --locked ruff format
 exit /b %errorlevel%
 
 :fix
-uv run --group quality --locked ruff check --fix language_tool_python tests
+uv run --group quality --locked ruff check --fix
 exit /b %errorlevel%
 
 :ruff-check
-uv run --group quality --locked ruff check language_tool_python tests
+uv run --group quality --locked ruff check
 if errorlevel 1 exit /b %errorlevel%
 
-uv run --group quality --locked ruff format --check language_tool_python tests
+uv run --group quality --locked ruff format --check
 exit /b %errorlevel%
 
 :mypy-check

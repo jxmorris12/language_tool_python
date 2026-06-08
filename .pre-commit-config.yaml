@@ -1,7 +1,7 @@
 repos:
   # Ruff for linting and formatting
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.12 # Keep in sync ruff version with pyproject.toml
+    rev: v0.15.16 # Keep in sync ruff version with pyproject.toml
     hooks:
       # Run the linter
       - id: ruff
@@ -11,7 +11,7 @@ repos:
 
   # mypy for type checking
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v2.0.0 # Keep in sync mypy version with pyproject.toml
+    rev: v2.1.0 # Keep in sync mypy version with pyproject.toml
     hooks:
       - id: mypy
         args: [--config-file=pyproject.toml]

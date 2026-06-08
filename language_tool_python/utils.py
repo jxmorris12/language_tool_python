@@ -1,5 +1,7 @@
 """Utility functions for the LanguageTool library."""
 
+from __future__ import annotations
+
 import contextlib
 import locale
 import logging
@@ -10,15 +12,17 @@ import urllib.parse
 from enum import Enum
 from pathlib import Path
 from shutil import which
-from typing import Any, List, Optional, Tuple
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 import psutil
 from packaging import version
 
 from ._deprecated import deprecated
-from .config_file import LanguageToolConfig
 from .exceptions import JavaError, PathError
-from .match import Match
+
+if TYPE_CHECKING:
+    from .config_file import LanguageToolConfig
+    from .match import Match
 
 logger = logging.getLogger(__name__)
 
@@ -33,10 +37,6 @@ LTP_PATH_ENV_VAR = "LTP_PATH"  # LanguageTool download path
 # Directory containing the LanguageTool jar file:
 LTP_JAR_DIR_PATH_ENV_VAR = "LTP_JAR_DIR_PATH"
 
-# https://mail.python.org/pipermail/python-dev/2011-July/112551.html
-
-startupinfo: Optional[Any] = None
-
 if os.name == "nt":
     # Gets STARTUPINFO dynamically to avoid issues on non-Windows platforms
     startupinfo_cls = getattr(subprocess, "STARTUPINFO", None)
@@ -48,10 +48,10 @@ if os.name == "nt":
 
 
 def parse_url(url_str: str) -> str:
-    """
-    Parse the given URL string and ensure it has a scheme.
-    If the input URL string does not contain 'http', 'http://' is prepended to it.
-    The function then parses the URL and returns its canonical form.
+    """Parse the given URL string and ensure it has a scheme.
+
+    If the input URL string does not contain 'http', 'http://' is prepended to it. The
+    function then parses the URL and returns its canonical form.
 
     :param url_str: The URL string to be parsed.
     :type url_str: str
@@ -65,8 +65,7 @@ def parse_url(url_str: str) -> str:
 
 
 def get_env_int(env_var: str, default: int) -> int:
-    """
-    Read a positive integer from the environment.
+    """Read a positive integer from the environment.
 
     :param env_var: Environment variable name.
     :type env_var: str
@@ -95,8 +94,7 @@ def get_env_int(env_var: str, default: int) -> int:
 
 
 def get_env_float(env_var: str, default: float) -> float:
-    """
-    Read a positive float from the environment.
+    """Read a positive float from the environment.
 
     :param env_var: Environment variable name.
     :type env_var: str
@@ -125,40 +123,42 @@ def get_env_float(env_var: str, default: float) -> float:
 
 
 class TextStatus(Enum):
+    """Status classification for matches."""
+
     CORRECT = "correct"
     FAULTY = "faulty"
     GARBAGE = "garbage"
 
 
-def classify_matches(matches: List[Match]) -> TextStatus:
-    """
-    Classify the matches (result of a check on a text) into one of three categories:
-    CORRECT, FAULTY, or GARBAGE.
+def classify_matches(matches: list[Match]) -> TextStatus:
+    """Classify matches as CORRECT, FAULTY, or GARBAGE.
+
     This function checks the status of the matches and returns a corresponding
     ``TextStatus`` value.
 
     :param matches: A list of Match objects to be classified.
-    :type matches: List[Match]
+    :type matches: list[Match]
     :return: The classification of the matches as a ``TextStatus`` value.
     :rtype: TextStatus
     """
     if not len(matches):
         return TextStatus.CORRECT
     matches = [match for match in matches if match.replacements]
-    if not len(matches):
+    if not matches:
         return TextStatus.GARBAGE
     return TextStatus.FAULTY
 
 
-def correct(text: str, matches: List[Match]) -> str:
-    """
-    Corrects the given text based on the provided matches.
+def correct(text: str, matches: list[Match]) -> str:
+    """Corrects the given text based on the provided matches.
+
     Only the first replacement for each match is applied to the text.
 
     :param text: The original text to be corrected.
     :type text: str
-    :param matches: A list of Match objects that contain the positions and replacements for errors in the text.
-    :type matches: List[Match]
+    :param matches: A list of Match objects that contain the positions and replacements
+        for errors in the text.
+    :type matches: list[Match]
     :return: The corrected text.
     :rtype: str
     """
@@ -182,12 +182,13 @@ def correct(text: str, matches: List[Match]) -> str:
 
 
 def get_language_tool_download_path() -> Path:
-    """
-    Get the download path for LanguageTool.
-    This function retrieves the download path for LanguageTool from the environment variable
-    specified by ``LTP_PATH_ENV_VAR``. If the environment variable is not set, it defaults to
-    a path in the user's home directory under ``.cache/language_tool_python``.
-    The function ensures that the directory exists before returning it.
+    """Get the download path for LanguageTool.
+
+    This function retrieves the download path for LanguageTool from the environment
+    variable specified by ``LTP_PATH_ENV_VAR``. If the environment variable is not set,
+    it defaults to a path in the user's home directory under
+    ``.cache/language_tool_python``. The function ensures that the directory exists
+    before returning it.
 
     :return: The download path for LanguageTool.
     :rtype: Path
@@ -203,19 +204,22 @@ def get_language_tool_download_path() -> Path:
 
 
 @deprecated(
-    "This function is no longer used internally and will be removed in 4.0.\nReplace its usage by an inline alternative.",
+    (
+        "This function is no longer used internally and will be removed in 4.0.\n"
+        "Replace its usage by an inline alternative."
+    ),
     stacklevel=2,
 )  # type: ignore[untyped-decorator, unused-ignore]
-def find_existing_language_tool_downloads(download_folder: Path) -> List[Path]:
-    """
-    Find existing LanguageTool downloads in the specified folder.
+def find_existing_language_tool_downloads(download_folder: Path) -> list[Path]:
+    """Find existing LanguageTool downloads in the specified folder.
+
     This function searches for directories in the given download folder
     that match the pattern 'LanguageTool*' and returns a list of their paths.
 
     :param download_folder: The folder where LanguageTool downloads are stored.
     :type download_folder: Path
     :return: A list of paths to the existing LanguageTool download directories.
-    :rtype: List[Path]
+    :rtype: list[Path]
 
     .. deprecated:: 3.3.0
         This function is no longer used internally and will be removed in 4.0.
@@ -228,8 +232,7 @@ def find_existing_language_tool_downloads(download_folder: Path) -> List[Path]:
     stacklevel=2,
 )  # type: ignore[untyped-decorator, unused-ignore]
 def _extract_version(path: Path) -> version.Version:
-    """
-    Extract the version number from a LanguageTool directory path.
+    """Extract the version number from a LanguageTool directory path.
 
     This function parses the directory name to extract the version information
     from LanguageTool installation folders that follow the naming convention
@@ -245,7 +248,8 @@ def _extract_version(path: Path) -> version.Version:
         This function is no longer used internally and will be removed in 4.0.
     """
     if not path.name.startswith("LanguageTool-"):
-        raise ValueError(f"Invalid LanguageTool folder name: {path.name}")
+        err = f"Invalid LanguageTool folder name: {path.name}"
+        raise ValueError(err)
     # Handle LanguageTool- prefix
     version_str = path.name.removeprefix("LanguageTool-")
     # Handle both -SNAPSHOT and -snapshot suffixes
@@ -254,25 +258,30 @@ def _extract_version(path: Path) -> version.Version:
 
 
 @deprecated(
-    "This function is no longer used internally and will be removed in 4.0.\nUse instead language_tool_python.download_lt.LocalLanguageTool.get_latest_installed_version.",
+    (
+        "This function is no longer used internally and will be removed in 4.0.\n"
+        "Use instead "
+        "language_tool_python.download_lt.LocalLanguageTool."
+        "get_latest_installed_version."
+    ),
     stacklevel=2,
 )  # type: ignore[untyped-decorator, unused-ignore]
 def get_language_tool_directory() -> Path:
-    """
-    Get the directory path of the LanguageTool installation.
+    """Get the directory path of the LanguageTool installation.
+
     This function checks the download folder for LanguageTool installations,
     verifies that the folder exists and is a directory, and returns the path
     to the latest version of LanguageTool found in the directory.
 
     :raises NotADirectoryError: If the download folder path is not a valid directory.
-    :raises FileNotFoundError: If no LanguageTool installation is found in the download folder.
+    :raises FileNotFoundError: If no LanguageTool installation is found in the download
+     folder.
     :return: The path to the latest version of LanguageTool found in the directory.
     :rtype: Path
 
     .. deprecated:: 3.3.0
         This function is no longer used internally and will be removed in 4.0.
     """
-
     download_folder = get_language_tool_download_path()
     if not download_folder.is_dir():
         err = f"LanguageTool directory path is not a valid directory {download_folder}."
@@ -293,22 +302,29 @@ def get_language_tool_directory() -> Path:
 
 
 @deprecated(
-    "This function is no longer used internally and will be removed in 4.0.\nUse instead language_tool_python.download_lt.LocalLanguageTool.get_server_cmd.",
+    (
+        "This function is no longer used internally and will be removed in 4.0.\n"
+        "Use instead language_tool_python.download_lt.LocalLanguageTool.get_server_cmd."
+    ),
     stacklevel=2,
 )  # type: ignore[untyped-decorator, unused-ignore]
 def get_server_cmd(
-    port: Optional[int] = None,
-    config: Optional[LanguageToolConfig] = None,
-) -> List[str]:
-    """
-    Generate the command to start the LanguageTool HTTP server.
+    port: int | None = None,
+    config: LanguageToolConfig | None = None,
+) -> list[str]:
+    """Generate the command to start the LanguageTool HTTP server.
 
-    :param port: Optional; The port number on which the server should run. If not provided, the default port will be used.
-    :type port: Optional[int]
-    :param config: Optional; The configuration for the LanguageTool server. If not provided, default configuration will be used.
-    :type config: Optional[LanguageToolConfig]
+    :param port: Optional; The port number on which the server should run. If not
+     provided, the default port will be used.
+    :type port: int | None
+    :param config: Optional; The configuration for the LanguageTool server. If not
+     provided, default configuration will be used.
+    :type config: LanguageToolConfig | None
     :return: A list of command line arguments to start the LanguageTool HTTP server.
-    :rtype: List[str]
+    :rtype: list[str]
+    :raises JavaError: If the Java executable cannot be found.
+    :raises PathError: If the LanguageTool JAR file cannot be found in the specified
+     directory.
 
     .. deprecated:: 3.3.0
         This function is no longer used internally and will be removed in 4.0.
@@ -335,22 +351,23 @@ def get_server_cmd(
     "This function is no longer used internally and will be removed in 4.0.",
     stacklevel=2,
 )  # type: ignore[untyped-decorator, unused-ignore]
-def get_jar_info() -> Tuple[Path, Path]:
-    """
-    Retrieve the path to the Java executable and the LanguageTool JAR file.
+def get_jar_info() -> tuple[Path, Path]:
+    """Retrieve the path to the Java executable and the LanguageTool JAR file.
+
     This function searches for the Java executable in the system's PATH and
     locates the LanguageTool JAR file either in a directory specified by an
     environment variable or in a default download directory.
 
     :raises JavaError: If the Java executable cannot be found.
-    :raises PathError: If the LanguageTool JAR file cannot be found in the specified directory.
-    :return: A tuple containing the path to the Java executable and the path to the LanguageTool JAR file.
-    :rtype: Tuple[Path, Path]
+    :raises PathError: If the LanguageTool JAR file cannot be found in the specified
+     directory.
+    :return: A tuple containing the path to the Java executable and the path to the
+     LanguageTool JAR file.
+    :rtype: tuple[Path, Path]
 
     .. deprecated:: 3.3.0
         This function is no longer used internally and will be removed in 4.0.
     """
-
     java_path_str = which("java")
     if not java_path_str:
         err = "can't find Java"
@@ -380,12 +397,12 @@ def get_jar_info() -> Tuple[Path, Path]:
 
 
 def get_locale_language() -> str:
-    """
-    Get the current locale language.
-    This function retrieves the current locale language setting of the system.
-    It first attempts to get the locale using ``locale.getlocale()``. If that fails,
-    it falls back to using ``locale.getdefaultlocale()``. If both methods fail to
-    provide a valid language code, it returns a default failsafe language code.
+    """Get the current locale language.
+
+    This function retrieves the current locale language setting of the system. It first
+    attempts to get the locale using ``locale.getlocale()``. If that fails, it falls
+    back to using ``locale.getdefaultlocale()``. If both methods fail to provide a valid
+    language code, it returns a default failsafe language code.
 
     :return: The language code of the current locale.
     :rtype: str
@@ -395,18 +412,21 @@ def get_locale_language() -> str:
 
 def kill_process_force(
     *,
-    pid: Optional[int] = None,
-    proc: Optional[psutil.Process] = None,
+    pid: int | None = None,
+    proc: psutil.Process | None = None,
 ) -> None:
-    """
-    Forcefully kills a process and all its child processes.
-    This function attempts to kill a process specified either by its PID or by a psutil.Process object.
-    If the process has any child processes, they will be killed first.
+    """Terminate a process and all of its child processes forcefully.
 
-    :param pid: The process ID of the process to be killed. Either ``pid`` or ``proc`` must be provided.
-    :type pid: Optional[int]
-    :param proc: A psutil.Process object representing the process to be killed. Either ``pid`` or ``proc`` must be provided.
-    :type proc: Optional[psutil.Process]
+    This function attempts to kill a process specified either by its PID or by a
+    psutil.Process object. If the process has any child processes, they will be killed
+    first.
+
+    :param pid: The process ID of the process to be killed. Either ``pid`` or ``proc``
+        must be provided.
+    :type pid: int | None
+    :param proc: A psutil.Process object representing the process to be killed. Either
+        ``pid`` or ``proc`` must be provided.
+    :type proc: psutil.Process | None
     :raises ValueError: If neither ``pid`` nor ``proc`` is provided.
     """
     if not any([pid, proc]):
@@ -424,3 +444,38 @@ def kill_process_force(
             child.kill()
     with contextlib.suppress(psutil.NoSuchProcess):
         proc.kill()
+
+
+@runtime_checkable
+class SupportsBool(Protocol):
+    """Protocol for types that can be converted to a boolean value."""
+
+    def __bool__(self) -> bool:
+        """Define the interface for types that can be evaluated in a boolean context."""
+        ...
+
+
+@deprecated(
+    "This protocol is no longer used internally and will be removed in 4.0.",
+    stacklevel=2,
+)  # type: ignore[untyped-decorator, unused-ignore]
+@runtime_checkable
+class SupportsInt(Protocol):
+    """Protocol for types that can be converted to an integer value."""
+
+    def __int__(self) -> int:
+        """Define the interface for types that can be converted to an integer."""
+        ...
+
+
+@deprecated(
+    "This protocol is no longer used internally and will be removed in 4.0.",
+    stacklevel=2,
+)  # type: ignore[untyped-decorator, unused-ignore]
+@runtime_checkable
+class SupportsFloat(Protocol):
+    """Protocol for types that can be converted to a float value."""
+
+    def __float__(self) -> float:
+        """Define the interface for types that can be converted to a float."""
+        ...

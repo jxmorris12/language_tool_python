@@ -1,9 +1,14 @@
 """Tests for the deprecated decorator."""
 
+from __future__ import annotations
+
 import warnings
-from typing import Dict, Optional, Tuple
 
 from language_tool_python._deprecated import deprecated
+
+EXPECTED_CUSTOM_WARNING_RESULT = 42
+EXPECTED_FUNCTION_SUM = 5
+EXPECTED_WARNING_COUNT = 3
 
 
 def test_deprecated_emits_warning() -> None:
@@ -37,7 +42,7 @@ def test_deprecated_with_custom_category() -> None:
         assert len(w) == 1
         assert issubclass(w[0].category, UserWarning)
         assert "This is a user warning" in str(w[0].message)
-        assert result == 42
+        assert result == EXPECTED_CUSTOM_WARNING_RESULT
 
 
 def test_deprecated_preserves_function_signature() -> None:
@@ -52,7 +57,7 @@ def test_deprecated_preserves_function_signature() -> None:
         assert my_function.__name__ == "my_function"
         assert my_function.__doc__ is not None
         assert "Add two numbers" in my_function.__doc__
-        assert my_function(2, 3) == 5
+        assert my_function(2, 3) == EXPECTED_FUNCTION_SUM
 
 
 def test_deprecated_with_multiple_calls() -> None:
@@ -68,7 +73,7 @@ def test_deprecated_with_multiple_calls() -> None:
         func()
         func()
 
-        assert len(w) == 3
+        assert len(w) == EXPECTED_WARNING_COUNT
         assert all(issubclass(warning.category, DeprecationWarning) for warning in w)
 
 
@@ -77,8 +82,12 @@ def test_deprecated_with_args_and_kwargs() -> None:
 
     @deprecated("This function is obsolete")  # type: ignore[untyped-decorator, unused-ignore]
     def complex_function(
-        a: int, b: int, *args: int, c: Optional[int] = None, **kwargs: int
-    ) -> Tuple[int, int, Tuple[int, ...], Optional[int], Dict[str, int]]:
+        a: int,
+        b: int,
+        *args: int,
+        c: int | None = None,
+        **kwargs: int,
+    ) -> tuple[int, int, tuple[int, ...], int | None, dict[str, int]]:
         return (a, b, args, c, kwargs)
 
     with warnings.catch_warnings(record=True) as w:

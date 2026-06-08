@@ -1,26 +1,40 @@
 """Module for configuring LanguageTool's local server."""
 
+from __future__ import annotations
+
 import atexit
 import logging
 import tempfile
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
+from os import PathLike
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterable, Optional, Tuple, Union
+from typing import Callable, Generic, TypeVar, Union, cast
 
 from .exceptions import PathError
+from .utils import SupportsBool
+
+# Union here because | not supported by PathLike in py3.9
+ConfigValue = Union[PathLike[str], SupportsBool, str, int, float, Iterable[str]]
+
+ConfigValueT_contra = TypeVar("ConfigValueT_contra", contravariant=True)
 
 logger = logging.getLogger(__name__)
 
+LANGUAGE_KEY_PARTS = 2
+LANGUAGE_KEY_WITH_DICT_PATH_PARTS = 3
+LANGUAGE_DICT_PATH_SEPARATOR_COUNT = 2
+
 
 def _reject_line_breaks(field_name: str, value: str) -> None:
-    """
-    Reject values that would break the one-option-per-line config format.
+    """Reject values that would break the one-option-per-line config format.
 
     :param field_name: The name of the configuration field being validated.
     :type field_name: str
     :param value: The value of the configuration field to validate.
     :type value: str
-    :raises ValueError: If the value contains line break characters or ends with an odd number of backslashes.
+    :raises ValueError: If the value contains line break characters or ends with an odd
+        number of backslashes.
     """
     if "\n" in value or "\r" in value:
         err = f"config {field_name} cannot contain line breaks"
@@ -33,53 +47,59 @@ def _reject_line_breaks(field_name: str, value: str) -> None:
 
 
 @dataclass(frozen=True)
-class OptionSpec:
+class OptionSpec(Generic[ConfigValueT_contra]):
+    """Specification for a configuration option.
+
+    This class defines the structure and behavior of a configuration option, including
+    its type constraints, encoding mechanism, and optional validation.
+
+    This class is frozen (immutable) to ensure configuration specifications remain
+    constant throughout the application lifecycle.
     """
-    Specification for a configuration option.
 
-    This class defines the structure and behavior of a configuration option,
-    including its type constraints, encoding mechanism, and optional validation.
-
-    This class is frozen (immutable) to ensure configuration specifications
-    remain constant throughout the application lifecycle.
-    """
-
-    py_types: Union[type, Tuple[type, ...]]
+    py_types: type | tuple[type, ...]
     """The Python type(s) that this option accepts."""
 
-    encoder: Callable[[Any], str]
+    encoder: Callable[[ConfigValueT_contra], str]
     """A callable that converts the option value to its string representation."""
 
-    validator: Optional[Callable[[Any], None]] = None
+    validator: Callable[[ConfigValueT_contra], None] | None = None
     """An optional validator function for the option value."""
 
 
-def _bool_encoder(v: Any) -> str:
-    """
-    Encode a value as a lowercase boolean string.
+def _bool_encoder(v: SupportsBool) -> str:
+    """Encode a value as a lowercase boolean string.
 
-    Converts any value to a boolean and returns its string representation
-    in lowercase format ('true' or 'false').
+    Converts any value to a boolean and returns its string representation in lowercase
+    format ('true' or 'false').
 
     :param v: The value to be converted to a boolean string.
-    :type v: Any
+    :type v: SupportsBool
     :return: A lowercase string representation of the boolean value ('true' or 'false').
     :rtype: str
     """
     return str(bool(v)).lower()
 
 
-def _comma_list_encoder(v: Union[str, Iterable[str]]) -> str:
-    """
-    Encode a value as a comma-separated list string.
+def _int_encoder(v: int) -> str:
+    """Encode an integer value as a string."""
+    return str(int(v))
 
-    Converts a value into a string representation suitable for comma-separated
-    list configuration options. If the input is already a string, it is returned
-    as-is. If it's an iterable, its elements are converted to strings and joined
-    with commas.
+
+def _number_encoder(v: int | float) -> str:
+    """Encode a numeric value as a string."""
+    return str(float(v))
+
+
+def _comma_list_encoder(v: str | Iterable[str]) -> str:
+    """Encode a value as a comma-separated list string.
+
+    Converts a value into a string representation suitable for comma-separated list
+    configuration options. If the input is already a string, it is returned as-is. If
+    it's an iterable, its elements are converted to strings and joined with commas.
 
     :param v: The value to encode. Can be a string or an iterable of values.
-    :type v: Union[str, Iterable[str]]
+    :type v: str | Iterable[str]
     :return: A comma-separated string representation of the input value.
     :rtype: str
     """
@@ -88,29 +108,27 @@ def _comma_list_encoder(v: Union[str, Iterable[str]]) -> str:
     return ",".join(str(x) for x in v)
 
 
-def _path_encoder(v: Any) -> str:
-    """
-    Encode a path value to a string.
-    Converts the input to a Path object, then to a string, and escapes all
-    backslashes by doubling them. This is useful for windows file paths and
-    other contexts where backslashes need to be escaped. (because they will
-    be used by LT java binary)
+def _path_encoder(v: PathLike[str] | str) -> str:
+    r"""Encode a path value to a string.
 
-    :param v: The path value to encode. Can be any type that Path accepts
-        (str, Path, etc.).
-    :type v: Any
-    :return: The path as a string with escaped backslashes (e.g., "C:\\\\Users\\\\file").
+    Converts the input to a Path object, then to a string, and escapes all backslashes
+    by doubling them. This is useful for windows file paths and other contexts where
+    backslashes need to be escaped. (because they will be used by LT java binary)
+
+    :param v: The path value to encode. Can be any type that Path accepts (str, Path,
+        etc.).
+    :type v: PathLike[str] | str
+    :return: The path as a string with escaped backslashes (e.g., "C:\\Users\\file").
     :rtype: str
     """
     return str(Path(v)).replace("\\", "\\\\")
 
 
-def _path_validator(v: Any) -> None:
-    """
-    Validate that a given path exists and is a file.
+def _path_validator(v: PathLike[str] | str) -> None:
+    """Validate that a given path exists and is a file.
 
     :param v: The path to validate, which will be converted to a Path object
-    :type v: Any
+    :type v: PathLike[str] | str
     :raises PathError: If the path does not exist
     :raises PathError: If the path exists but is not a file
     """
@@ -123,39 +141,42 @@ def _path_validator(v: Any) -> None:
         raise PathError(err)
 
 
-CONFIG_SCHEMA: Dict[str, OptionSpec] = {
-    "maxTextLength": OptionSpec(int, lambda v: str(int(v))),
-    "maxTextHardLength": OptionSpec(int, lambda v: str(int(v))),
-    "maxCheckTimeMillis": OptionSpec(int, lambda v: str(int(v))),
-    "maxErrorsPerWordRate": OptionSpec((int, float), lambda v: str(float(v))),
-    "maxSpellingSuggestions": OptionSpec(int, lambda v: str(int(v))),
-    "maxCheckThreads": OptionSpec(int, lambda v: str(int(v))),
-    "cacheSize": OptionSpec(int, lambda v: str(int(v))),
-    "cacheTTLSeconds": OptionSpec(int, lambda v: str(int(v))),
-    "requestLimit": OptionSpec(int, lambda v: str(int(v))),
-    "requestLimitInBytes": OptionSpec(int, lambda v: str(int(v))),
-    "timeoutRequestLimit": OptionSpec(int, lambda v: str(int(v))),
-    "requestLimitPeriodInSeconds": OptionSpec(int, lambda v: str(int(v))),
-    "languageModel": OptionSpec((str, Path), _path_encoder, _path_validator),
-    "fasttextModel": OptionSpec((str, Path), _path_encoder, _path_validator),
-    "fasttextBinary": OptionSpec((str, Path), _path_encoder, _path_validator),
-    "maxWorkQueueSize": OptionSpec(int, lambda v: str(int(v))),
-    "rulesFile": OptionSpec((str, Path), _path_encoder, _path_validator),
-    "blockedReferrers": OptionSpec((str, list, tuple, set), _comma_list_encoder),
-    "premiumOnly": OptionSpec((bool, int), _bool_encoder),
-    "disabledRuleIds": OptionSpec((str, list, tuple, set), _comma_list_encoder),
-    "pipelineCaching": OptionSpec((bool, int), _bool_encoder),
-    "maxPipelinePoolSize": OptionSpec(int, lambda v: str(int(v))),
-    "pipelineExpireTimeInSeconds": OptionSpec(int, lambda v: str(int(v))),
-    "pipelinePrewarming": OptionSpec((bool, int), _bool_encoder),
-    "trustXForwardForHeader": OptionSpec((bool, int), _bool_encoder),
-    "suggestionsEnabled": OptionSpec((bool, int), _bool_encoder),
-}
+CONFIG_SCHEMA = cast(
+    "dict[str, OptionSpec[ConfigValue]]",
+    {
+        "maxTextLength": OptionSpec(int, _int_encoder),
+        "maxTextHardLength": OptionSpec(int, _int_encoder),
+        "maxCheckTimeMillis": OptionSpec(int, _int_encoder),
+        "maxErrorsPerWordRate": OptionSpec((int, float), _number_encoder),
+        "maxSpellingSuggestions": OptionSpec(int, _int_encoder),
+        "maxCheckThreads": OptionSpec(int, _int_encoder),
+        "cacheSize": OptionSpec(int, _int_encoder),
+        "cacheTTLSeconds": OptionSpec(int, _int_encoder),
+        "requestLimit": OptionSpec(int, _int_encoder),
+        "requestLimitInBytes": OptionSpec(int, _int_encoder),
+        "timeoutRequestLimit": OptionSpec(int, _int_encoder),
+        "requestLimitPeriodInSeconds": OptionSpec(int, _int_encoder),
+        "languageModel": OptionSpec((str, Path), _path_encoder, _path_validator),
+        "fasttextModel": OptionSpec((str, Path), _path_encoder, _path_validator),
+        "fasttextBinary": OptionSpec((str, Path), _path_encoder, _path_validator),
+        "maxWorkQueueSize": OptionSpec(int, _int_encoder),
+        "rulesFile": OptionSpec((str, Path), _path_encoder, _path_validator),
+        "blockedReferrers": OptionSpec((str, list, tuple, set), _comma_list_encoder),
+        "premiumOnly": OptionSpec((bool, int), _bool_encoder),
+        "disabledRuleIds": OptionSpec((str, list, tuple, set), _comma_list_encoder),
+        "pipelineCaching": OptionSpec((bool, int), _bool_encoder),
+        "maxPipelinePoolSize": OptionSpec(int, _int_encoder),
+        "pipelineExpireTimeInSeconds": OptionSpec(int, _int_encoder),
+        "pipelinePrewarming": OptionSpec((bool, int), _bool_encoder),
+        "trustXForwardForHeader": OptionSpec((bool, int), _bool_encoder),
+        "suggestionsEnabled": OptionSpec((bool, int), _bool_encoder),
+    },
+)
 
 
 def _is_lang_key(key: str) -> bool:
-    """
-    Check if a given key is a valid language key.
+    """Check if a given key is a valid language key.
+
     A valid language key must follow one of these formats:
 
         - lang-<code> where code is a non-empty language code
@@ -170,31 +191,33 @@ def _is_lang_key(key: str) -> bool:
         return False
 
     parts = key.split("-")
-    return (len(parts) == 2 and len(parts[1]) > 0) or (  # lang-<code>
-        len(parts) == 3
+    return (len(parts) == LANGUAGE_KEY_PARTS and len(parts[1]) > 0) or (  # lang-<code>
+        len(parts) == LANGUAGE_KEY_WITH_DICT_PATH_PARTS
         and len(parts[1]) > 0
         and parts[2] == "dictPath"  # lang-<code>-dictPath
     )
 
 
-def _encode_config(config: Dict[str, Any]) -> Dict[str, str]:
-    """
-    Encode configuration dictionary values to their string representations.
+def _encode_config(config: Mapping[str, ConfigValue]) -> dict[str, str]:
+    """Encode configuration dictionary values to their string representations.
+
     This function converts a configuration dictionary into a format suitable for
     serialization by encoding each value according to its corresponding schema
     specification.
 
     :param config: A dictionary containing configuration keys and values to be encoded.
-    :type config: Dict[str, Any]
+    :type config: Mapping[str, ConfigValue]
     :return: A dictionary with the same keys but with all values encoded as strings.
-    :rtype: Dict[str, str]
-    :raises ValueError: If a key in the config is not found in the CONFIG_SCHEMA and
-                       is not a language key.
-    :raises TypeError: If a value's type does not match the expected type(s) defined
-                      in the CONFIG_SCHEMA specification.
+    :rtype: dict[str, str]
+    :raises ValueError: If a key in the config is not found in the CONFIG_SCHEMA and is
+        not a language key, or if a key/value cannot be serialized safely.
+    :raises TypeError: If a value's type does not match the expected type(s) defined in
+        the CONFIG_SCHEMA specification.
+    :raises PathError: If a path-like configuration value does not point to an existing
+        file.
     """
     logger.debug("Encoding LanguageTool config with keys: %s", list(config.keys()))
-    encoded: Dict[str, str] = {}
+    encoded: dict[str, str] = {}
     for key, value in config.items():
         _reject_line_breaks("key", key)
         if _is_lang_key(key) and key.count("-") == 1:  # lang-<code>
@@ -202,10 +225,13 @@ def _encode_config(config: Dict[str, Any]) -> Dict[str, str]:
             encoded[key] = str(value)
             _reject_line_breaks(key, encoded[key])
             continue
-        if _is_lang_key(key) and key.count("-") == 2:  # lang-<code>-dictPath
+        if (
+            _is_lang_key(key) and key.count("-") == LANGUAGE_DICT_PATH_SEPARATOR_COUNT
+        ):  # lang-<code>-dictPath
             logger.debug("Encoding language dictPath %s=%r", key, value)
-            _path_validator(value)
-            encoded[key] = _path_encoder(value)
+            path_value = cast("PathLike[str] | str", value)
+            _path_validator(path_value)
+            encoded[key] = _path_encoder(path_value)
             _reject_line_breaks(key, encoded[key])
             continue
 
@@ -225,22 +251,25 @@ def _encode_config(config: Dict[str, Any]) -> Dict[str, str]:
 
 
 class LanguageToolConfig:
-    """
-    Configuration class for LanguageTool.
+    """Configuration class for LanguageTool.
 
     :param config: Dictionary containing configuration keys and values.
-    :type config: Dict[str, Any]
+    :type config: Mapping[str, ConfigValue]
     """
 
-    config: Dict[str, Any]
+    config: dict[str, str]
     """Dictionary containing configuration keys and values."""
 
     path: str
     """Path to the temporary file storing the configuration."""
 
-    def __init__(self, config: Dict[str, Any]):
-        """
-        Initialize the LanguageToolConfig object.
+    def __init__(self, config: Mapping[str, ConfigValue]) -> None:
+        """Initialize the LanguageToolConfig object.
+
+        :raises ValueError: If the config is empty or contains invalid keys/values.
+        :raises TypeError: If a config value has an unsupported type.
+        :raises PathError: If a path-like config value does not point to an existing
+            file.
         """
         if not config:
             err = "config cannot be empty"
@@ -250,8 +279,7 @@ class LanguageToolConfig:
         self.path = self._create_temp_file()
 
     def _create_temp_file(self) -> str:
-        """
-        Create a temporary file to store the configuration.
+        """Create a temporary file to store the configuration.
 
         :return: Path to the temporary file.
         :rtype: str

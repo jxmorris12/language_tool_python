@@ -1,20 +1,26 @@
 """Safe ZIP extraction utilities."""
 
+from __future__ import annotations
+
 import contextlib
 import logging
 import re
 import shutil
 import stat
 import tempfile
-import zipfile
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
-from typing import Optional
+from typing import TYPE_CHECKING
 
 from .exceptions import PathError
 from .utils import get_env_float, get_env_int
 
+if TYPE_CHECKING:
+    import zipfile
+
 logger = logging.getLogger(__name__)
+
+CONTROL_CHARACTER_MAX = 32
 
 LTP_SAFE_ZIP_MAX_ARCHIVE_BYTES_ENV_VAR = "LTP_SAFE_ZIP_MAX_ARCHIVE_BYTES"
 LTP_SAFE_ZIP_MAX_EXTRACTED_BYTES_ENV_VAR = "LTP_SAFE_ZIP_MAX_EXTRACTED_BYTES"
@@ -29,10 +35,12 @@ LTP_SAFE_ZIP_MAX_TOTAL_COMPRESSION_RATIO_ENV_VAR = (
     "LTP_SAFE_ZIP_MAX_TOTAL_COMPRESSION_RATIO"
 )
 DEFAULT_MAX_ARCHIVE_BYTES = get_env_int(
-    LTP_SAFE_ZIP_MAX_ARCHIVE_BYTES_ENV_VAR, 512 * 1024 * 1024
+    LTP_SAFE_ZIP_MAX_ARCHIVE_BYTES_ENV_VAR,
+    512 * 1024 * 1024,
 )  # 512 MiB, latest snapshot: 246.15 MiB compressed members
 DEFAULT_MAX_EXTRACTED_BYTES = get_env_int(
-    LTP_SAFE_ZIP_MAX_EXTRACTED_BYTES_ENV_VAR, 768 * 1024 * 1024
+    LTP_SAFE_ZIP_MAX_EXTRACTED_BYTES_ENV_VAR,
+    768 * 1024 * 1024,
 )  # 768 MiB, latest snapshot: 394.48 MiB extracted
 DEFAULT_MAX_MEMBERS = get_env_int(
     LTP_SAFE_ZIP_MAX_MEMBERS_ENV_VAR,
@@ -40,7 +48,8 @@ DEFAULT_MAX_MEMBERS = get_env_int(
 )  # latest snapshot: 2,051 members
 DEFAULT_COPY_CHUNK_BYTES = 1024 * 1024  # I/O chunk size
 DEFAULT_MAX_MEMBER_EXTRACTED_BYTES = get_env_int(
-    LTP_SAFE_ZIP_MAX_MEMBER_EXTRACTED_BYTES_ENV_VAR, 128 * 1024 * 1024
+    LTP_SAFE_ZIP_MAX_MEMBER_EXTRACTED_BYTES_ENV_VAR,
+    128 * 1024 * 1024,
 )  # 128 MiB, latest snapshot: 32.91 MiB largest member
 DEFAULT_MAX_MEMBER_COMPRESSION_RATIO = get_env_float(
     LTP_SAFE_ZIP_MAX_MEMBER_COMPRESSION_RATIO_ENV_VAR,
@@ -62,8 +71,7 @@ RESERVED_WINDOWS_FILENAMES = {
 
 @dataclass(frozen=True)
 class SafeZipLimits:
-    """
-    Limits applied while validating and extracting a ZIP archive.
+    """Limits applied while validating and extracting a ZIP archive.
 
     Values are expressed in bytes unless otherwise stated.
     """
@@ -78,16 +86,13 @@ class SafeZipLimits:
 
 
 class SafeZipExtractor:
-    """
-    Extract ZIP archives after validating paths, member types, and size limits.
-    """
+    """Extract ZIP archives after validating paths, member types, and size limits."""
 
-    def __init__(self, limits: Optional[SafeZipLimits] = None) -> None:
-        """
-        Initialize the safe extractor.
+    def __init__(self, limits: SafeZipLimits | None = None) -> None:
+        """Initialize the safe extractor.
 
         :param limits: Optional extraction limits. Defaults to SafeZipLimits().
-        :type limits: Optional[SafeZipLimits]
+        :type limits: SafeZipLimits | None
         """
         self.limits = limits or SafeZipLimits()
 
@@ -95,20 +100,19 @@ class SafeZipExtractor:
         self,
         zip_file: zipfile.ZipFile,
         destination: Path,
-        work_dir: Optional[Path] = None,
+        work_dir: Path | None = None,
     ) -> None:
-        """
-        Safely extract all ZIP members into destination.
+        """Safely extract all ZIP members into destination.
 
-        Extraction first happens inside a private directory, then validated
-        top-level entries are moved into the final destination.
+        Extraction first happens inside a private directory, then validated top-level
+        entries are moved into the final destination.
 
         :param zip_file: The open ZIP archive to extract.
         :type zip_file: zipfile.ZipFile
         :param destination: Directory where ZIP contents should be placed.
         :type destination: Path
         :param work_dir: Optional parent directory for temporary extraction.
-        :type work_dir: Optional[Path]
+        :type work_dir: Path | None
         :raises PathError: If the archive or destination is unsafe.
         """
         destination = Path(destination)
@@ -129,8 +133,7 @@ class SafeZipExtractor:
         logger.debug("Completed safe ZIP extraction to %s", destination)
 
     def _normalize_member_path(self, filename: str) -> PurePosixPath:
-        """
-        Normalize and validate a ZIP member path.
+        """Normalize and validate a ZIP member path.
 
         :param filename: Raw ZIP member filename.
         :type filename: str
@@ -142,7 +145,7 @@ class SafeZipExtractor:
             err = f"Unsafe ZIP member name: {filename!r}."
             raise PathError(err)
 
-        if any(ord(character) < 32 for character in filename):
+        if any(ord(character) < CONTROL_CHARACTER_MAX for character in filename):
             err = f"Unsafe ZIP member name: {filename!r}."
             raise PathError(err)
 
@@ -181,8 +184,7 @@ class SafeZipExtractor:
         return member_path
 
     def _validate_member_type(self, member: zipfile.ZipInfo) -> None:
-        """
-        Reject symlinks and unsupported ZIP member types.
+        """Reject symlinks and unsupported ZIP member types.
 
         :param member: ZIP member metadata.
         :type member: zipfile.ZipInfo
@@ -208,8 +210,7 @@ class SafeZipExtractor:
         raise PathError(err)
 
     def _validate_member_compression_ratio(self, member: zipfile.ZipInfo) -> None:
-        """
-        Reject a member with a suspicious compression ratio.
+        """Reject a member with a suspicious compression ratio.
 
         :param member: ZIP member metadata.
         :type member: zipfile.ZipInfo
@@ -237,8 +238,7 @@ class SafeZipExtractor:
             raise PathError(err)
 
     def _zip_target(self, destination: Path, member_path: PurePosixPath) -> Path:
-        """
-        Resolve a member target and ensure it stays inside destination.
+        """Resolve a member target and ensure it stays inside destination.
 
         :param destination: Extraction root directory.
         :type destination: Path
@@ -260,12 +260,138 @@ class SafeZipExtractor:
 
         return target
 
+    def _member_path_key(self, member_path: PurePosixPath) -> str:
+        """Return the normalized key used to detect path conflicts.
+
+        :param member_path: Normalized ZIP member path.
+        :type member_path: PurePosixPath
+        :return: Case-folded POSIX path key.
+        :rtype: str
+        """
+        return "/".join(part.casefold() for part in member_path.parts)
+
+    def _validate_member_path_conflicts(
+        self,
+        member: zipfile.ZipInfo,
+        member_path: PurePosixPath,
+        seen_paths: set[str],
+        seen_file_paths: set[str],
+    ) -> None:
+        """Reject duplicate paths and file/directory path conflicts.
+
+        :param member: ZIP member metadata.
+        :type member: zipfile.ZipInfo
+        :param member_path: Normalized ZIP member path.
+        :type member_path: PurePosixPath
+        :param seen_paths: Case-folded paths already seen in the archive.
+        :type seen_paths: set[str]
+        :param seen_file_paths: Case-folded file paths already seen in the archive.
+        :type seen_file_paths: set[str]
+        :raises PathError: If the member conflicts with another archive path.
+        """
+        path_key = self._member_path_key(member_path)
+
+        if path_key in seen_paths:
+            err = f"Refusing to extract duplicate ZIP member path: {member.filename!r}."
+            raise PathError(err)
+
+        seen_paths.add(path_key)
+
+        ancestor_keys = [
+            self._member_path_key(PurePosixPath(*member_path.parts[:index]))
+            for index in range(1, len(member_path.parts))
+        ]
+        if any(ancestor in seen_file_paths for ancestor in ancestor_keys):
+            err = (
+                f"Refusing to extract ZIP member below file path: {member.filename!r}."
+            )
+            raise PathError(err)
+
+        if not member.is_dir():
+            descendant_prefix = f"{path_key}/"
+            if any(existing.startswith(descendant_prefix) for existing in seen_paths):
+                err = (
+                    f"Refusing to extract ZIP file over directory path: "
+                    f"{member.filename!r}."
+                )
+                raise PathError(err)
+            seen_file_paths.add(path_key)
+
+    def _validate_member_sizes(self, member: zipfile.ZipInfo) -> None:
+        """Validate a member's declared type, sizes, and compression ratio.
+
+        :param member: ZIP member metadata.
+        :type member: zipfile.ZipInfo
+        :raises PathError: If the member metadata is unsafe.
+        """
+        self._validate_member_type(member)
+
+        if member.compress_size < 0 or member.file_size < 0:
+            err = f"Invalid ZIP member size: {member.filename!r}."
+            raise PathError(err)
+
+        self._validate_member_compression_ratio(member)
+
+    def _validate_archive_size_totals(
+        self,
+        total_compressed: int,
+        total_uncompressed: int,
+    ) -> None:
+        """Validate accumulated compressed and uncompressed archive sizes.
+
+        :param total_compressed: Sum of compressed member sizes seen so far.
+        :type total_compressed: int
+        :param total_uncompressed: Sum of uncompressed member sizes seen so far.
+        :type total_uncompressed: int
+        :raises PathError: If an archive size limit is exceeded.
+        """
+        if total_compressed > self.limits.max_archive_bytes:
+            err = (
+                f"Refusing to extract ZIP archive with {total_compressed} "
+                f"compressed member bytes. Maximum allowed size is "
+                f"{self.limits.max_archive_bytes} bytes."
+            )
+            raise PathError(err)
+
+        if total_uncompressed > self.limits.max_extracted_bytes:
+            err = (
+                f"Refusing to extract {total_uncompressed} bytes. "
+                f"Maximum allowed extracted size is "
+                f"{self.limits.max_extracted_bytes} bytes."
+            )
+            raise PathError(err)
+
+    def _validate_total_compression_ratio(
+        self,
+        total_compressed: int,
+        total_uncompressed: int,
+    ) -> None:
+        """Reject an archive with a suspicious total compression ratio.
+
+        :param total_compressed: Sum of compressed member sizes.
+        :type total_compressed: int
+        :param total_uncompressed: Sum of uncompressed member sizes.
+        :type total_uncompressed: int
+        :raises PathError: If the total compression ratio is too high.
+        """
+        if total_compressed == 0:
+            return
+
+        total_ratio = total_uncompressed / total_compressed
+
+        if total_ratio > self.limits.max_total_compression_ratio:
+            err = (
+                f"Refusing ZIP archive with suspicious total compression ratio "
+                f"{total_ratio:.1f}. Maximum allowed ratio is "
+                f"{self.limits.max_total_compression_ratio:.1f}."
+            )
+            raise PathError(err)
+
     def _validate_members(
         self,
         members: list[zipfile.ZipInfo],
     ) -> list[tuple[zipfile.ZipInfo, PurePosixPath]]:
-        """
-        Validate all ZIP members before writing any file.
+        """Validate all ZIP members before writing any file.
 
         :param members: ZIP members to validate.
         :type members: list[zipfile.ZipInfo]
@@ -288,79 +414,22 @@ class SafeZipExtractor:
 
         for member in members:
             member_path = self._normalize_member_path(member.filename)
-            path_key = "/".join(part.casefold() for part in member_path.parts)
-
-            if path_key in seen_paths:
-                err = (
-                    f"Refusing to extract duplicate ZIP member path: "
-                    f"{member.filename!r}."
-                )
-                raise PathError(err)
-
-            seen_paths.add(path_key)
-
-            ancestor_keys = [
-                "/".join(part.casefold() for part in member_path.parts[:index])
-                for index in range(1, len(member_path.parts))
-            ]
-            if any(ancestor in seen_file_paths for ancestor in ancestor_keys):
-                err = (
-                    f"Refusing to extract ZIP member below file path: "
-                    f"{member.filename!r}."
-                )
-                raise PathError(err)
-
-            if not member.is_dir():
-                descendant_prefix = f"{path_key}/"
-                if any(
-                    existing.startswith(descendant_prefix) for existing in seen_paths
-                ):
-                    err = (
-                        f"Refusing to extract ZIP file over directory path: "
-                        f"{member.filename!r}."
-                    )
-                    raise PathError(err)
-                seen_file_paths.add(path_key)
-
-            self._validate_member_type(member)
-
-            if member.compress_size < 0 or member.file_size < 0:
-                err = f"Invalid ZIP member size: {member.filename!r}."
-                raise PathError(err)
-
-            self._validate_member_compression_ratio(member)
+            self._validate_member_path_conflicts(
+                member,
+                member_path,
+                seen_paths,
+                seen_file_paths,
+            )
+            self._validate_member_sizes(member)
 
             total_compressed += member.compress_size
             total_uncompressed += member.file_size
 
-            if total_compressed > self.limits.max_archive_bytes:
-                err = (
-                    f"Refusing to extract ZIP archive with {total_compressed} "
-                    f"compressed member bytes. Maximum allowed size is "
-                    f"{self.limits.max_archive_bytes} bytes."
-                )
-                raise PathError(err)
-
-            if total_uncompressed > self.limits.max_extracted_bytes:
-                err = (
-                    f"Refusing to extract {total_uncompressed} bytes. "
-                    f"Maximum allowed extracted size is "
-                    f"{self.limits.max_extracted_bytes} bytes."
-                )
-                raise PathError(err)
+            self._validate_archive_size_totals(total_compressed, total_uncompressed)
 
             validated_members.append((member, member_path))
 
-        if total_compressed > 0:
-            total_ratio = total_uncompressed / total_compressed
-
-            if total_ratio > self.limits.max_total_compression_ratio:
-                err = (
-                    f"Refusing ZIP archive with suspicious total compression ratio "
-                    f"{total_ratio:.1f}. Maximum allowed ratio is "
-                    f"{self.limits.max_total_compression_ratio:.1f}."
-                )
-                raise PathError(err)
+        self._validate_total_compression_ratio(total_compressed, total_uncompressed)
 
         logger.debug(
             "Validated ZIP archive: members=%d, compressed=%d bytes, "
@@ -373,8 +442,7 @@ class SafeZipExtractor:
         return validated_members
 
     def _ensure_safe_parent(self, destination: Path, target: Path) -> None:
-        """
-        Ensure the target parent is inside destination and not symlinked.
+        """Ensure the target parent is inside destination and not symlinked.
 
         :param destination: Extraction root directory.
         :type destination: Path
@@ -424,8 +492,7 @@ class SafeZipExtractor:
         member: zipfile.ZipInfo,
         target: Path,
     ) -> None:
-        """
-        Copy one validated file member without overwriting existing paths.
+        """Copy one validated file member without overwriting existing paths.
 
         :param zip_file: The open ZIP archive.
         :type zip_file: zipfile.ZipFile
@@ -450,7 +517,7 @@ class SafeZipExtractor:
         try:
             with (
                 zip_file.open(member, "r") as source,
-                open(target, "xb") as target_file,
+                target.open("xb") as target_file,
             ):
                 while True:
                     chunk = source.read(self.limits.copy_chunk_bytes)
@@ -497,8 +564,7 @@ class SafeZipExtractor:
         zip_file: zipfile.ZipFile,
         destination: Path,
     ) -> None:
-        """
-        Extract validated members into a private temporary directory.
+        """Extract validated members into a private temporary directory.
 
         :param zip_file: The open ZIP archive.
         :type zip_file: zipfile.ZipFile
@@ -557,8 +623,7 @@ class SafeZipExtractor:
         logger.debug("Finished extracting ZIP members into %s", destination)
 
     def _make_private_extract_dir(self, base_dir: Path) -> Path:
-        """
-        Create a private temporary directory under base_dir.
+        """Create a private temporary directory under base_dir.
 
         :param base_dir: Parent directory for temporary extraction.
         :type base_dir: Path
@@ -579,7 +644,7 @@ class SafeZipExtractor:
             tempfile.mkdtemp(
                 prefix="zip-extract-",
                 dir=base_dir,
-            )
+            ),
         )
 
         with contextlib.suppress(OSError):
@@ -594,8 +659,7 @@ class SafeZipExtractor:
         final_directory: Path,
         private_work_dir: Path,
     ) -> None:
-        """
-        Extract into a private directory and move safe top-level entries.
+        """Extract into a private directory and move safe top-level entries.
 
         :param zip_file: The open ZIP archive.
         :type zip_file: zipfile.ZipFile
@@ -613,7 +677,10 @@ class SafeZipExtractor:
             final_directory.mkdir(parents=True, exist_ok=True)
 
             if final_directory.is_symlink():
-                err = f"Refusing to extract into symlinked destination: {final_directory}."
+                err = (
+                    f"Refusing to extract into symlinked"
+                    f" destination: {final_directory}."
+                )
                 raise PathError(err)
 
             final_directory_resolved = final_directory.resolve(strict=True)

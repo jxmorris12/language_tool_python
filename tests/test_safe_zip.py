@@ -4,7 +4,6 @@ import contextlib
 import hashlib
 import importlib
 import io
-import os
 import shutil
 import stat
 import uuid
@@ -19,11 +18,16 @@ from language_tool_python import safe_zip, utils
 from language_tool_python.exceptions import PathError
 from language_tool_python.safe_zip import SafeZipExtractor, SafeZipLimits
 
+EXPECTED_MAX_ARCHIVE_BYTES = 11
+EXPECTED_MAX_EXTRACTED_BYTES = 22
+EXPECTED_MAX_MEMBERS = 33
+EXPECTED_MAX_MEMBER_EXTRACTED_BYTES = 44
+EXPECTED_MAX_MEMBER_COMPRESSION_RATIO = 55.5
+EXPECTED_MAX_TOTAL_COMPRESSION_RATIO = 66.5
+
 
 def make_zip_payload(files: dict[str, bytes]) -> bytes:
-    """
-    Create an in-memory ZIP payload for safe extraction tests.
-    """
+    """Create an in-memory ZIP payload for safe extraction tests."""
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w") as zip_file:
         for filename, payload in files.items():
@@ -32,9 +36,7 @@ def make_zip_payload(files: dict[str, bytes]) -> bytes:
 
 
 def make_deflated_zip_payload(files: dict[str, bytes]) -> bytes:
-    """
-    Create an in-memory ZIP payload using DEFLATE compression.
-    """
+    """Create an in-memory ZIP payload using DEFLATE compression."""
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w", compression=zipfile.ZIP_DEFLATED) as zip_file:
         for filename, payload in files.items():
@@ -43,9 +45,7 @@ def make_deflated_zip_payload(files: dict[str, bytes]) -> bytes:
 
 
 def make_zip_payload_from_info(member: zipfile.ZipInfo, payload: bytes) -> bytes:
-    """
-    Create an in-memory ZIP payload with explicit member metadata.
-    """
+    """Create an in-memory ZIP payload with explicit member metadata."""
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w") as zip_file:
         zip_file.writestr(member, payload)
@@ -58,20 +58,16 @@ def make_symlink_or_skip(
     *,
     target_is_directory: bool = False,
 ) -> None:
-    """
-    Create a symlink, or skip the test if the platform disallows it.
-    """
+    """Create a symlink, or skip the test if the platform disallows it."""
     try:
-        os.symlink(target, link, target_is_directory=target_is_directory)
+        link.symlink_to(target, target_is_directory=target_is_directory)
     except (NotImplementedError, OSError) as error:
         pytest.skip(f"Cannot create symlink for this test: {error}")
 
 
 @contextmanager
 def workspace_temp_dir() -> Iterator[Path]:
-    """
-    Create a temporary directory inside the repository workspace.
-    """
+    """Create a temporary directory inside the repository workspace."""
     root = Path.cwd() / ".test_safe_zip_tmp"
     path = root / uuid.uuid4().hex
     path.mkdir(parents=True)
@@ -84,14 +80,12 @@ def workspace_temp_dir() -> Iterator[Path]:
 
 
 def test_safe_extract_allows_regular_zip() -> None:
-    """
-    Test that a regular ZIP is extracted by the safe extractor.
-    """
+    """Test that a regular ZIP is extracted by the safe extractor."""
     payload = make_zip_payload(
         {
             "LanguageTool-6.9-SNAPSHOT/": b"",
             "LanguageTool-6.9-SNAPSHOT/languagetool-server.jar": b"jar",
-        }
+        },
     )
 
     with (
@@ -107,36 +101,50 @@ def test_safe_extract_allows_regular_zip() -> None:
 def test_safe_zip_limits_use_env_overrides(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """
-    Test that safe ZIP limits can be configured from the environment.
-    """
+    """Test that safe ZIP limits can be configured from the environment."""
     try:
         with monkeypatch.context() as env:
-            env.setenv(safe_zip.LTP_SAFE_ZIP_MAX_ARCHIVE_BYTES_ENV_VAR, "11")
-            env.setenv(safe_zip.LTP_SAFE_ZIP_MAX_EXTRACTED_BYTES_ENV_VAR, "22")
-            env.setenv(safe_zip.LTP_SAFE_ZIP_MAX_MEMBERS_ENV_VAR, "33")
+            env.setenv(
+                safe_zip.LTP_SAFE_ZIP_MAX_ARCHIVE_BYTES_ENV_VAR,
+                str(EXPECTED_MAX_ARCHIVE_BYTES),
+            )
+            env.setenv(
+                safe_zip.LTP_SAFE_ZIP_MAX_EXTRACTED_BYTES_ENV_VAR,
+                str(EXPECTED_MAX_EXTRACTED_BYTES),
+            )
+            env.setenv(
+                safe_zip.LTP_SAFE_ZIP_MAX_MEMBERS_ENV_VAR, str(EXPECTED_MAX_MEMBERS)
+            )
             env.setenv(
                 safe_zip.LTP_SAFE_ZIP_MAX_MEMBER_EXTRACTED_BYTES_ENV_VAR,
-                "44",
+                str(EXPECTED_MAX_MEMBER_EXTRACTED_BYTES),
             )
             env.setenv(
                 safe_zip.LTP_SAFE_ZIP_MAX_MEMBER_COMPRESSION_RATIO_ENV_VAR,
-                "55.5",
+                str(EXPECTED_MAX_MEMBER_COMPRESSION_RATIO),
             )
             env.setenv(
                 safe_zip.LTP_SAFE_ZIP_MAX_TOTAL_COMPRESSION_RATIO_ENV_VAR,
-                "66.5",
+                str(EXPECTED_MAX_TOTAL_COMPRESSION_RATIO),
             )
 
             reloaded_safe_zip = importlib.reload(safe_zip)
             limits = reloaded_safe_zip.SafeZipLimits()
 
-            assert limits.max_archive_bytes == 11
-            assert limits.max_extracted_bytes == 22
-            assert limits.max_members == 33
-            assert limits.max_member_extracted_bytes == 44
-            assert limits.max_member_compression_ratio == 55.5
-            assert limits.max_total_compression_ratio == 66.5
+            assert limits.max_archive_bytes == EXPECTED_MAX_ARCHIVE_BYTES
+            assert limits.max_extracted_bytes == EXPECTED_MAX_EXTRACTED_BYTES
+            assert limits.max_members == EXPECTED_MAX_MEMBERS
+            assert (
+                limits.max_member_extracted_bytes == EXPECTED_MAX_MEMBER_EXTRACTED_BYTES
+            )
+            assert (
+                limits.max_member_compression_ratio
+                == EXPECTED_MAX_MEMBER_COMPRESSION_RATIO
+            )
+            assert (
+                limits.max_total_compression_ratio
+                == EXPECTED_MAX_TOTAL_COMPRESSION_RATIO
+            )
     finally:
         importlib.reload(safe_zip)
 
@@ -146,9 +154,7 @@ def test_safe_zip_float_env_rejects_non_finite_values(
     monkeypatch: pytest.MonkeyPatch,
     configured: str,
 ) -> None:
-    """
-    Test that non-finite ratio limits are rejected.
-    """
+    """Test that non-finite ratio limits are rejected."""
     env_var = "LTP_TEST_SAFE_ZIP_FLOAT"
     monkeypatch.setenv(env_var, configured)
 
@@ -184,9 +190,7 @@ def test_safe_zip_float_env_rejects_non_finite_values(
 def test_safe_extract_rejects_unsafe_member_names(
     filename: str,
 ) -> None:
-    """
-    Test that unsafe ZIP member names are rejected.
-    """
+    """Test that unsafe ZIP member names are rejected."""
     payload = make_zip_payload({filename: b"nope"})
 
     with (
@@ -198,9 +202,7 @@ def test_safe_extract_rejects_unsafe_member_names(
 
 
 def test_safe_extract_rejects_duplicate_member_paths() -> None:
-    """
-    Test that duplicate ZIP member paths are rejected before extraction.
-    """
+    """Test that duplicate ZIP member paths are rejected before extraction."""
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w") as zip_file:
         zip_file.writestr("LanguageTool/file.txt", b"one")
@@ -216,47 +218,41 @@ def test_safe_extract_rejects_duplicate_member_paths() -> None:
 
 
 def test_safe_extract_rejects_file_directory_conflict() -> None:
-    """
-    Test that archives cannot contain both a file and children below that file path.
-    """
+    """Test that archives reject file-and-child path conflicts."""
     payload = make_zip_payload(
         {
             "LanguageTool/path": b"file",
             "LanguageTool/path/child.txt": b"child",
-        }
+        },
     )
 
     with (
         workspace_temp_dir() as temp_dir,
         zipfile.ZipFile(io.BytesIO(payload)) as zip_file,
-        pytest.raises(PathError, match="below file path|file over directory path"),
+        pytest.raises(PathError, match=r"below file path|file over directory path"),
     ):
         SafeZipExtractor().extractall(zip_file, temp_dir)
 
 
 def test_safe_extract_rejects_file_directory_conflict_in_reverse_order() -> None:
-    """
-    Test that archives cannot replace a directory path with a file path.
-    """
+    """Test that archives cannot replace a directory path with a file path."""
     payload = make_zip_payload(
         {
             "LanguageTool/path/child.txt": b"child",
             "LanguageTool/path": b"file",
-        }
+        },
     )
 
     with (
         workspace_temp_dir() as temp_dir,
         zipfile.ZipFile(io.BytesIO(payload)) as zip_file,
-        pytest.raises(PathError, match="below file path|file over directory path"),
+        pytest.raises(PathError, match=r"below file path|file over directory path"),
     ):
         SafeZipExtractor().extractall(zip_file, temp_dir)
 
 
 def test_safe_extract_rejects_zip_symlink() -> None:
-    """
-    Test that ZIP symlink entries are rejected.
-    """
+    """Test that ZIP symlink entries are rejected."""
     member = zipfile.ZipInfo("LanguageTool/link")
     member.create_system = 3
     member.external_attr = (stat.S_IFLNK | 0o777) << 16
@@ -271,9 +267,7 @@ def test_safe_extract_rejects_zip_symlink() -> None:
 
 
 def test_safe_extract_rejects_symlinked_destination() -> None:
-    """
-    Test that the final destination itself cannot be a symlink.
-    """
+    """Test that the final destination itself cannot be a symlink."""
     payload = make_zip_payload({"LanguageTool/file.txt": b"jar"})
 
     with (
@@ -300,9 +294,7 @@ def test_safe_extract_rejects_symlinked_destination() -> None:
 
 
 def test_safe_extract_rejects_existing_symlink_in_destination() -> None:
-    """
-    Test that an existing destination symlink cannot redirect extracted content.
-    """
+    """Test that an existing destination symlink cannot redirect extracted content."""
     payload = make_zip_payload({"LanguageTool/file.txt": b"jar"})
 
     with (
@@ -321,7 +313,7 @@ def test_safe_extract_rejects_existing_symlink_in_destination() -> None:
 
         with pytest.raises(
             PathError,
-            match="Unsafe extracted ZIP destination path|overwrite existing path",
+            match=r"Unsafe extracted ZIP destination path|overwrite existing path",
         ):
             SafeZipExtractor().extractall(
                 zip_file,
@@ -333,9 +325,7 @@ def test_safe_extract_rejects_existing_symlink_in_destination() -> None:
 
 
 def test_safe_extract_rejects_symlinked_work_dir() -> None:
-    """
-    Test that the private extraction work directory cannot be a symlink.
-    """
+    """Test that the private extraction work directory cannot be a symlink."""
     payload = make_zip_payload({"LanguageTool/file.txt": b"jar"})
 
     with (
@@ -356,9 +346,7 @@ def test_safe_extract_rejects_symlinked_work_dir() -> None:
 
 
 def test_safe_extract_rejects_special_zip_member_type() -> None:
-    """
-    Test that non-file, non-directory ZIP entries are rejected.
-    """
+    """Test that non-file, non-directory ZIP entries are rejected."""
     member = zipfile.ZipInfo("LanguageTool/fifo")
     member.create_system = 3
     member.external_attr = (stat.S_IFIFO | 0o644) << 16
@@ -373,14 +361,12 @@ def test_safe_extract_rejects_special_zip_member_type() -> None:
 
 
 def test_safe_extract_allows_multiple_safe_roots() -> None:
-    """
-    Test that safe extraction does not require a LanguageTool-specific root.
-    """
+    """Test that safe extraction does not require a LanguageTool-specific root."""
     payload = make_zip_payload(
         {
             "first/file.txt": b"one",
             "second/file.txt": b"two",
-        }
+        },
     )
 
     with (
@@ -396,9 +382,7 @@ def test_safe_extract_allows_multiple_safe_roots() -> None:
 
 
 def test_safe_extract_rejects_existing_destination_path() -> None:
-    """
-    Test that extraction never overwrites an existing final destination path.
-    """
+    """Test that extraction never overwrites an existing final destination path."""
     payload = make_zip_payload({"file.txt": b"new"})
 
     with (
@@ -421,14 +405,12 @@ def test_safe_extract_rejects_existing_destination_path() -> None:
 
 
 def test_safe_extract_rejects_too_many_members() -> None:
-    """
-    Test that ZIP archives with too many entries are rejected.
-    """
+    """Test that ZIP archives with too many entries are rejected."""
     payload = make_zip_payload(
         {
             "LanguageTool/one.txt": b"one",
             "LanguageTool/two.txt": b"two",
-        }
+        },
     )
     extractor = SafeZipExtractor(SafeZipLimits(max_members=1))
 
@@ -441,9 +423,7 @@ def test_safe_extract_rejects_too_many_members() -> None:
 
 
 def test_safe_extract_rejects_too_much_uncompressed_data() -> None:
-    """
-    Test that ZIP archives with too much uncompressed data are rejected.
-    """
+    """Test that ZIP archives with too much uncompressed data are rejected."""
     payload = make_zip_payload({"LanguageTool/file.txt": b"four"})
     extractor = SafeZipExtractor(SafeZipLimits(max_extracted_bytes=3))
 
@@ -456,15 +436,13 @@ def test_safe_extract_rejects_too_much_uncompressed_data() -> None:
 
 
 def test_safe_extract_rejects_oversized_member_during_copy() -> None:
-    """
-    Test that per-member extracted size limits are enforced while copying.
-    """
+    """Test that per-member extracted size limits are enforced while copying."""
     payload = make_zip_payload({"LanguageTool/file.txt": b"four"})
     extractor = SafeZipExtractor(
         SafeZipLimits(
             max_extracted_bytes=100,
             max_member_extracted_bytes=3,
-        )
+        ),
     )
 
     with (
@@ -476,9 +454,7 @@ def test_safe_extract_rejects_oversized_member_during_copy() -> None:
 
 
 def test_safe_extract_rejects_too_much_compressed_data() -> None:
-    """
-    Test that local ZIP extraction also applies the compressed-size limit.
-    """
+    """Test that local ZIP extraction also applies the compressed-size limit."""
     payload = make_zip_payload({"LanguageTool/file.txt": b"data"})
     extractor = SafeZipExtractor(SafeZipLimits(max_archive_bytes=1))
 
@@ -491,15 +467,13 @@ def test_safe_extract_rejects_too_much_compressed_data() -> None:
 
 
 def test_safe_extract_rejects_suspicious_member_compression_ratio() -> None:
-    """
-    Test that a single member with an abusive compression ratio is rejected.
-    """
+    """Test that a single member with an abusive compression ratio is rejected."""
     payload = make_deflated_zip_payload({"LanguageTool/file.txt": b"A" * 4096})
     extractor = SafeZipExtractor(
         SafeZipLimits(
             max_member_compression_ratio=2.0,
             max_total_compression_ratio=10_000.0,
-        )
+        ),
     )
 
     with (
@@ -511,15 +485,13 @@ def test_safe_extract_rejects_suspicious_member_compression_ratio() -> None:
 
 
 def test_safe_extract_rejects_suspicious_total_compression_ratio() -> None:
-    """
-    Test that an archive with an abusive total compression ratio is rejected.
-    """
+    """Test that an archive with an abusive total compression ratio is rejected."""
     payload = make_deflated_zip_payload({"LanguageTool/file.txt": b"A" * 4096})
     extractor = SafeZipExtractor(
         SafeZipLimits(
             max_member_compression_ratio=10_000.0,
             max_total_compression_ratio=2.0,
-        )
+        ),
     )
 
     with (
@@ -531,9 +503,7 @@ def test_safe_extract_rejects_suspicious_total_compression_ratio() -> None:
 
 
 def test_safe_extract_checks_total_compression_ratio_after_all_members() -> None:
-    """
-    Test that total ratio checks are based on the final archive ratio.
-    """
+    """Test that total ratio checks are based on the final archive ratio."""
     already_compressed = b"".join(
         hashlib.sha256(index.to_bytes(4, "big")).digest() for index in range(2048)
     )
@@ -541,13 +511,13 @@ def test_safe_extract_checks_total_compression_ratio_after_all_members() -> None
         {
             "LanguageTool/compressible.txt": b"A" * 4096,
             "LanguageTool/already-compressed.bin": already_compressed,
-        }
+        },
     )
     extractor = SafeZipExtractor(
         SafeZipLimits(
             max_member_compression_ratio=1_000.0,
             max_total_compression_ratio=5.0,
-        )
+        ),
     )
 
     with (

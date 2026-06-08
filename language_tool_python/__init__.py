@@ -1,12 +1,12 @@
 """LanguageTool API for Python."""
 
 __all__ = [
+    "LanguageTag",
     "LanguageTool",
     "LanguageToolPublicAPI",
-    "LanguageTag",
     "Match",
-    "utils",
     "exceptions",
+    "utils",
 ]
 
 import logging
