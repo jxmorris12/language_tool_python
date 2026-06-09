@@ -128,8 +128,8 @@ def test_safe_zip_limits_use_env_overrides(
                 str(EXPECTED_MAX_TOTAL_COMPRESSION_RATIO),
             )
 
-            reloaded_safe_zip = importlib.reload(safe_zip)
-            limits = reloaded_safe_zip.SafeZipLimits()
+            importlib.reload(safe_zip)
+            limits = safe_zip.SafeZipLimits()
 
             assert limits.max_archive_bytes == EXPECTED_MAX_ARCHIVE_BYTES
             assert limits.max_extracted_bytes == EXPECTED_MAX_EXTRACTED_BYTES

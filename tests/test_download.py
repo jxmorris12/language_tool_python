@@ -12,7 +12,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -50,6 +50,17 @@ class MockDownloadResponse:
             yield self.payload[index : index + chunk_size]
 
 
+class FixedDatetime:
+    """Datetime replacement returning a configurable UTC datetime."""
+
+    current_datetime = datetime(2024, 5, 14, tzinfo=timezone.utc)
+
+    @classmethod
+    def now(cls, _tz: timezone) -> datetime:
+        """Return the configured test datetime."""
+        return cls.current_datetime
+
+
 def make_zip_payload(files: dict[str, bytes]) -> bytes:
     """Create an in-memory ZIP payload for download tests."""
     buffer = io.BytesIO()
@@ -57,6 +68,10 @@ def make_zip_payload(files: dict[str, bytes]) -> bytes:
         for filename, payload in files.items():
             zip_file.writestr(filename, payload)
     return buffer.getvalue()
+
+
+def skip_java_compatibility_check(_language_tool_version: str) -> None:
+    """Skip Java compatibility checks in download-only tests."""
 
 
 @contextmanager
@@ -121,8 +136,7 @@ def test_http_get_403_forbidden() -> None:
 
     :raises AssertionError: If PathError is not raised for a 403 status code.
     """
-    mock_response = MagicMock()
-    mock_response.status_code = 403
+    mock_response = MockDownloadResponse(b"", status_code=403)
     mock_response.headers = {}
 
     out_file = io.BytesIO()
@@ -148,8 +162,7 @@ def test_http_get_other_error_codes() -> None:
     error_codes = [500, 502, 503, 504]
 
     for error_code in error_codes:
-        mock_response = MagicMock()
-        mock_response.status_code = error_code
+        mock_response = MockDownloadResponse(b"", status_code=error_code)
         mock_response.headers = {}
 
         out_file = io.BytesIO()
@@ -194,12 +207,9 @@ def test_max_download_bytes_uses_env_override(
             env.setenv(
                 LTP_MAX_DOWNLOAD_BYTES_ENV_VAR, str(EXPECTED_DOWNLOAD_BYTES_OVERRIDE)
             )
-            reloaded_download_lt = importlib.reload(download_lt)
+            importlib.reload(download_lt)
 
-            assert (
-                reloaded_download_lt.MAX_DOWNLOAD_BYTES
-                == EXPECTED_DOWNLOAD_BYTES_OVERRIDE
-            )
+            assert download_lt.MAX_DOWNLOAD_BYTES == EXPECTED_DOWNLOAD_BYTES_OVERRIDE
     finally:
         importlib.reload(download_lt)
 
@@ -274,9 +284,9 @@ def test_latest_snapshot_uses_latest_download_url_and_current_date(
         "https://example.test/snapshots/",
     )
 
-    with patch("language_tool_python.download_lt.datetime") as datetime_mock:
-        datetime_mock.now.return_value.strftime.return_value = "20240514"
-        local_language_tool = LocalLanguageTool.from_version_name("latest")
+    FixedDatetime.current_datetime = datetime(2024, 5, 14, tzinfo=timezone.utc)
+    monkeypatch.setattr(download_lt, "datetime", FixedDatetime)
+    local_language_tool = LocalLanguageTool.from_version_name("latest")
 
     assert local_language_tool.version_name == "20240514"
     assert (
@@ -475,7 +485,11 @@ def test_snapshot_download_renames_archive_root_to_requested_date(
         {"LanguageTool-6.9-SNAPSHOT/languagetool-server.jar": b"jar"},
     )
     local_language_tool = LocalLanguageTool.from_version_name(requested_snapshot)
-    monkeypatch.setattr(download_lt, "confirm_java_compatibility", lambda _: None)
+    monkeypatch.setattr(
+        download_lt,
+        "confirm_java_compatibility",
+        skip_java_compatibility_check,
+    )
 
     with (
         workspace_temp_dir() as temp_dir,
@@ -510,10 +524,14 @@ def test_latest_snapshot_download_renames_archive_root_to_current_date(
     payload = make_zip_payload(
         {"LanguageTool-6.9-SNAPSHOT/languagetool-server.jar": b"jar"},
     )
-    with patch("language_tool_python.download_lt.datetime") as datetime_mock:
-        datetime_mock.now.return_value.strftime.return_value = current_snapshot_date
-        local_language_tool = LocalLanguageTool.from_version_name("latest")
-    monkeypatch.setattr(download_lt, "confirm_java_compatibility", lambda _: None)
+    FixedDatetime.current_datetime = datetime(2024, 5, 14, tzinfo=timezone.utc)
+    monkeypatch.setattr(download_lt, "datetime", FixedDatetime)
+    local_language_tool = LocalLanguageTool.from_version_name("latest")
+    monkeypatch.setattr(
+        download_lt,
+        "confirm_java_compatibility",
+        skip_java_compatibility_check,
+    )
 
     with (
         workspace_temp_dir() as temp_dir,

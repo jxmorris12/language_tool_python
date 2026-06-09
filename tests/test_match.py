@@ -1,11 +1,26 @@
 """Tests for the Match functionality of LanguageTool."""
 
-from typing import cast
+from typing import TypedDict
 
 import language_tool_python
 
 EXPECTED_MATCH_COUNT = 2
 EXPECTED_CORRECTED_MATCH_COUNT = 4
+
+
+class ExpectedMatch(TypedDict):
+    """Expected values for a LanguageTool match."""
+
+    rule_id: str
+    message: str
+    replacements: list[str]
+    offset_in_context: int
+    context: str
+    offset: int
+    error_length: int
+    category: str
+    rule_issue_type: str
+    sentence: str
 
 
 def test_langtool_load() -> None:
@@ -22,7 +37,7 @@ def test_langtool_load() -> None:
     with language_tool_python.LanguageTool("en-US") as tool:
         matches = tool.check("ain't nothin but a thang")
 
-        expected_matches: list[dict[str, str | list[str] | int]] = [
+        expected_matches: list[ExpectedMatch] = [
             {
                 "rule_id": "UPPERCASE_SENTENCE_START",
                 "message": "This sentence does not start with an uppercase letter.",
@@ -80,29 +95,20 @@ def test_langtool_load() -> None:
         assert len(matches) == len(expected_matches)
         for match_i, match in enumerate(matches):
             assert isinstance(match, language_tool_python.Match)
-            for key in [
-                "rule_id",
-                "message",
-                "offset_in_context",
-                "context",
-                "offset",
-                "error_length",
-                "category",
-                "rule_issue_type",
-                "sentence",
-            ]:
-                assert expected_matches[match_i][key] == getattr(match, key)
+            expected_match = expected_matches[match_i]
+            assert expected_match["rule_id"] == match.rule_id
+            assert expected_match["message"] == match.message
+            assert expected_match["offset_in_context"] == match.offset_in_context
+            assert expected_match["context"] == match.context
+            assert expected_match["offset"] == match.offset
+            assert expected_match["error_length"] == match.error_length
+            assert expected_match["category"] == match.category
+            assert expected_match["rule_issue_type"] == match.rule_issue_type
+            assert expected_match["sentence"] == match.sentence
 
             # For replacements we allow some flexibility in the order
             # of the suggestions depending on the version of LT.
-            for key in [
-                "replacements",
-            ]:
-                expected_replacements = cast(
-                    "list[str]",
-                    expected_matches[match_i][key],
-                )
-                assert set(expected_replacements) == set(getattr(match, key))
+            assert set(expected_match["replacements"]) == set(match.replacements)
 
 
 def test_match() -> None:

@@ -205,6 +205,9 @@ class Match:  # noqa: PLW1641  # Doesn't implement hash because it's mutable
     rule_issue_type: str
     """The issue type of the rule that was violated."""
 
+    sentence: str
+    """The sentence that contains the rule violation."""
+
     def __init__(self, attrib: CheckMatch, text: str) -> None:
         """Initialize a Match object with the given attributes.
 
