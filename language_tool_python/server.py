@@ -82,6 +82,24 @@ def _kill_processes(processes: list[subprocess.Popen[str]]) -> None:
             p.wait(timeout=5)
 
 
+def _match_offset(match: Match) -> int:
+    """Return a match offset for sorting."""
+    return match.offset
+
+
+def _response_content(response: requests.Response) -> object:
+    """Return response content while containing third-party Any annotations."""
+    return response.content
+
+
+def _decode_response_content(response: requests.Response) -> str:
+    """Decode response content from bytes to text."""
+    content = _response_content(response)
+    if isinstance(content, bytes):
+        return content.decode()
+    return str(content)
+
+
 class LanguageTool:
     """Interact with the LanguageTool server for text checking and correction.
 
@@ -703,7 +721,7 @@ class LanguageTool:
 
             all_matches.extend(region_matches)
 
-        return sorted(all_matches, key=lambda m: m.offset)
+        return sorted(all_matches, key=_match_offset)
 
     def _create_params(self, text: str) -> dict[str, str]:
         """Create a dictionary of parameters for the language tool server request.
@@ -998,7 +1016,9 @@ class LanguageTool:
                                 "LanguageTool API. Please try again later."
                             )
                             raise RateLimitError(err) from e
-                        raise LanguageToolError(response.content.decode()) from e
+                        raise LanguageToolError(
+                            _decode_response_content(response),
+                        ) from e
                     else:
                         return data
             except (OSError, http.client.HTTPException) as e:  # noqa: PERF203  # it is intentional to catch exceptions in a loop, to retry the request in case of transient errors
