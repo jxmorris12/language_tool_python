@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 from functools import total_ordering
 from pathlib import Path
 from shutil import which
-from typing import IO, TYPE_CHECKING
+from typing import IO, TYPE_CHECKING, cast
 from urllib.parse import urljoin
 from warnings import warn
 
@@ -35,6 +35,7 @@ from .utils import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
     from types import NotImplementedType
 
     from .config_file import LanguageToolConfig
@@ -76,13 +77,38 @@ LTP_MAX_DOWNLOAD_BYTES_ENV_VAR = "LTP_MAX_DOWNLOAD_BYTES"
 DOWNLOAD_CHUNK_BYTES = 1024 * 1024
 _SAFE_ZIP_EXTRACTOR = SafeZipExtractor()
 
+
+def _toml_loads(raw_manifest: str) -> object:
+    """Parse TOML while containing the third-party parser's Any return type."""
+    return toml_loads(raw_manifest)  # type: ignore[misc]
+
+
+def _load_expected_download_sha256(raw_manifest: str) -> dict[str, str]:
+    """Load and validate the bundled download checksum manifest."""
+    parsed = _toml_loads(raw_manifest)
+    if not isinstance(parsed, dict):
+        err = "Invalid integrity manifest: expected a TOML table."
+        raise PathError(err)
+
+    manifest = cast("Mapping[object, object]", parsed)
+    expected_hashes: dict[str, str] = {}
+    for version_name, checksum in manifest.items():
+        if not isinstance(version_name, str) or not isinstance(checksum, str):
+            err = "Invalid integrity manifest: expected string keys and values."
+            raise PathError(err)
+        expected_hashes[version_name] = checksum
+    return expected_hashes
+
+
 with (
     importlib.resources.as_file(
         importlib.resources.files("language_tool_python").joinpath("integrity.toml"),
     ) as hashes_path,
     hashes_path.open("rb") as f,
 ):
-    EXPECTED_DOWNLOAD_SHA256 = toml_loads(f.read().decode("utf-8"))
+    EXPECTED_DOWNLOAD_SHA256 = _load_expected_download_sha256(
+        f.read().decode("utf-8"),
+    )
 
 JAVA_VERSION_REGEX = re.compile(
     r'^(?:java|openjdk) version "(?P<major1>\d+)(|\.(?P<major2>\d+)\.[^"]+)"',
@@ -310,7 +336,11 @@ def http_get(
     :raises PathError: If the download fails or checksum validation fails.
     """
     version_match = re.search(r"LanguageTool-(.+)\.zip", url)
-    version_name = version_match.group(1) if version_match else LTP_DOWNLOAD_VERSION
+    if version_match:
+        version_start, version_end = version_match.span(1)
+        version_name = url[version_start:version_end]
+    else:
+        version_name = LTP_DOWNLOAD_VERSION
 
     # Normalize snapshot-style version names (e.g. "6.8-SNAPSHOT", "latest-snapshot")
     if version_name.lower().endswith("-snapshot"):
