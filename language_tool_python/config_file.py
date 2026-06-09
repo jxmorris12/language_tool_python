@@ -5,19 +5,18 @@ from __future__ import annotations
 import atexit
 import logging
 import tempfile
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from os import PathLike
 from pathlib import Path
-from typing import Callable, Generic, TypeVar, Union, cast
+from typing import TypeVar, Union, cast
 
 from .exceptions import PathError
 from .utils import SupportsBool
 
 # Union here because | not supported by PathLike in py3.9
 ConfigValue = Union[PathLike[str], SupportsBool, str, int, float, Iterable[str]]
-
-ConfigValueT_contra = TypeVar("ConfigValueT_contra", contravariant=True)
+ConfigValueT = TypeVar("ConfigValueT", bound=ConfigValue)
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +46,7 @@ def _reject_line_breaks(field_name: str, value: str) -> None:
 
 
 @dataclass(frozen=True)
-class OptionSpec(Generic[ConfigValueT_contra]):
+class OptionSpec:
     """Specification for a configuration option.
 
     This class defines the structure and behavior of a configuration option, including
@@ -57,14 +56,27 @@ class OptionSpec(Generic[ConfigValueT_contra]):
     constant throughout the application lifecycle.
     """
 
-    py_types: type | tuple[type, ...]
+    py_types: type[object] | tuple[type[object], ...]
     """The Python type(s) that this option accepts."""
 
-    encoder: Callable[[ConfigValueT_contra], str]
+    encoder: Callable[[ConfigValue], str]
     """A callable that converts the option value to its string representation."""
 
-    validator: Callable[[ConfigValueT_contra], None] | None = None
+    validator: Callable[[ConfigValue], None] | None = None
     """An optional validator function for the option value."""
+
+
+def _option_spec(
+    py_types: type[object] | tuple[type[object], ...],
+    encoder: Callable[[ConfigValueT], str],
+    validator: Callable[[ConfigValueT], None] | None = None,
+) -> OptionSpec:
+    """Create a schema entry for a runtime-checked configuration option."""
+    return OptionSpec(
+        py_types=py_types,
+        encoder=cast("Callable[[ConfigValue], str]", encoder),
+        validator=cast("Callable[[ConfigValue], None] | None", validator),
+    )
 
 
 def _bool_encoder(v: SupportsBool) -> str:
@@ -141,37 +153,34 @@ def _path_validator(v: PathLike[str] | str) -> None:
         raise PathError(err)
 
 
-CONFIG_SCHEMA = cast(
-    "dict[str, OptionSpec[ConfigValue]]",
-    {
-        "maxTextLength": OptionSpec(int, _int_encoder),
-        "maxTextHardLength": OptionSpec(int, _int_encoder),
-        "maxCheckTimeMillis": OptionSpec(int, _int_encoder),
-        "maxErrorsPerWordRate": OptionSpec((int, float), _number_encoder),
-        "maxSpellingSuggestions": OptionSpec(int, _int_encoder),
-        "maxCheckThreads": OptionSpec(int, _int_encoder),
-        "cacheSize": OptionSpec(int, _int_encoder),
-        "cacheTTLSeconds": OptionSpec(int, _int_encoder),
-        "requestLimit": OptionSpec(int, _int_encoder),
-        "requestLimitInBytes": OptionSpec(int, _int_encoder),
-        "timeoutRequestLimit": OptionSpec(int, _int_encoder),
-        "requestLimitPeriodInSeconds": OptionSpec(int, _int_encoder),
-        "languageModel": OptionSpec((str, Path), _path_encoder, _path_validator),
-        "fasttextModel": OptionSpec((str, Path), _path_encoder, _path_validator),
-        "fasttextBinary": OptionSpec((str, Path), _path_encoder, _path_validator),
-        "maxWorkQueueSize": OptionSpec(int, _int_encoder),
-        "rulesFile": OptionSpec((str, Path), _path_encoder, _path_validator),
-        "blockedReferrers": OptionSpec((str, list, tuple, set), _comma_list_encoder),
-        "premiumOnly": OptionSpec((bool, int), _bool_encoder),
-        "disabledRuleIds": OptionSpec((str, list, tuple, set), _comma_list_encoder),
-        "pipelineCaching": OptionSpec((bool, int), _bool_encoder),
-        "maxPipelinePoolSize": OptionSpec(int, _int_encoder),
-        "pipelineExpireTimeInSeconds": OptionSpec(int, _int_encoder),
-        "pipelinePrewarming": OptionSpec((bool, int), _bool_encoder),
-        "trustXForwardForHeader": OptionSpec((bool, int), _bool_encoder),
-        "suggestionsEnabled": OptionSpec((bool, int), _bool_encoder),
-    },
-)
+CONFIG_SCHEMA: dict[str, OptionSpec] = {
+    "maxTextLength": _option_spec(int, _int_encoder),
+    "maxTextHardLength": _option_spec(int, _int_encoder),
+    "maxCheckTimeMillis": _option_spec(int, _int_encoder),
+    "maxErrorsPerWordRate": _option_spec((int, float), _number_encoder),
+    "maxSpellingSuggestions": _option_spec(int, _int_encoder),
+    "maxCheckThreads": _option_spec(int, _int_encoder),
+    "cacheSize": _option_spec(int, _int_encoder),
+    "cacheTTLSeconds": _option_spec(int, _int_encoder),
+    "requestLimit": _option_spec(int, _int_encoder),
+    "requestLimitInBytes": _option_spec(int, _int_encoder),
+    "timeoutRequestLimit": _option_spec(int, _int_encoder),
+    "requestLimitPeriodInSeconds": _option_spec(int, _int_encoder),
+    "languageModel": _option_spec((str, Path), _path_encoder, _path_validator),
+    "fasttextModel": _option_spec((str, Path), _path_encoder, _path_validator),
+    "fasttextBinary": _option_spec((str, Path), _path_encoder, _path_validator),
+    "maxWorkQueueSize": _option_spec(int, _int_encoder),
+    "rulesFile": _option_spec((str, Path), _path_encoder, _path_validator),
+    "blockedReferrers": _option_spec((str, list, tuple, set), _comma_list_encoder),
+    "premiumOnly": _option_spec((bool, int), _bool_encoder),
+    "disabledRuleIds": _option_spec((str, list, tuple, set), _comma_list_encoder),
+    "pipelineCaching": _option_spec((bool, int), _bool_encoder),
+    "maxPipelinePoolSize": _option_spec(int, _int_encoder),
+    "pipelineExpireTimeInSeconds": _option_spec(int, _int_encoder),
+    "pipelinePrewarming": _option_spec((bool, int), _bool_encoder),
+    "trustXForwardForHeader": _option_spec((bool, int), _bool_encoder),
+    "suggestionsEnabled": _option_spec((bool, int), _bool_encoder),
+}
 
 
 def _is_lang_key(key: str) -> bool:
