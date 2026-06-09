@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 UTF8_4_BYTE_LENGTH = 4
 CONTEXT_PREFIX_SUFFIX_LENGTH = 3
 CONTEXT_WITH_ADDITIONS_MIN_LENGTH = 6
+MatchValue = str | int | list[str]
 
 
 def get_match_ordered_dict() -> OrderedDictType[str, type]:
@@ -247,6 +248,21 @@ class Match:  # noqa: PLW1641  # Doesn't implement hash because it's mutable
                 1 for pos in Match.FOUR_BYTES_POSITIONS if pos < self.offset
             )
 
+    def _ordered_items(self) -> list[tuple[str, MatchValue]]:
+        """Return public match attributes in the documented order."""
+        return [
+            ("rule_id", self.rule_id),
+            ("message", self.message),
+            ("replacements", self.replacements),
+            ("offset_in_context", self.offset_in_context),
+            ("context", self.context),
+            ("offset", self.offset),
+            ("error_length", self.error_length),
+            ("category", self.category),
+            ("rule_issue_type", self.rule_issue_type),
+            ("sentence", self.sentence),
+        ]
+
     def __repr__(self) -> str:
         """Return a string representation of the object.
 
@@ -270,14 +286,10 @@ class Match:  # noqa: PLW1641  # Doesn't implement hash because it's mutable
                   dictionary format.
             :rtype: str
             """
-            slots = list(get_match_ordered_dict())
-            slots += list(set(self.__dict__).difference(slots))
-            attrs = [
-                slot
-                for slot in slots
-                if slot in self.__dict__ and not slot.startswith("_")
-            ]
-            return f"{{{', '.join([f'{attr!r}: {getattr(self, attr)!r}' for attr in attrs])}}}"  # noqa: E501  # Difficult to break this line in python 3.9
+            items = ", ".join(
+                f"{attr!r}: {value!r}" for attr, value in self._ordered_items()
+            )
+            return f"{{{items}}}"
 
         return f"{self.__class__.__name__}({_ordered_dict_repr()})"
 
@@ -379,7 +391,7 @@ class Match:  # noqa: PLW1641  # Doesn't implement hash because it's mutable
             return NotImplemented
         return list(self) < list(other)
 
-    def __iter__(self) -> Iterator[str | int | list[str]]:
+    def __iter__(self) -> Iterator[MatchValue]:
         """Return an iterator over the attributes of the match object.
 
         This method allows the match object to be iterated over, yielding the values of
@@ -388,9 +400,9 @@ class Match:  # noqa: PLW1641  # Doesn't implement hash because it's mutable
         :return: An iterator over the attribute values of the match object.
         :rtype: Iterator[str | int | list[str]]
         """
-        return iter(getattr(self, attr) for attr in get_match_ordered_dict())
+        return iter(value for _, value in self._ordered_items())
 
-    def __setattr__(self, key: str, value: str | int | list[str]) -> None:
+    def __setattr__(self, key: str, value: MatchValue) -> None:
         """Set an attribute on the instance.
 
         This method overrides the default behavior of setting an attribute. It attempts
