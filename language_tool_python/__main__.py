@@ -53,13 +53,6 @@ except PackageNotFoundError:
 
 
 logger = logging.getLogger(__name__)
-with (
-    importlib.resources.as_file(
-        importlib.resources.files("language_tool_python").joinpath("logging.toml"),
-    ) as config_path,
-    config_path.open("rb") as f,
-):
-    log_config = toml_loads(f.read().decode("utf-8"))
 with importlib.resources.as_file(
     importlib.resources.files("language_tool_python").joinpath("logging.toml"),
 ) as config_path:
