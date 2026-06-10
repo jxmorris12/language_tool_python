@@ -56,7 +56,6 @@ types = [
     "types-requests",
     "types-tqdm",
     "types-psutil",
-    "types-toml",
 ]
 
 quality = [
