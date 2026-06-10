@@ -31,7 +31,8 @@ dependencies = [
     "tqdm",
     "packaging",
     "psutil",
-    "toml"
+    "toml",
+    "typing_extensions; python_version < '3.13'", # only needed for py < 3.13 because warnings.deprecated added in 3.13 is used in the codebase
 ]
 
 [project.urls]

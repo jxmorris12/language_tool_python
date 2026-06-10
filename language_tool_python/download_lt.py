@@ -275,7 +275,7 @@ def confirm_java_compatibility(
 @deprecated(
     "This function is no longer used internally and will be removed in 4.0.",
     stacklevel=2,
-)  # type: ignore[untyped-decorator, unused-ignore]
+)
 def get_common_prefix(z: zipfile.ZipFile) -> str | None:
     """Determine the common prefix of all file names in a zip archive.
 
@@ -297,7 +297,7 @@ def get_common_prefix(z: zipfile.ZipFile) -> str | None:
 @deprecated(
     "This function is no longer used internally and will be removed in 4.0.",
     stacklevel=2,
-)  # type: ignore[untyped-decorator, unused-ignore]
+)
 def http_get(
     url: str,
     out_file: IO[bytes],
@@ -329,7 +329,7 @@ def http_get(
 @deprecated(
     "This function is no longer used internally and will be removed in 4.0.",
     stacklevel=2,
-)  # type: ignore[untyped-decorator, unused-ignore]
+)
 def unzip_file(temp_file_name: str, directory_to_extract_to: Path) -> None:
     """Unzips a zip file to a specified directory.
 
@@ -358,7 +358,7 @@ def unzip_file(temp_file_name: str, directory_to_extract_to: Path) -> None:
 @deprecated(
     "This function is no longer used internally and will be removed in 4.0.",
     stacklevel=2,
-)  # type: ignore[untyped-decorator, unused-ignore]
+)
 def download_zip(url: str, directory: Path) -> None:
     """Download a ZIP file from the given URL and extract it to the specified directory.
 
@@ -389,7 +389,7 @@ def download_zip(url: str, directory: Path) -> None:
         "Use instead language_tool_python.download_lt.LocalLanguageTool.download."
     ),
     stacklevel=2,
-)  # type: ignore[untyped-decorator, unused-ignore]
+)
 def download_lt(language_tool_version: str = LTP_DOWNLOAD_VERSION) -> None:
     """Download and extract the specified version of LanguageTool.
 

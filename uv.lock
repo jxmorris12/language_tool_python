@@ -648,6 +648,7 @@ dependencies = [
     { name = "requests", version = "2.34.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
     { name = "toml" },
     { name = "tqdm" },
+    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
 ]
 
 [package.dev-dependencies]
@@ -687,6 +688,7 @@ requires-dist = [
     { name = "requests" },
     { name = "toml" },
     { name = "tqdm" },
+    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
 ]
 
 [package.metadata.requires-dev]
