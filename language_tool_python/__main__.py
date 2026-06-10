@@ -14,8 +14,7 @@ from logging.config import dictConfig
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
-import toml
-
+from ._compat import toml_loads
 from .exceptions import LanguageToolError
 from .server import LanguageTool
 
@@ -30,7 +29,7 @@ except PackageNotFoundError:
     project_root = Path(__file__).resolve().parent.parent
     pyproject = project_root / "pyproject.toml"
     with pyproject.open("rb") as f:
-        __version__ = toml.loads(f.read().decode("utf-8"))["project"]["version"]
+        __version__ = toml_loads(f.read().decode("utf-8"))["project"]["version"]
 
 
 logger = logging.getLogger(__name__)
@@ -40,7 +39,7 @@ with (
     ) as config_path,
     config_path.open("rb") as f,
 ):
-    log_config = toml.loads(f.read().decode("utf-8"))
+    log_config = toml_loads(f.read().decode("utf-8"))
 dictConfig(log_config)
 
 

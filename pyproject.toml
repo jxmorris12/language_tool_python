@@ -31,7 +31,7 @@ dependencies = [
     "tqdm",
     "packaging",
     "psutil",
-    "toml",
+    "tomli; python_version < '3.11'", # only needed for py < 3.11 because tomllib added in 3.11 is used in the codebase, needs a fallback
     "typing_extensions; python_version < '3.13'", # only needed for py < 3.13 because warnings.deprecated added in 3.13 is used in the codebase
 ]
 

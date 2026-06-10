@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import warnings
 
-from language_tool_python._deprecated import deprecated
+from language_tool_python._compat import deprecated
 
 EXPECTED_CUSTOM_WARNING_RESULT = 42
 EXPECTED_FUNCTION_SUM = 5

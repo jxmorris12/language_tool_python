@@ -21,12 +21,11 @@ from urllib.parse import urljoin
 from warnings import warn
 
 import requests
-import toml
 import tqdm
 from packaging import version
 from packaging.version import Version
 
-from ._deprecated import deprecated
+from ._compat import deprecated, toml_loads
 from .exceptions import JavaError, PathError
 from .safe_zip import SafeZipExtractor
 from .utils import (
@@ -83,7 +82,7 @@ with (
     ) as hashes_path,
     hashes_path.open("rb") as f,
 ):
-    EXPECTED_DOWNLOAD_SHA256 = toml.loads(f.read().decode("utf-8"))
+    EXPECTED_DOWNLOAD_SHA256 = toml_loads(f.read().decode("utf-8"))
 
 JAVA_VERSION_REGEX = re.compile(
     r'^(?:java|openjdk) version "(?P<major1>\d+)(|\.(?P<major2>\d+)\.[^"]+)"',
