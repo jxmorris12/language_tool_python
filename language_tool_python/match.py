@@ -63,7 +63,7 @@ def get_match_ordered_dict() -> OrderedDictType[str, type]:
 @deprecated(
     "This function is no longer used internally and will be removed in 4.0.",
     stacklevel=2,
-)  # type: ignore[untyped-decorator, unused-ignore]
+)
 def auto_type(obj: SupportsInt | SupportsFloat | object) -> int | float | object:
     """Attempt to automatically convert the input object to an integer or float.
 

@@ -209,7 +209,7 @@ def get_language_tool_download_path() -> Path:
         "Replace its usage by an inline alternative."
     ),
     stacklevel=2,
-)  # type: ignore[untyped-decorator, unused-ignore]
+)
 def find_existing_language_tool_downloads(download_folder: Path) -> list[Path]:
     """Find existing LanguageTool downloads in the specified folder.
 
@@ -230,7 +230,7 @@ def find_existing_language_tool_downloads(download_folder: Path) -> list[Path]:
 @deprecated(
     "This function is no longer used internally and will be removed in 4.0.",
     stacklevel=2,
-)  # type: ignore[untyped-decorator, unused-ignore]
+)
 def _extract_version(path: Path) -> version.Version:
     """Extract the version number from a LanguageTool directory path.
 
@@ -265,7 +265,7 @@ def _extract_version(path: Path) -> version.Version:
         "get_latest_installed_version."
     ),
     stacklevel=2,
-)  # type: ignore[untyped-decorator, unused-ignore]
+)
 def get_language_tool_directory() -> Path:
     """Get the directory path of the LanguageTool installation.
 
@@ -307,7 +307,7 @@ def get_language_tool_directory() -> Path:
         "Use instead language_tool_python.download_lt.LocalLanguageTool.get_server_cmd."
     ),
     stacklevel=2,
-)  # type: ignore[untyped-decorator, unused-ignore]
+)
 def get_server_cmd(
     port: int | None = None,
     config: LanguageToolConfig | None = None,
@@ -350,7 +350,7 @@ def get_server_cmd(
 @deprecated(
     "This function is no longer used internally and will be removed in 4.0.",
     stacklevel=2,
-)  # type: ignore[untyped-decorator, unused-ignore]
+)
 def get_jar_info() -> tuple[Path, Path]:
     """Retrieve the path to the Java executable and the LanguageTool JAR file.
 
@@ -458,7 +458,7 @@ class SupportsBool(Protocol):
 @deprecated(
     "This protocol is no longer used internally and will be removed in 4.0.",
     stacklevel=2,
-)  # type: ignore[untyped-decorator, unused-ignore]
+)
 @runtime_checkable
 class SupportsInt(Protocol):
     """Protocol for types that can be converted to an integer value."""
@@ -471,7 +471,7 @@ class SupportsInt(Protocol):
 @deprecated(
     "This protocol is no longer used internally and will be removed in 4.0.",
     stacklevel=2,
-)  # type: ignore[untyped-decorator, unused-ignore]
+)
 @runtime_checkable
 class SupportsFloat(Protocol):
     """Protocol for types that can be converted to a float value."""
