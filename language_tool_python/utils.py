@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING, Protocol, runtime_checkable
 import psutil
 from packaging import version
 
-from ._deprecated import deprecated
+from ._compat import deprecated
 from .exceptions import JavaError, PathError
 
 if TYPE_CHECKING:

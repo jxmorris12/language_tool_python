@@ -9,7 +9,7 @@ from collections import OrderedDict as OrderedDictType
 from functools import total_ordering
 from typing import TYPE_CHECKING
 
-from ._deprecated import deprecated
+from ._compat import deprecated
 from .utils import SupportsFloat, SupportsInt
 
 if TYPE_CHECKING:
