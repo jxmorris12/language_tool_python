@@ -54,13 +54,10 @@ def test_deprecated_preserves_function_signature() -> None:
         return x + y
 
     with warnings.catch_warnings(record=True):
-        # ignore the misc warns because the deprecated decorator is not typed
-        # and so the type checker cannot verify that the decorated function
-        #  has the expected attributes
-        assert my_function.__name__ == "my_function"  # type: ignore[misc]
-        assert my_function.__doc__ is not None  # type: ignore[misc]
-        assert "Add two numbers" in my_function.__doc__  # type: ignore[misc]
-        assert my_function(2, 3) == EXPECTED_FUNCTION_SUM  # type: ignore[misc]
+        assert my_function.__name__ == "my_function"
+        assert my_function.__doc__ is not None
+        assert "Add two numbers" in my_function.__doc__
+        assert my_function(2, 3) == EXPECTED_FUNCTION_SUM
 
 
 def test_deprecated_with_multiple_calls() -> None:
