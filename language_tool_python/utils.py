@@ -7,7 +7,6 @@ import locale
 import logging
 import math
 import os
-import subprocess
 import urllib.parse
 from enum import Enum
 from pathlib import Path
@@ -36,10 +35,6 @@ LTP_PATH_ENV_VAR = "LTP_PATH"  # LanguageTool download path
 
 # Directory containing the LanguageTool jar file:
 LTP_JAR_DIR_PATH_ENV_VAR = "LTP_JAR_DIR_PATH"
-
-if os.name == "nt":
-    startupinfo = subprocess.STARTUPINFO()
-    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 
 
 def parse_url(url_str: str) -> str:

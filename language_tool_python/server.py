@@ -7,11 +7,11 @@ import contextlib
 import http.client
 import json
 import logging
-import os
 import random
 import re
 import socket
 import subprocess
+import sys
 import time
 import urllib.parse
 import warnings
@@ -43,9 +43,10 @@ from .utils import (
     parse_url,
 )
 
-startupinfo: object = None
-if os.name == "nt":
-    from .utils import startupinfo
+startupinfo: object | None = None
+if sys.platform == "win32":
+    startupinfo = subprocess.STARTUPINFO()
+    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
