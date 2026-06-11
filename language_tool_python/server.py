@@ -15,7 +15,7 @@ import subprocess
 import time
 import urllib.parse
 import warnings
-from typing import TYPE_CHECKING, ClassVar, Literal, cast
+from typing import TYPE_CHECKING, ClassVar, Literal
 
 import psutil
 import requests
@@ -52,7 +52,6 @@ if TYPE_CHECKING:
     from pathlib import Path
     from types import TracebackType
 
-    from .api_types import CheckResponse, LanguageInfo
     from .config_file import ConfigValue
 
 logger = logging.getLogger(__name__)
@@ -669,17 +668,13 @@ class LanguageTool:
         """
         url = urllib.parse.urljoin(self._url, "check")
         logger.debug("Sending text to LanguageTool server at %s", url)
-        raw_response = self._query_server(url, self._create_params(text), method="post")
-        if raw_response is None:
+        response = self._query_server(url, self._create_params(text), method="post")
+        if response is None:
             err = "No response received from the LanguageTool server."
             raise ServerError(err)
-        if not is_check_response(raw_response):
-            err = (
-                f"Invalid response received from the "
-                f"LanguageTool server: {raw_response}"
-            )
+        if not is_check_response(response):
+            err = f"Invalid response received from the LanguageTool server: {response}"
             raise ServerError(err)
-        response = cast("CheckResponse", raw_response)
         matches = response["matches"]
         return [Match(match, text) for match in matches]
 
@@ -920,14 +915,13 @@ class LanguageTool:
             )
             raise ServerError(err)
         if isinstance(raw_languages_response, list):
-            for raw_lang in raw_languages_response:
-                if not is_language_info(raw_lang):
+            for lang in raw_languages_response:
+                if not is_language_info(lang):
                     err = (
                         "Unexpected response format when fetching languages from the "
                         "LanguageTool server."
                     )
                     raise ServerError(err)
-                lang = cast("LanguageInfo", raw_lang)
                 languages.add(lang["code"])
                 languages.add(lang["longCode"])
         else:

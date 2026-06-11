@@ -32,7 +32,9 @@ dependencies = [
     "packaging",
     "psutil",
     "tomli; python_version < '3.11'", # only needed for py < 3.11 because tomllib added in 3.11 is used in the codebase, needs a fallback
-    "typing_extensions; python_version < '3.13'", # only needed for py < 3.13 because warnings.deprecated added in 3.13 is used in the codebase
+    # needed for py < 3.13 because warnings.deprecated added in 3.13 is used in the codebase
+    # also needed for py < 3.10 because of the usage of typing.TypeGuard in the codebase, which is backported to typing_extensions for py < 3.10
+    "typing_extensions; python_version < '3.13'",
 ]
 
 [project.urls]
