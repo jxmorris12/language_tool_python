@@ -207,6 +207,9 @@ class LanguageTool:
     _proxies: dict[str, str] | None
     """A dictionary of proxies for network requests (used in requests to the server)."""
 
+    _premium_key: str | None
+    """The premium API key for the LanguageTool API."""
+
     def __init__(  # noqa: PLR0913  # Too many arguments, but they are all necessary for configuring the server. Maybe refactor in a future breaking release to use a configuration object instead of individual parameters.
         self,
         language: str | None = None,
@@ -285,6 +288,7 @@ class LanguageTool:
         self._enabled_rules_only = False
         self._preferred_variants = set()
         self._picky = False
+        self._premium_key = None
 
     def __enter__(self) -> LanguageTool:
         """Enter the runtime context related to this object.
@@ -578,6 +582,24 @@ class LanguageTool:
         self._picky = value
 
     @property
+    def premium_key(self) -> str | None:
+        """Get the premium API key.
+
+        :return: The premium API key if set, otherwise None.
+        :rtype: str | None
+        """
+        return self._premium_key
+
+    @premium_key.setter
+    def premium_key(self, value: str | None) -> None:
+        """Set the premium API key.
+
+        :param value: The premium API key.
+        :type value: str | None
+        """
+        self._premium_key = value
+
+    @property
     def config(self) -> LanguageToolConfig | None:
         """Get the server configuration.
 
@@ -756,6 +778,8 @@ class LanguageTool:
             params["preferredVariants"] = ",".join(self._preferred_variants)
         if self._picky:
             params["level"] = "picky"
+        if self._premium_key:
+            params["apiKey"] = self._premium_key
         return params
 
     def correct(self, text: str) -> str:

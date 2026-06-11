@@ -61,6 +61,23 @@ with language_tool_python.LanguageToolPublicAPI("es") as tool:
     print(matches)
 ```
 
+#### Public LanguageTool API with an API key
+
+If you have a LanguageTool API key, set `premium_key` before calling `check()`:
+
+```python
+import os
+
+import language_tool_python
+
+with language_tool_python.LanguageToolPublicAPI("en-US") as tool:
+    tool.premium_key = os.environ["LANGUAGETOOL_API_KEY"]
+    matches = tool.check("This are bad.")
+    print(matches)
+```
+
+The key is sent to the public API as `apiKey` for each request.
+
 ### Your own remote LanguageTool server
 
 ```python
