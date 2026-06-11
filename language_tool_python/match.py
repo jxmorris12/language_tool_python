@@ -7,7 +7,7 @@ import unicodedata
 from collections import OrderedDict
 from collections import OrderedDict as OrderedDictType
 from functools import total_ordering
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 from ._compat import deprecated
 from .utils import SupportsFloat, SupportsInt
@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 UTF8_4_BYTE_LENGTH = 4
 CONTEXT_PREFIX_SUFFIX_LENGTH = 3
 CONTEXT_WITH_ADDITIONS_MIN_LENGTH = 6
-MatchValue = str | int | list[str]
+MatchValue = Union[str, int, list[str]]  # | operator not fully supported by py3.9
 
 
 def get_match_ordered_dict() -> OrderedDictType[str, type]:
