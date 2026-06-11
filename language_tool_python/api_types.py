@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, TypedDict
 
 if TYPE_CHECKING:
-    from ._compat import TypeGuard
+    from typing import TypeGuard
 
 __all__ = [
     "Category",

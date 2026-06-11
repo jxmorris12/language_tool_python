@@ -40,12 +40,6 @@ uv run --group quality --locked ruff format --check
 exit /b %errorlevel%
 
 :mypy-check
-uv run --locked python -c "import operator, sys; raise SystemExit(0 if operator.ge(sys.version_info[:2], (3, 10)) else 1)"
-if errorlevel 1 (
-    echo Skipping mypy: Python 3.10 or newer is required.
-    exit /b 0
-)
-
 uv run --group tests --group types --group quality --locked mypy
 exit /b %errorlevel%
 

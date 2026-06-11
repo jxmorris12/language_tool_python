@@ -23,11 +23,7 @@ ruff-check:
 	uv run --group quality --locked ruff format --check
 
 mypy-check:
-	@if uv run --locked python -c 'import sys; raise SystemExit(0 if sys.version_info >= (3, 10) else 1)'; then \
-		uv run --group tests --group types --group quality --locked mypy; \
-	else \
-		echo "Skipping mypy: Python 3.10 or newer is required."; \
-	fi
+	uv run --group tests --group types --group quality --locked mypy
 
 check:
 	make ruff-check
