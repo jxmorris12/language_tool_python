@@ -86,7 +86,7 @@ def _loads_manifest(raw_manifest: str) -> object:
     :return: The parsed manifest as a Python object.
     :rtype: object
     """
-    return toml_loads(raw_manifest)  # type: ignore[misc]
+    return cast("object", toml_loads(raw_manifest))
 
 
 def _load_expected_download_sha256(raw_manifest: str) -> dict[str, str]:
