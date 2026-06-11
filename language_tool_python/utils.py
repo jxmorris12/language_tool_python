@@ -7,7 +7,6 @@ import locale
 import logging
 import math
 import os
-import subprocess
 import urllib.parse
 from enum import Enum
 from pathlib import Path
@@ -36,15 +35,6 @@ LTP_PATH_ENV_VAR = "LTP_PATH"  # LanguageTool download path
 
 # Directory containing the LanguageTool jar file:
 LTP_JAR_DIR_PATH_ENV_VAR = "LTP_JAR_DIR_PATH"
-
-if os.name == "nt":
-    # Gets STARTUPINFO dynamically to avoid issues on non-Windows platforms
-    startupinfo_cls = getattr(subprocess, "STARTUPINFO", None)
-    if startupinfo_cls is not None:
-        si = startupinfo_cls()
-        # STARTF_USESHOWWINDOW also dynamically retrieved
-        si.dwFlags |= getattr(subprocess, "STARTF_USESHOWWINDOW", 0)
-        startupinfo = si
 
 
 def parse_url(url_str: str) -> str:
@@ -376,13 +366,15 @@ def get_jar_info() -> tuple[Path, Path]:
 
     # Use the env var to the jar directory if it is defined
     # otherwise look in the download directory
-    jar_dir_name = os.environ.get(
-        LTP_JAR_DIR_PATH_ENV_VAR,
-        get_language_tool_directory(),
+    configured_jar_dir = os.environ.get(LTP_JAR_DIR_PATH_ENV_VAR)
+    jar_dir_path = (
+        Path(configured_jar_dir)
+        if configured_jar_dir is not None
+        else get_language_tool_directory()
     )
     jar_path = None
     for jar_name in JAR_NAMES:
-        for jar_path in Path(jar_dir_name).glob(jar_name):
+        for jar_path in jar_dir_path.glob(jar_name):
             if jar_path.is_file():
                 logger.debug("Found LanguageTool JAR: %s", jar_path)
                 break
@@ -391,7 +383,7 @@ def get_jar_info() -> tuple[Path, Path]:
         if jar_path:
             break
     else:
-        err = f"can't find languagetool-standalone in {jar_dir_name!r}"
+        err = f"can't find languagetool-standalone in {jar_dir_path!r}"
         raise PathError(err)
     return java_path, jar_path
 

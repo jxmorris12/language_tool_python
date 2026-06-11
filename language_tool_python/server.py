@@ -7,15 +7,15 @@ import contextlib
 import http.client
 import json
 import logging
-import os
 import random
 import re
 import socket
 import subprocess
+import sys
 import time
 import urllib.parse
 import warnings
-from typing import TYPE_CHECKING, ClassVar, Literal, cast
+from typing import TYPE_CHECKING, ClassVar, Literal
 
 import psutil
 import requests
@@ -43,16 +43,16 @@ from .utils import (
     parse_url,
 )
 
-startupinfo: object = None
-if os.name == "nt":
-    from .utils import startupinfo
+startupinfo: object | None = None
+if sys.platform == "win32":
+    startupinfo = subprocess.STARTUPINFO()
+    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
     from pathlib import Path
     from types import TracebackType
 
-    from .api_types import CheckResponse, LanguageInfo
     from .config_file import ConfigValue
 
 logger = logging.getLogger(__name__)
@@ -80,6 +80,19 @@ def _kill_processes(processes: list[subprocess.Popen[str]]) -> None:
         # Wait to avoid zombies
         with contextlib.suppress(subprocess.TimeoutExpired):
             p.wait(timeout=5)
+
+
+def _match_offset(match: Match) -> int:
+    """Return a match offset for sorting."""
+    return match.offset
+
+
+def _decode_response_content(response: requests.Response) -> str:
+    """Decode response content from bytes to text."""
+    content: object = response.content
+    if isinstance(content, bytes):
+        return content.decode()
+    return str(content)
 
 
 class LanguageTool:
@@ -651,17 +664,13 @@ class LanguageTool:
         """
         url = urllib.parse.urljoin(self._url, "check")
         logger.debug("Sending text to LanguageTool server at %s", url)
-        raw_response = self._query_server(url, self._create_params(text), method="post")
-        if raw_response is None:
+        response = self._query_server(url, self._create_params(text), method="post")
+        if response is None:
             err = "No response received from the LanguageTool server."
             raise ServerError(err)
-        if not is_check_response(raw_response):
-            err = (
-                f"Invalid response received from the "
-                f"LanguageTool server: {raw_response}"
-            )
+        if not is_check_response(response):
+            err = f"Invalid response received from the LanguageTool server: {response}"
             raise ServerError(err)
-        response = cast("CheckResponse", raw_response)
         matches = response["matches"]
         return [Match(match, text) for match in matches]
 
@@ -703,7 +712,7 @@ class LanguageTool:
 
             all_matches.extend(region_matches)
 
-        return sorted(all_matches, key=lambda m: m.offset)
+        return sorted(all_matches, key=_match_offset)
 
     def _create_params(self, text: str) -> dict[str, str]:
         """Create a dictionary of parameters for the language tool server request.
@@ -902,14 +911,13 @@ class LanguageTool:
             )
             raise ServerError(err)
         if isinstance(raw_languages_response, list):
-            for raw_lang in raw_languages_response:
-                if not is_language_info(raw_lang):
+            for lang in raw_languages_response:
+                if not is_language_info(lang):
                     err = (
                         "Unexpected response format when fetching languages from the "
                         "LanguageTool server."
                     )
                     raise ServerError(err)
-                lang = cast("LanguageInfo", raw_lang)
                 languages.add(lang["code"])
                 languages.add(lang["longCode"])
         else:
@@ -998,7 +1006,9 @@ class LanguageTool:
                                 "LanguageTool API. Please try again later."
                             )
                             raise RateLimitError(err) from e
-                        raise LanguageToolError(response.content.decode()) from e
+                        raise LanguageToolError(
+                            _decode_response_content(response),
+                        ) from e
                     else:
                         return data
             except (OSError, http.client.HTTPException) as e:  # noqa: PERF203  # it is intentional to catch exceptions in a loop, to retry the request in case of transient errors

@@ -20,7 +20,7 @@ def test_deprecated_emits_warning() -> None:
 
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
-        result = old_function()
+        result: str = old_function()
 
         assert len(w) == 1
         assert issubclass(w[0].category, DeprecationWarning)
@@ -37,7 +37,7 @@ def test_deprecated_with_custom_category() -> None:
 
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
-        result = old_function()
+        result: int = old_function()
 
         assert len(w) == 1
         assert issubclass(w[0].category, UserWarning)
@@ -92,7 +92,9 @@ def test_deprecated_with_args_and_kwargs() -> None:
 
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
-        result = complex_function(1, 2, 3, 4, c=5, d=6, e=7)
+        result: tuple[int, int, tuple[int, ...], int | None, dict[str, int]] = (
+            complex_function(1, 2, 3, 4, c=5, d=6, e=7)
+        )
 
         assert len(w) == 1
         assert result == (1, 2, (3, 4), 5, {"d": 6, "e": 7})

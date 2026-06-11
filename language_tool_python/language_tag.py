@@ -131,7 +131,9 @@ class LanguageTag:
                     err = "tag does not match pattern"
                     raise AttributeError(err) from e
                 logger.debug("Regex match groups: %s", match.groups())
-                return languages[match.group(1).lower()]
+                language_start, language_end = match.span(1)
+                language = tag[language_start:language_end].lower()
+                return languages[language]
             except (KeyError, AttributeError) as e:
                 err = f"unsupported language: {tag!r}"
                 raise ValueError(err) from e
