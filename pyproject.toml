@@ -149,6 +149,8 @@ ignore = [
 
 [tool.mypy]
 files = ["language_tool_python", "tests"]
+disallow_any_decorated = true
+disallow_any_explicit = true
 disallow_any_expr = true
 disallow_any_generics = true
 disallow_any_unimported = true
@@ -162,6 +164,7 @@ no_implicit_reexport = true
 pretty = true
 show_error_codes = true
 strict_equality = true
+strict_equality_for_none = true
 warn_redundant_casts = true
 warn_return_any = true
 warn_unreachable = true
