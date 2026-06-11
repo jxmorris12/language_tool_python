@@ -26,7 +26,7 @@ Default local download target: LanguageTool `6.8`.
 
 ## Requirements
 
-- Python `>=3.9` (tested up to 3.14)
+- Python `>=3.10` (tested up to 3.15)
 - Java (to run local LanguageTool server):
   - LanguageTool `< 6.6`: Java `>=9`
   - LanguageTool `>= 6.6` (default): Java `>=17`

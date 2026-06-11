@@ -18,11 +18,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Execute tests on python 3.9-3.14 on ubuntu
+        # Execute tests on python 3.10-3.15 on ubuntu
         # and python 3.14 on macOS and windows
         include:
-          - os: ubuntu-24.04
-            python-version: "3.9"
           - os: ubuntu-24.04
             python-version: "3.10"
           - os: ubuntu-24.04
@@ -33,6 +31,8 @@ jobs:
             python-version: "3.13"
           - os: ubuntu-24.04
             python-version: "3.14"
+          - os: ubuntu-24.04
+            python-version: "3.15.0-beta.2"
           - os: macos-26
             python-version: "3.14"
           - os: windows-2025

@@ -9,13 +9,12 @@ from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from os import PathLike
 from pathlib import Path
-from typing import TypeVar, Union, cast
+from typing import TypeVar, cast
 
 from .exceptions import PathError
 from .utils import SupportsBool
 
-# Union here because | not supported by PathLike in py3.9
-ConfigValue = Union[PathLike[str], SupportsBool, str, int, float, Iterable[str]]
+ConfigValue = PathLike[str] | SupportsBool | str | int | float | Iterable[str]
 ConfigValueT = TypeVar("ConfigValueT", bound=ConfigValue)
 
 logger = logging.getLogger(__name__)
