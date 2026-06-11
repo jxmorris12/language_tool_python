@@ -86,14 +86,9 @@ def _match_offset(match: Match) -> int:
     return match.offset
 
 
-def _response_content(response: requests.Response) -> object:
-    """Return response content while containing third-party Any annotations."""
-    return response.content
-
-
 def _decode_response_content(response: requests.Response) -> str:
     """Decode response content from bytes to text."""
-    content = _response_content(response)
+    content: object = response.content
     if isinstance(content, bytes):
         return content.decode()
     return str(content)
