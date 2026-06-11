@@ -30,15 +30,27 @@ class _PyProject(TypedDict):
     project: _PyProjectProject
 
 
-def _load_toml(path: Path) -> dict[str, object]:
-    """Load TOML data from a file."""
+def _load_pyproject_and_logconfig(path: Path) -> dict[str, object]:
+    """Load a TOML file as a typed dictionary.
+
+    :param path: The path to the TOML file to load.
+    :type path: Path
+    :return: The contents of the TOML file as a dictionary.
+    :rtype: dict[str, object]
+    """
     with path.open("rb") as f:
         return cast("dict[str, object]", toml_loads(f.read().decode("utf-8")))
 
 
 def _read_project_version(pyproject: Path) -> str:
-    """Read the package version from pyproject.toml."""
-    pyproject_config = cast("_PyProject", _load_toml(pyproject))
+    """Read the package version from pyproject.toml.
+
+    :param pyproject: The path to the pyproject.toml file.
+    :type pyproject: Path
+    :return: The package version.
+    :rtype: str
+    """
+    pyproject_config = cast("_PyProject", _load_pyproject_and_logconfig(pyproject))
     return pyproject_config["project"]["version"]
 
 
@@ -56,7 +68,7 @@ logger = logging.getLogger(__name__)
 with importlib.resources.as_file(
     importlib.resources.files("language_tool_python").joinpath("logging.toml"),
 ) as config_path:
-    log_config = _load_toml(config_path)
+    log_config = _load_pyproject_and_logconfig(config_path)
 dictConfig(log_config)
 
 RULE_RE: re.Pattern[str] = re.compile(r"[\w-]+")

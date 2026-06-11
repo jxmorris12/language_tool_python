@@ -78,14 +78,26 @@ DOWNLOAD_CHUNK_BYTES = 1024 * 1024
 _SAFE_ZIP_EXTRACTOR = SafeZipExtractor()
 
 
-def _toml_loads(raw_manifest: str) -> object:
-    """Parse TOML while containing the third-party parser's Any return type."""
+def _loads_manifest(raw_manifest: str) -> object:
+    """Load the integrity manifest from a raw TOML string.
+
+    :param raw_manifest: The raw TOML string containing the integrity manifest.
+    :type raw_manifest: str
+    :return: The parsed manifest as a Python object.
+    :rtype: object
+    """
     return toml_loads(raw_manifest)  # type: ignore[misc]
 
 
 def _load_expected_download_sha256(raw_manifest: str) -> dict[str, str]:
-    """Load and validate the bundled download checksum manifest."""
-    parsed = _toml_loads(raw_manifest)
+    """Load and validate the bundled download checksum manifest.
+
+    :param raw_manifest: The raw TOML string containing the integrity manifest.
+    :type raw_manifest: str
+    :return: A dictionary mapping version names to their expected SHA-256 hashes.
+    :rtype: dict[str, str]
+    """
+    parsed = _loads_manifest(raw_manifest)
     if not isinstance(parsed, dict):
         err = "Invalid integrity manifest: expected a TOML table."
         raise PathError(err)
