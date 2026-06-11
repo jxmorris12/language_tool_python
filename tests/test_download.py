@@ -572,7 +572,7 @@ def test_install_oldest_supported_version() -> None:
             "en-US",
             language_tool_download_version="4.0",
         ) as tool:
-            assert tool is not None
+            assert tool.language_tool_download_version == "4.0"
     except LanguageToolError:
         pytest.fail("Failed to download or initialize the oldest supported version.")
 
@@ -592,7 +592,9 @@ def test_install_snapshot_version() -> None:
                 (datetime.now(timezone.utc) - timedelta(days=3)).strftime("%Y%m%d")
             ),
         ) as tool:
-            assert tool is not None
+            assert tool.language_tool_download_version == (
+                datetime.now(timezone.utc) - timedelta(days=3)
+            ).strftime("%Y%m%d")
     except LanguageToolError:
         pytest.skip(
             (
