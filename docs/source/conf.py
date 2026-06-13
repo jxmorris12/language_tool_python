@@ -7,7 +7,7 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "language_tool_python"
-copyright = "2025, jxmorris12"
+copyright = "2026, jxmorris12"  # Keep in sync with LICENSE
 author = "jxmorris12"
 release = "3.4.0"  # Keep in sync with pyproject.toml
 
