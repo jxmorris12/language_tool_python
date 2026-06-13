@@ -9,9 +9,6 @@ from collections import OrderedDict as OrderedDictType
 from functools import total_ordering
 from typing import TYPE_CHECKING
 
-from ._compat import deprecated
-from .utils import SupportsFloat, SupportsInt
-
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
@@ -59,28 +56,6 @@ def get_match_ordered_dict() -> OrderedDictType[str, type]:
             ("sentence", str),
         ],
     )
-
-
-@deprecated(
-    "This function is no longer used internally and will be removed in 4.0.",
-    stacklevel=2,
-)
-def auto_type(obj: SupportsInt | SupportsFloat | object) -> int | float | object:
-    """Attempt to automatically convert the input object to an integer or float.
-
-    If the conversion to an integer fails, it tries to convert to a float. If both
-    conversions fail, it returns the original object.
-
-    :param obj: The object to be converted.
-    :type obj: SupportsInt | SupportsFloat | object
-    :return: The converted object as an integer, float, or the original object.
-    :rtype: int | float | object
-    """
-    if isinstance(obj, SupportsInt):
-        return int(obj)
-    if isinstance(obj, SupportsFloat):
-        return float(obj)
-    return obj
 
 
 def four_byte_char_positions(text: str) -> list[int]:
