@@ -21,17 +21,17 @@ jobs:
         # Execute tests on python 3.10-3.15 on ubuntu
         # and python 3.14 on macOS and windows
         include:
-          - os: ubuntu-24.04
+          - os: ubuntu-26.04
             python-version: "3.10"
-          - os: ubuntu-24.04
+          - os: ubuntu-26.04
             python-version: "3.11"
-          - os: ubuntu-24.04
+          - os: ubuntu-26.04
             python-version: "3.12"
-          - os: ubuntu-24.04
+          - os: ubuntu-26.04
             python-version: "3.13"
-          - os: ubuntu-24.04
+          - os: ubuntu-26.04
             python-version: "3.14"
-          - os: ubuntu-24.04
+          - os: ubuntu-26.04
             python-version: "3.15.0-beta.2"
           - os: macos-26
             python-version: "3.14"
@@ -39,14 +39,6 @@ jobs:
             python-version: "3.14"
 
     steps:
-    - name: Clone repository
-      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # 6.0.3
-    
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # 6.2.0
-      with:
-        python-version: ${{ matrix.python-version }}
-
     - name: Install uv
       uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # 8.2.0
     
@@ -56,20 +48,27 @@ jobs:
         distribution: 'temurin'
         java-version: '26'
 
+    - name: Clone repository
+      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # 6.0.3
+      with:
+        persist-credentials: false
+
     - name: Test with pytest
       run: |
-        uv run --group tests --locked pytest
+        uv run --python ${{ matrix.python-version }} --group tests --locked pytest
 
   lint:
     timeout-minutes: 10
     name: Lint with Ruff
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
-      - name: Clone repository
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # 6.0.3
-        
       - name: Install uv
         uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # 8.2.0
+
+      - name: Clone repository
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # 6.0.3
+        with:
+          persist-credentials: false
 
       - name: Run Ruff Linter
         run: |
@@ -78,14 +77,16 @@ jobs:
   type_check:
     timeout-minutes: 10
     name: Type Check with Mypy
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
-      - name: Clone repository
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # 6.0.3
-        
       - name: Install uv
         uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # 8.2.0
-          
+
+      - name: Clone repository
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # 6.0.3
+        with:
+          persist-credentials: false
+
       - name: Run Mypy Type Checker
         run: | 
           make mypy-check
