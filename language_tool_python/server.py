@@ -19,7 +19,6 @@ from typing import TYPE_CHECKING, ClassVar, Literal
 
 import psutil
 import requests
-from packaging.version import Version
 
 from .api_types import (
     is_check_response,
@@ -41,6 +40,7 @@ from .utils import (
     get_locale_language,
     kill_process_force,
     parse_url,
+    version_tuple,
 )
 
 startupinfo: object | None = None
@@ -1136,8 +1136,8 @@ class LanguageTool:
         url = (
             urllib.parse.urljoin(self._url, "check?text=healthcheck&language=en")
             if re.match(r"^\d+\.\d+$", self._language_tool_download_version)
-            and Version(self._language_tool_download_version)
-            < Version("4.2")  # healthcheck endpoint added in 4.2
+            and version_tuple(self._language_tool_download_version)
+            < (4, 2)  # healthcheck endpoint added in 4.2
             else urllib.parse.urljoin(self._url, "healthcheck")
         )
         start = time.time()
