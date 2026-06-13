@@ -22,8 +22,6 @@ from warnings import warn
 
 import requests
 import tqdm
-from packaging import version
-from packaging.version import Version
 
 from ._compat import deprecated, toml_loads
 from .exceptions import JavaError, PathError
@@ -32,6 +30,7 @@ from .utils import (
     LTP_JAR_DIR_PATH_ENV_VAR,
     get_env_int,
     get_language_tool_download_path,
+    version_tuple,
 )
 
 if TYPE_CHECKING:
@@ -275,7 +274,7 @@ def confirm_java_compatibility(
 
     is_old_version = language_tool_version != LTP_DOWNLOAD_VERSION and (
         re.match(r"^\d+\.\d+$", language_tool_version)
-        and Version(language_tool_version) < Version("6.6")
+        and version_tuple(language_tool_version) < (6, 6)  # 6.6
     )
 
     # Some installs of java show the version number like '14.0.1'
@@ -765,15 +764,15 @@ class LocalLanguageTool(ABC):
 
     @property
     @abstractmethod
-    def version_into(self) -> Version | datetime:
+    def version_into(self) -> tuple[int, int] | datetime:
         """Get the version as a comparable object.
 
         This abstract property must be implemented by subclasses to return the version
-        as either a Version object (for releases) or datetime object (for snapshots) for
-        comparison purposes.
+        as either a tuple of integers (for releases) or datetime object (for snapshots)
+        for comparison purposes.
 
-        :return: A Version object for releases or datetime for snapshots.
-        :rtype: Version | datetime
+        :return: A tuple of integers for releases or datetime for snapshots.
+        :rtype: tuple[int, int] | datetime
         :raises NotImplementedError: Always, unless implemented by a subclass.
         """
         raise NotImplementedError
@@ -835,8 +834,7 @@ class LocalLanguageTool(ABC):
                 self_version = self.version_into
                 other_version = other.version_into
                 if (
-                    isinstance(self_version, Version)
-                    and isinstance(other_version, Version)
+                    isinstance(self_version, tuple) and isinstance(other_version, tuple)
                 ) or (
                     isinstance(self_version, datetime)
                     and isinstance(other_version, datetime)
@@ -919,13 +917,13 @@ class ReleaseLocalLanguageTool(LocalLanguageTool):
         return self._version_name
 
     @property
-    def version_into(self) -> Version:
-        """Get the version as a Version object for comparison.
+    def version_into(self) -> tuple[int, int]:
+        """Get the version as a tuple of integers for comparison.
 
-        :return: A parsed Version object from the version string.
-        :rtype: Version
+        :return: A tuple of integers representing the version.
+        :rtype: tuple[int, int]
         """
-        return version.parse(self._version_name)
+        return version_tuple(self._version_name)
 
     @property
     def download_url(self) -> str:
@@ -941,16 +939,16 @@ class ReleaseLocalLanguageTool(LocalLanguageTool):
         :rtype: str
         :raises PathError: If the version is below 4.0 (unsupported).
         """
-        version_num = Version(self._version_name)
+        version_num = version_tuple(self._version_name)
         filename = FILENAME_RELEASE.format(version=self._version_name)
         # Versions >= 6.7 from new release page
-        if version_num >= Version("6.7"):
+        if version_num >= (6, 7):  # 6.7
             base_url = BASE_URL_NEW_RELEASES.format(version=self._version_name)
             return urljoin(base_url, filename)
         # Versions >= 6.0 from main download page
-        if version_num >= Version("6.0"):
+        if version_num >= (6, 0):  # 6.0
             return urljoin(BASE_URL_RELEASE, filename)
-        if version_num < Version("4.0"):
+        if version_num < (4, 0):  # 4.0
             err = (
                 "LanguageTool versions below 4.0 are no longer supported for download."
                 " Below version 4.0, the API changed significantly and is "

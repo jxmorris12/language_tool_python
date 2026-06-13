@@ -14,7 +14,6 @@ from shutil import which
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 import psutil
-from packaging import version
 
 from ._compat import deprecated
 from .exceptions import JavaError, PathError
@@ -221,7 +220,7 @@ def find_existing_language_tool_downloads(download_folder: Path) -> list[Path]:
     "This function is no longer used internally and will be removed in 4.0.",
     stacklevel=2,
 )
-def _extract_version(path: Path) -> version.Version:
+def _extract_version(path: Path) -> tuple[int, int]:
     """Extract the version number from a LanguageTool directory path.
 
     This function parses the directory name to extract the version information
@@ -230,8 +229,8 @@ def _extract_version(path: Path) -> version.Version:
 
     :param path: The path to the LanguageTool directory
     :type path: Path
-    :return: The parsed version object extracted from the directory name
-    :rtype: version.Version
+    :return: The parsed version tuple extracted from the directory name
+    :rtype: tuple[int, int]
     :raises ValueError: If the directory name doesn't start with 'LanguageTool-'
 
     .. deprecated:: 3.3.0
@@ -244,7 +243,7 @@ def _extract_version(path: Path) -> version.Version:
     version_str = path.name.removeprefix("LanguageTool-")
     # Handle both -SNAPSHOT and -snapshot suffixes
     version_str = version_str.removesuffix("-SNAPSHOT").removesuffix("-snapshot")
-    return version.parse(version_str)
+    return version_tuple(version_str)
 
 
 @deprecated(
@@ -471,3 +470,20 @@ class SupportsFloat(Protocol):
     def __float__(self) -> float:
         """Define the interface for types that can be converted to a float."""
         ...
+
+
+def version_tuple(v: str) -> tuple[int, int]:
+    """Convert a version string into a tuple of integers.
+
+    This function takes a version string in the format 'X.Y' and converts it into a
+    tuple of integers (X, Y). This can be useful for comparing version numbers.
+
+    :param v: The version string to be converted, expected in the format 'X.Y'.
+    :type v: str
+    :return: A tuple of integers representing the version, in the format (X, Y).
+    :rtype: tuple[int, int]
+    :raises ValueError: If the version string is not in the expected format or contains
+     non-integer components.
+    """
+    major, minor = v.split(".")
+    return int(major), int(minor)
