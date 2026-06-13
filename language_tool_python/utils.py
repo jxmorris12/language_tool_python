@@ -10,16 +10,13 @@ import os
 import urllib.parse
 from enum import Enum
 from pathlib import Path
-from shutil import which
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 import psutil
 
-from ._compat import deprecated
-from .exceptions import JavaError, PathError
+from .exceptions import PathError
 
 if TYPE_CHECKING:
-    from .config_file import LanguageToolConfig
     from .match import Match
 
 logger = logging.getLogger(__name__)
@@ -192,201 +189,6 @@ def get_language_tool_download_path() -> Path:
     return path
 
 
-@deprecated(
-    (
-        "This function is no longer used internally and will be removed in 4.0.\n"
-        "Replace its usage by an inline alternative."
-    ),
-    stacklevel=2,
-)
-def find_existing_language_tool_downloads(download_folder: Path) -> list[Path]:
-    """Find existing LanguageTool downloads in the specified folder.
-
-    This function searches for directories in the given download folder
-    that match the pattern 'LanguageTool*' and returns a list of their paths.
-
-    :param download_folder: The folder where LanguageTool downloads are stored.
-    :type download_folder: Path
-    :return: A list of paths to the existing LanguageTool download directories.
-    :rtype: list[Path]
-
-    .. deprecated:: 3.3.0
-        This function is no longer used internally and will be removed in 4.0.
-    """
-    return [path for path in download_folder.glob("LanguageTool*") if path.is_dir()]
-
-
-@deprecated(
-    "This function is no longer used internally and will be removed in 4.0.",
-    stacklevel=2,
-)
-def _extract_version(path: Path) -> tuple[int, int]:
-    """Extract the version number from a LanguageTool directory path.
-
-    This function parses the directory name to extract the version information
-    from LanguageTool installation folders that follow the naming convention
-    'LanguageTool-X.Y-SNAPSHOT'.
-
-    :param path: The path to the LanguageTool directory
-    :type path: Path
-    :return: The parsed version tuple extracted from the directory name
-    :rtype: tuple[int, int]
-    :raises ValueError: If the directory name doesn't start with 'LanguageTool-'
-
-    .. deprecated:: 3.3.0
-        This function is no longer used internally and will be removed in 4.0.
-    """
-    if not path.name.startswith("LanguageTool-"):
-        err = f"Invalid LanguageTool folder name: {path.name}"
-        raise ValueError(err)
-    # Handle LanguageTool- prefix
-    version_str = path.name.removeprefix("LanguageTool-")
-    # Handle both -SNAPSHOT and -snapshot suffixes
-    version_str = version_str.removesuffix("-SNAPSHOT").removesuffix("-snapshot")
-    return version_tuple(version_str)
-
-
-@deprecated(
-    (
-        "This function is no longer used internally and will be removed in 4.0.\n"
-        "Use instead "
-        "language_tool_python.download_lt.LocalLanguageTool."
-        "get_latest_installed_version."
-    ),
-    stacklevel=2,
-)
-def get_language_tool_directory() -> Path:
-    """Get the directory path of the LanguageTool installation.
-
-    This function checks the download folder for LanguageTool installations,
-    verifies that the folder exists and is a directory, and returns the path
-    to the latest version of LanguageTool found in the directory.
-
-    :raises NotADirectoryError: If the download folder path is not a valid directory.
-    :raises FileNotFoundError: If no LanguageTool installation is found in the download
-     folder.
-    :return: The path to the latest version of LanguageTool found in the directory.
-    :rtype: Path
-
-    .. deprecated:: 3.3.0
-        This function is no longer used internally and will be removed in 4.0.
-    """
-    download_folder = get_language_tool_download_path()
-    if not download_folder.is_dir():
-        err = f"LanguageTool directory path is not a valid directory {download_folder}."
-        raise NotADirectoryError(err)
-    language_tool_path_list = find_existing_language_tool_downloads(download_folder)
-
-    if not len(language_tool_path_list):
-        err = f"LanguageTool not found in {download_folder}."
-        raise FileNotFoundError(err)
-
-    # Return the latest version found in the directory.
-    latest: Path = max(
-        language_tool_path_list,
-        key=_extract_version,
-    )
-    logger.debug("Using LanguageTool directory: %s", latest)
-    return latest
-
-
-@deprecated(
-    (
-        "This function is no longer used internally and will be removed in 4.0.\n"
-        "Use instead language_tool_python.download_lt.LocalLanguageTool.get_server_cmd."
-    ),
-    stacklevel=2,
-)
-def get_server_cmd(
-    port: int | None = None,
-    config: LanguageToolConfig | None = None,
-) -> list[str]:
-    """Generate the command to start the LanguageTool HTTP server.
-
-    :param port: Optional; The port number on which the server should run. If not
-     provided, the default port will be used.
-    :type port: int | None
-    :param config: Optional; The configuration for the LanguageTool server. If not
-     provided, default configuration will be used.
-    :type config: LanguageToolConfig | None
-    :return: A list of command line arguments to start the LanguageTool HTTP server.
-    :rtype: list[str]
-    :raises JavaError: If the Java executable cannot be found.
-    :raises PathError: If the LanguageTool JAR file cannot be found in the specified
-     directory.
-
-    .. deprecated:: 3.3.0
-        This function is no longer used internally and will be removed in 4.0.
-    """
-    java_path, jar_path = get_jar_info()
-    cmd = [
-        str(java_path),
-        "-cp",
-        str(jar_path),
-        "org.languagetool.server.HTTPServer",
-    ]
-
-    if port is not None:
-        cmd += ["-p", str(port)]
-
-    if config is not None:
-        cmd += ["--config", config.path]
-
-    logger.debug("LanguageTool server command: %r", cmd)
-    return cmd
-
-
-@deprecated(
-    "This function is no longer used internally and will be removed in 4.0.",
-    stacklevel=2,
-)
-def get_jar_info() -> tuple[Path, Path]:
-    """Retrieve the path to the Java executable and the LanguageTool JAR file.
-
-    This function searches for the Java executable in the system's PATH and
-    locates the LanguageTool JAR file either in a directory specified by an
-    environment variable or in a default download directory.
-
-    :raises JavaError: If the Java executable cannot be found.
-    :raises PathError: If the LanguageTool JAR file cannot be found in the specified
-     directory.
-    :return: A tuple containing the path to the Java executable and the path to the
-     LanguageTool JAR file.
-    :rtype: tuple[Path, Path]
-
-    .. deprecated:: 3.3.0
-        This function is no longer used internally and will be removed in 4.0.
-    """
-    java_path_str = which("java")
-    if not java_path_str:
-        err = "can't find Java"
-        raise JavaError(err)
-    java_path = Path(java_path_str)
-
-    # Use the env var to the jar directory if it is defined
-    # otherwise look in the download directory
-    configured_jar_dir = os.environ.get(LTP_JAR_DIR_PATH_ENV_VAR)
-    jar_dir_path = (
-        Path(configured_jar_dir)
-        if configured_jar_dir is not None
-        else get_language_tool_directory()
-    )
-    jar_path = None
-    for jar_name in JAR_NAMES:
-        for jar_path in jar_dir_path.glob(jar_name):
-            if jar_path.is_file():
-                logger.debug("Found LanguageTool JAR: %s", jar_path)
-                break
-        else:
-            jar_path = None
-        if jar_path:
-            break
-    else:
-        err = f"can't find languagetool-standalone in {jar_dir_path!r}"
-        raise PathError(err)
-    return java_path, jar_path
-
-
 def get_locale_language() -> str:
     """Get the current locale language.
 
@@ -443,32 +245,6 @@ class SupportsBool(Protocol):
 
     def __bool__(self) -> bool:
         """Define the interface for types that can be evaluated in a boolean context."""
-        ...
-
-
-@deprecated(
-    "This protocol is no longer used internally and will be removed in 4.0.",
-    stacklevel=2,
-)
-@runtime_checkable
-class SupportsInt(Protocol):
-    """Protocol for types that can be converted to an integer value."""
-
-    def __int__(self) -> int:
-        """Define the interface for types that can be converted to an integer."""
-        ...
-
-
-@deprecated(
-    "This protocol is no longer used internally and will be removed in 4.0.",
-    stacklevel=2,
-)
-@runtime_checkable
-class SupportsFloat(Protocol):
-    """Protocol for types that can be converted to a float value."""
-
-    def __float__(self) -> float:
-        """Define the interface for types that can be converted to a float."""
         ...
 
 
