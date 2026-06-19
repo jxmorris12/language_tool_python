@@ -51,9 +51,6 @@ exit /b %errorlevel%
 
 :test
 uv run --group tests --locked pytest
-if errorlevel 1 exit /b %errorlevel%
-
-uvx --with defusedxml genbadge coverage --input-file coverage.xml --silent
 exit /b %errorlevel%
 
 :doc

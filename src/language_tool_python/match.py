@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import logging
+import typing
 import unicodedata
 from collections import OrderedDict
 from collections import OrderedDict as OrderedDictType
 from functools import total_ordering
-from typing import TYPE_CHECKING, TypeGuard
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -87,13 +88,13 @@ def _four_byte_char_positions(text: str) -> list[int]:
     return positions
 
 
-def is_check_match(value: object) -> TypeGuard[CheckMatch]:
+def is_check_match(value: object) -> typing.TypeGuard[CheckMatch]:
     """Verify that a value is a CheckMatch.
 
     :param value: The value to check.
     :type value: object
     :return: TypeGuard indicating whether the value is a CheckMatch.
-    :rtype: TypeGuard[CheckMatch]
+    :rtype: typing.TypeGuard[CheckMatch]
     """
     if not isinstance(value, dict):
         return False

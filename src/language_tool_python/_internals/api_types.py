@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, TypedDict
 
 if TYPE_CHECKING:
-    from typing import TypeGuard
+    import typing
 
 __all__ = [
     "Category",
@@ -34,13 +34,13 @@ class LanguageInfo(TypedDict):
     name: str
 
 
-def is_language_info(value: object) -> TypeGuard[LanguageInfo]:
+def is_language_info(value: object) -> typing.TypeGuard[LanguageInfo]:
     """Verify that a value is a LanguageInfo.
 
     :param value: The value to check.
     :type value: object
     :return: TypeGuard indicating whether the value is a LanguageInfo.
-    :rtype: TypeGuard[LanguageInfo]
+    :rtype: typing.TypeGuard[LanguageInfo]
     """
     if not isinstance(value, dict):
         return False
@@ -144,13 +144,13 @@ class CheckResponse(TypedDict):
     warnings: WarningInfo
 
 
-def is_check_response(value: object) -> TypeGuard[CheckResponse]:
+def is_check_response(value: object) -> typing.TypeGuard[CheckResponse]:
     """Verify that a value is a CheckResponse.
 
     :param value: The value to check.
     :type value: object
     :return: TypeGuard indicating whether the value is a CheckResponse.
-    :rtype: TypeGuard[CheckResponse]
+    :rtype: typing.TypeGuard[CheckResponse]
     """
     if not isinstance(value, dict):
         return False

@@ -23,11 +23,11 @@ def classify_matches(matches: list[Match]) -> TextStatus:
     """Classify matches as CORRECT, FAULTY, or GARBAGE.
 
     This function checks the status of the matches and returns a corresponding
-    ``TextStatus`` value.
+    :class:`TextStatus` value.
 
     :param matches: A list of Match objects to be classified.
     :type matches: list[Match]
-    :return: The classification of the matches as a ``TextStatus`` value.
+    :return: The classification of the matches as a :class:`TextStatus` value.
     :rtype: TextStatus
     """
     if not len(matches):
