@@ -120,7 +120,9 @@ def _load_expected_download_sha256(raw_manifest: str) -> dict[str, str]:
 
 with (
     importlib.resources.as_file(
-        importlib.resources.files("language_tool_python").joinpath("integrity.toml"),
+        importlib.resources.files("language_tool_python")
+        .joinpath("_ressources")
+        .joinpath("integrity.toml"),
     ) as hashes_path,
     hashes_path.open("rb") as f,
 ):

@@ -352,7 +352,7 @@ Exit codes:
 Downloaded zips are verified with SHA-256 when a checksum is available. Checksums are resolved in this order:
 1. `LTP_DOWNLOAD_SHA256_<VERSION>`, where non-alphanumeric characters in the version are replaced with `_` and the name is uppercased.
 2. `LTP_DOWNLOAD_SHA256`.
-3. The bundled `language_tool_python/integrity.toml` manifest.
+3. The bundled `language_tool_python/_ressources/integrity.toml` manifest.
 
 The bundled manifest covers release/archive downloads. Snapshots are not stable, so provide `LTP_DOWNLOAD_SHA256_<VERSION>` or `LTP_DOWNLOAD_SHA256` if you want to verify a snapshot. If no checksum is available, the download proceeds without SHA-256 verification.
 
