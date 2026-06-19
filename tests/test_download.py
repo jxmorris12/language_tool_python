@@ -19,9 +19,9 @@ import pytest
 import language_tool_python
 from language_tool_python import download_lt
 from language_tool_python.download_lt import (
-    LTP_BYPASS_VERIFIED_DOWNLOADS_ENV_VAR,
-    LTP_DOWNLOAD_SHA256_ENV_VAR,
-    LTP_MAX_DOWNLOAD_BYTES_ENV_VAR,
+    _LTP_BYPASS_VERIFIED_DOWNLOADS_ENV_VAR,
+    _LTP_DOWNLOAD_SHA256_ENV_VAR,
+    _LTP_MAX_DOWNLOAD_BYTES_ENV_VAR,
     LocalLanguageTool,
 )
 from language_tool_python.exceptions import LanguageToolError, PathError
@@ -186,7 +186,7 @@ def test_http_get_rejects_oversized_content_length(
     )
     response = MockDownloadResponse(payload)
     response.headers["Content-Length"] = "2"
-    monkeypatch.setattr(download_lt, "MAX_DOWNLOAD_BYTES", 1)
+    monkeypatch.setattr(download_lt, "_MAX_DOWNLOAD_BYTES", 1)
 
     with (
         patch(
@@ -205,11 +205,11 @@ def test_max_download_bytes_uses_env_override(
     try:
         with monkeypatch.context() as env:
             env.setenv(
-                LTP_MAX_DOWNLOAD_BYTES_ENV_VAR, str(EXPECTED_DOWNLOAD_BYTES_OVERRIDE)
+                _LTP_MAX_DOWNLOAD_BYTES_ENV_VAR, str(EXPECTED_DOWNLOAD_BYTES_OVERRIDE)
             )
             importlib.reload(download_lt)
 
-            assert download_lt.MAX_DOWNLOAD_BYTES == EXPECTED_DOWNLOAD_BYTES_OVERRIDE
+            assert download_lt._MAX_DOWNLOAD_BYTES == EXPECTED_DOWNLOAD_BYTES_OVERRIDE
     finally:
         importlib.reload(download_lt)
 
@@ -223,7 +223,7 @@ def test_http_get_rejects_oversized_stream(
     )
     response = MockDownloadResponse(payload)
     response.headers = {}
-    monkeypatch.setattr(download_lt, "MAX_DOWNLOAD_BYTES", len(payload) - 1)
+    monkeypatch.setattr(download_lt, "_MAX_DOWNLOAD_BYTES", len(payload) - 1)
 
     with (
         patch(
@@ -244,7 +244,7 @@ def test_http_get_rejects_oversized_stream_with_small_content_length(
     )
     response = MockDownloadResponse(payload)
     response.headers["Content-Length"] = "1"
-    monkeypatch.setattr(download_lt, "MAX_DOWNLOAD_BYTES", len(payload) - 1)
+    monkeypatch.setattr(download_lt, "_MAX_DOWNLOAD_BYTES", len(payload) - 1)
 
     with (
         patch(
@@ -280,7 +280,7 @@ def test_latest_snapshot_uses_latest_download_url_and_current_date(
     """Test that latest remains a snapshot alias installed under the current date."""
     monkeypatch.setattr(
         download_lt,
-        "BASE_URL_SNAPSHOT",
+        "_BASE_URL_SNAPSHOT",
         "https://example.test/snapshots/",
     )
 
@@ -303,7 +303,7 @@ def test_release_download_url_uses_new_release_base_from_6_7(
     """Test that releases 6.7 and newer include the version in the base URL."""
     monkeypatch.setattr(
         download_lt,
-        "BASE_URL_NEW_RELEASES",
+        "_BASE_URL_NEW_RELEASES",
         "https://example.test/releases/LanguageTool-{version}/",
     )
 
@@ -323,7 +323,7 @@ def test_release_download_url_keeps_main_release_base_for_6_6(
     """Test that release 6.6 keeps using the versioned filename."""
     monkeypatch.setattr(
         download_lt,
-        "BASE_URL_RELEASE",
+        "_BASE_URL_RELEASE",
         "https://example.test/download/",
     )
 
@@ -341,7 +341,7 @@ def test_release_download_url_keeps_main_release_base_before_6_7(
     """Test that earlier 6.x releases keep using the versioned filename."""
     monkeypatch.setattr(
         download_lt,
-        "BASE_URL_RELEASE",
+        "_BASE_URL_RELEASE",
         "https://example.test/download/",
     )
 
@@ -359,7 +359,7 @@ def test_release_download_url_keeps_archive_base_before_6_0(
     """Test that older supported releases keep using the archive base URL."""
     monkeypatch.setattr(
         download_lt,
-        "BASE_URL_ARCHIVE",
+        "_BASE_URL_ARCHIVE",
         "https://example.test/archive/",
     )
 
@@ -407,8 +407,8 @@ def test_http_get_uses_integrity_manifest_sha256(
     """Test that bundled integrity.toml checksums are used when no env var is set."""
     payload = make_zip_payload({"LanguageTool-4.0/languagetool-server.jar": b"jar"})
     local_language_tool = LocalLanguageTool.from_version_name("4.0")
-    monkeypatch.delenv(LTP_BYPASS_VERIFIED_DOWNLOADS_ENV_VAR, raising=False)
-    monkeypatch.delenv(LTP_DOWNLOAD_SHA256_ENV_VAR, raising=False)
+    monkeypatch.delenv(_LTP_BYPASS_VERIFIED_DOWNLOADS_ENV_VAR, raising=False)
+    monkeypatch.delenv(_LTP_DOWNLOAD_SHA256_ENV_VAR, raising=False)
     monkeypatch.delenv("LTP_DOWNLOAD_SHA256_4_0", raising=False)
 
     with (
@@ -459,8 +459,8 @@ def test_http_get_bypass_skips_sha256_verification(
         {"LanguageTool-6.9-SNAPSHOT/languagetool-server.jar": b"jar"},
     )
     local_language_tool = LocalLanguageTool.from_version_name()
-    monkeypatch.setenv(LTP_BYPASS_VERIFIED_DOWNLOADS_ENV_VAR, "true")
-    monkeypatch.setenv(LTP_DOWNLOAD_SHA256_ENV_VAR, "0" * 64)
+    monkeypatch.setenv(_LTP_BYPASS_VERIFIED_DOWNLOADS_ENV_VAR, "true")
+    monkeypatch.setenv(_LTP_DOWNLOAD_SHA256_ENV_VAR, "0" * 64)
 
     out_file = io.BytesIO()
     with (
@@ -487,7 +487,7 @@ def test_snapshot_download_renames_archive_root_to_requested_date(
     local_language_tool = LocalLanguageTool.from_version_name(requested_snapshot)
     monkeypatch.setattr(
         download_lt,
-        "confirm_java_compatibility",
+        "_confirm_java_compatibility",
         skip_java_compatibility_check,
     )
 
@@ -529,7 +529,7 @@ def test_latest_snapshot_download_renames_archive_root_to_current_date(
     local_language_tool = LocalLanguageTool.from_version_name("latest")
     monkeypatch.setattr(
         download_lt,
-        "confirm_java_compatibility",
+        "_confirm_java_compatibility",
         skip_java_compatibility_check,
     )
 

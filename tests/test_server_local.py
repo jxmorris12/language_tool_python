@@ -7,8 +7,8 @@ import time
 from typing import TYPE_CHECKING
 
 import language_tool_python
+from language_tool_python._internals.utils import get_language_tool_download_path
 from language_tool_python.download_lt import LTP_DOWNLOAD_VERSION
-from language_tool_python.utils import get_language_tool_download_path
 
 if TYPE_CHECKING:
     import subprocess

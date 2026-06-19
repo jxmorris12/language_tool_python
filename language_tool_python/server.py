@@ -20,9 +20,16 @@ from typing import TYPE_CHECKING, ClassVar, Literal
 import psutil
 import requests
 
-from .api_types import (
+from ._internals.api_types import (
     is_check_response,
     is_language_info,
+)
+from ._internals.utils import (
+    FAILSAFE_LANGUAGE,
+    get_locale_language,
+    kill_process_force,
+    parse_url,
+    version_tuple,
 )
 from .config_file import LanguageToolConfig
 from .download_lt import LTP_DOWNLOAD_VERSION, LocalLanguageTool
@@ -34,19 +41,12 @@ from .exceptions import (
 )
 from .language_tag import LanguageTag
 from .match import Match
-from .utils import (
-    FAILSAFE_LANGUAGE,
-    correct,
-    get_locale_language,
-    kill_process_force,
-    parse_url,
-    version_tuple,
-)
+from .utils import correct
 
-startupinfo: object | None = None
+_startupinfo: object | None = None
 if sys.platform == "win32":
-    startupinfo = subprocess.STARTUPINFO()
-    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+    _startupinfo = subprocess.STARTUPINFO()
+    _startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -55,13 +55,15 @@ if TYPE_CHECKING:
 
     from .config_file import ConfigValue
 
+__all__ = ["LanguageTool", "LanguageToolPublicAPI"]
+
 logger = logging.getLogger(__name__)
 
-HTTP_STATUS_RATE_LIMIT = 426
+_HTTP_STATUS_RATE_LIMIT = 426
 
 # Keep track of running server PIDs in a global list. This way,
 # we can ensure they're killed on exit.
-RUNNING_SERVER_PROCESSES: list[subprocess.Popen[str]] = []
+_RUNNING_SERVER_PROCESSES: list[subprocess.Popen[str]] = []
 
 
 def _kill_processes(processes: list[subprocess.Popen[str]]) -> None:
@@ -1024,7 +1026,7 @@ class LanguageTool:
                             e,
                         )
                         logger.debug("Status code: %s", response.status_code)
-                        if response.status_code == HTTP_STATUS_RATE_LIMIT:
+                        if response.status_code == _HTTP_STATUS_RATE_LIMIT:
                             err = (
                                 "You have exceeded the rate limit for the free "
                                 "LanguageTool API. Please try again later."
@@ -1110,9 +1112,9 @@ class LanguageTool:
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
                 text=True,
-                startupinfo=startupinfo,
+                startupinfo=_startupinfo,
             )
-            RUNNING_SERVER_PROCESSES.append(self._server)
+            _RUNNING_SERVER_PROCESSES.append(self._server)
 
             self._wait_for_server_ready()
 
@@ -1186,7 +1188,7 @@ class LanguageTool:
         if self._server:
             logger.info("Terminating LanguageTool server on port %s", self._port)
             _kill_processes([self._server])
-            RUNNING_SERVER_PROCESSES.remove(self._server)
+            _RUNNING_SERVER_PROCESSES.remove(self._server)
 
             if self._server.stdin:
                 self._server.stdin.close()
@@ -1236,15 +1238,15 @@ class LanguageToolPublicAPI(LanguageTool):
 
 
 @atexit.register
-def terminate_server() -> None:
+def _terminate_server_at_exit() -> None:
     """Terminates all running server processes.
 
     This function iterates over the list of running server processes and forcefully
     kills each process by its PID.
     """
-    if RUNNING_SERVER_PROCESSES:
+    if _RUNNING_SERVER_PROCESSES:
         logger.info(
             "Terminating %d LanguageTool server process(es) at exit",
-            len(RUNNING_SERVER_PROCESSES),
+            len(_RUNNING_SERVER_PROCESSES),
         )
-    _kill_processes(RUNNING_SERVER_PROCESSES)
+    _kill_processes(_RUNNING_SERVER_PROCESSES)

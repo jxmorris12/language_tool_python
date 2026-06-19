@@ -5,6 +5,8 @@ import re
 from collections.abc import Iterable
 from functools import total_ordering
 
+__all__ = ["LanguageTag"]
+
 logger = logging.getLogger(__name__)
 
 

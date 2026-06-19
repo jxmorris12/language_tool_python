@@ -17,7 +17,9 @@ __all__ = [
     "LanguageInfo",
     "MatchType",
     "Replacement",
+    "ReplacementOptional",
     "Rule",
+    "RuleOptional",
     "WarningInfo",
     "is_check_response",
     "is_language_info",
@@ -50,11 +52,11 @@ def is_language_info(value: object) -> TypeGuard[LanguageInfo]:
     )
 
 
-class _ReplacementOptional(TypedDict, total=False):
+class ReplacementOptional(TypedDict, total=False):
     shortDescription: str
 
 
-class Replacement(_ReplacementOptional):
+class Replacement(ReplacementOptional):
     """A suggested replacement returned by LanguageTool."""
 
     value: str
@@ -75,12 +77,12 @@ class Category(TypedDict):
     name: str
 
 
-class _RuleOptional(TypedDict, total=False):
+class RuleOptional(TypedDict, total=False):
     sourceFile: str
     subId: str
 
 
-class Rule(_RuleOptional):
+class Rule(RuleOptional):
     """LanguageTool rule metadata for a match."""
 
     id: str

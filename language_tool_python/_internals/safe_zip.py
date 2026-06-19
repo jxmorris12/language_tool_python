@@ -12,11 +12,13 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING
 
-from .exceptions import PathError
-from .utils import get_env_float, get_env_int
+from language_tool_python._internals.utils import get_env_float, get_env_int
+from language_tool_python.exceptions import PathError
 
 if TYPE_CHECKING:
     import zipfile
+
+__all__ = ["SafeZipExtractor", "SafeZipLimits"]
 
 logger = logging.getLogger(__name__)
 

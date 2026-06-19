@@ -7,22 +7,24 @@ import unicodedata
 from collections import OrderedDict
 from collections import OrderedDict as OrderedDictType
 from functools import total_ordering
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeGuard
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from .api_types import CheckMatch
+    from ._internals.api_types import CheckMatch
+
+__all__ = ["Match", "is_check_match"]
 
 logger = logging.getLogger(__name__)
 
-UTF8_4_BYTE_LENGTH = 4
-CONTEXT_PREFIX_SUFFIX_LENGTH = 3
-CONTEXT_WITH_ADDITIONS_MIN_LENGTH = 6
-MatchValue = str | int | list[str]
+_UTF8_4_BYTE_LENGTH = 4
+_CONTEXT_PREFIX_SUFFIX_LENGTH = 3
+_CONTEXT_WITH_ADDITIONS_MIN_LENGTH = 6
+_MatchValue = str | int | list[str]
 
 
-def get_match_ordered_dict() -> OrderedDictType[str, type]:
+def _get_match_ordered_dict() -> OrderedDictType[str, type]:
     """Return an ordered dictionary with predefined keys and their corresponding types.
 
     :return: An OrderedDict where each key is a string representing a specific attribute
@@ -58,7 +60,7 @@ def get_match_ordered_dict() -> OrderedDictType[str, type]:
     )
 
 
-def four_byte_char_positions(text: str) -> list[int]:
+def _four_byte_char_positions(text: str) -> list[int]:
     """Identify positions of 4-byte encoded characters in a UTF-8 string.
 
     This function scans through the input text and identifies the positions of
@@ -74,7 +76,7 @@ def four_byte_char_positions(text: str) -> list[int]:
     positions: list[int] = []
     char_index = 0
     for char in text:
-        if len(char.encode("utf-8")) == UTF8_4_BYTE_LENGTH:
+        if len(char.encode("utf-8")) == _UTF8_4_BYTE_LENGTH:
             positions.append(char_index)
             # Adding 1 to the index because 4 byte characters are
             # 2 bytes in length in LanguageTool, instead of 1 byte in Python.
@@ -83,6 +85,32 @@ def four_byte_char_positions(text: str) -> list[int]:
     if positions:
         logger.debug("Found 4-byte encoded characters at positions: %s", positions)
     return positions
+
+
+def is_check_match(value: object) -> TypeGuard[CheckMatch]:
+    """Verify that a value is a CheckMatch.
+
+    :param value: The value to check.
+    :type value: object
+    :return: TypeGuard indicating whether the value is a CheckMatch.
+    :rtype: TypeGuard[CheckMatch]
+    """
+    if not isinstance(value, dict):
+        return False
+
+    return (
+        isinstance(value.get("message"), str)
+        and isinstance(value.get("shortMessage"), str)
+        and isinstance(value.get("replacements"), list)
+        and isinstance(value.get("offset"), int)
+        and isinstance(value.get("length"), int)
+        and isinstance(value.get("context"), dict)
+        and isinstance(value.get("sentence"), str)
+        and isinstance(value.get("type"), dict)
+        and isinstance(value.get("rule"), dict)
+        and isinstance(value.get("ignoreForIncompleteSentence"), bool)
+        and isinstance(value.get("contextForSureMatch"), int)
+    )
 
 
 @total_ordering
@@ -215,7 +243,7 @@ class Match:  # noqa: PLW1641  # Doesn't implement hash because it's mutable
 
         if text != Match.PREVIOUS_MATCHES_TEXT:
             Match.PREVIOUS_MATCHES_TEXT = text
-            Match.FOUR_BYTES_POSITIONS = four_byte_char_positions(text)
+            Match.FOUR_BYTES_POSITIONS = _four_byte_char_positions(text)
         # Get the positions of 4-byte encoded characters in the text because without
         # carrying out this step, the offsets of the matches could be incorrect.
         if Match.FOUR_BYTES_POSITIONS is not None:
@@ -223,7 +251,7 @@ class Match:  # noqa: PLW1641  # Doesn't implement hash because it's mutable
                 1 for pos in Match.FOUR_BYTES_POSITIONS if pos < self.offset
             )
 
-    def _ordered_items(self) -> list[tuple[str, MatchValue]]:
+    def _ordered_items(self) -> list[tuple[str, _MatchValue]]:
         """Return public match attributes in the documented order."""
         return [
             ("rule_id", self.rule_id),
@@ -312,8 +340,8 @@ class Match:  # noqa: PLW1641  # Doesn't implement hash because it's mutable
         :raises ValueError: If the original text does not contain the match context.
         """
         context_without_additions = (
-            self.context[CONTEXT_PREFIX_SUFFIX_LENGTH:-CONTEXT_PREFIX_SUFFIX_LENGTH]
-            if len(self.context) > CONTEXT_WITH_ADDITIONS_MIN_LENGTH
+            self.context[_CONTEXT_PREFIX_SUFFIX_LENGTH:-_CONTEXT_PREFIX_SUFFIX_LENGTH]
+            if len(self.context) > _CONTEXT_WITH_ADDITIONS_MIN_LENGTH
             else self.context
         )
         if context_without_additions not in original_text.replace("\n", " "):
@@ -366,7 +394,7 @@ class Match:  # noqa: PLW1641  # Doesn't implement hash because it's mutable
             return NotImplemented
         return list(self) < list(other)
 
-    def __iter__(self) -> Iterator[MatchValue]:
+    def __iter__(self) -> Iterator[_MatchValue]:
         """Return an iterator over the attributes of the match object.
 
         This method allows the match object to be iterated over, yielding the values of
@@ -377,7 +405,7 @@ class Match:  # noqa: PLW1641  # Doesn't implement hash because it's mutable
         """
         return iter(value for _, value in self._ordered_items())
 
-    def __setattr__(self, key: str, value: MatchValue) -> None:
+    def __setattr__(self, key: str, value: _MatchValue) -> None:
         """Set an attribute on the instance.
 
         This method overrides the default behavior of setting an attribute. It attempts
@@ -393,7 +421,7 @@ class Match:  # noqa: PLW1641  # Doesn't implement hash because it's mutable
         try:
             # Ex: if key is "offset", get_match_ordered_dict()[key] will return int, so
             # the value will be transformed to int
-            value = get_match_ordered_dict()[key](value)
+            value = _get_match_ordered_dict()[key](value)
         except KeyError:
             return
         super().__setattr__(key, value)
@@ -413,6 +441,6 @@ class Match:  # noqa: PLW1641  # Doesn't implement hash because it's mutable
         :rtype: None
         :raises AttributeError: If the attribute does not exist.
         """
-        if name not in get_match_ordered_dict():
+        if name not in _get_match_ordered_dict():
             err = f"{self.__class__.__name__!r} object has no attribute {name!r}"
             raise AttributeError(err)

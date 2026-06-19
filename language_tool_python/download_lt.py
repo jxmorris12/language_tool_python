@@ -23,15 +23,15 @@ from warnings import warn
 import requests
 import tqdm
 
-from ._compat import toml_loads
-from .exceptions import JavaError, PathError
-from .safe_zip import SafeZipExtractor
-from .utils import (
+from ._internals.compat import toml_loads
+from ._internals.safe_zip import SafeZipExtractor
+from ._internals.utils import (
     LTP_JAR_DIR_PATH_ENV_VAR,
     get_env_int,
     get_language_tool_download_path,
     version_tuple,
 )
+from .exceptions import JavaError, PathError
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -39,41 +39,48 @@ if TYPE_CHECKING:
 
     from .config_file import LanguageToolConfig
 
+__all__ = [
+    "LTP_DOWNLOAD_VERSION",
+    "LocalLanguageTool",
+    "ReleaseLocalLanguageTool",
+    "SnapshotLocalLanguageTool",
+]
+
 logger = logging.getLogger(__name__)
 
-MIN_JAVA_VERSION_FOR_OLD_LANGUAGE_TOOL = 9
-MIN_JAVA_VERSION_FOR_CURRENT_LANGUAGE_TOOL = 17
-HTTP_STATUS_NOT_FOUND = 404
-HTTP_STATUS_FORBIDDEN = 403
-HTTP_STATUS_OK = 200
+_MIN_JAVA_VERSION_FOR_OLD_LANGUAGE_TOOL = 9
+_MIN_JAVA_VERSION_FOR_CURRENT_LANGUAGE_TOOL = 17
+_HTTP_STATUS_NOT_FOUND = 404
+_HTTP_STATUS_FORBIDDEN = 403
+_HTTP_STATUS_OK = 200
 
 
 # Get download host from environment or default.
-BASE_URL_SNAPSHOT = os.environ.get(
+_BASE_URL_SNAPSHOT = os.environ.get(
     "LTP_DOWNLOAD_HOST_SNAPSHOT",
     "https://internal1.languagetool.org/snapshots/",
 )
-FILENAME_SNAPSHOT = "LanguageTool-{version}-snapshot.zip"
-BASE_URL_NEW_RELEASES = os.environ.get(
+_FILENAME_SNAPSHOT = "LanguageTool-{version}-snapshot.zip"
+_BASE_URL_NEW_RELEASES = os.environ.get(
     "LTP_DOWNLOAD_HOST_NEW_RELEASES",
     "https://github.com/jxmorris12/language_tool_python/releases/download/LanguageTool-{version}/",
 )
-BASE_URL_RELEASE = os.environ.get(
+_BASE_URL_RELEASE = os.environ.get(
     "LTP_DOWNLOAD_HOST_RELEASE",
     "https://languagetool.org/download/",
 )
-BASE_URL_ARCHIVE = os.environ.get(
+_BASE_URL_ARCHIVE = os.environ.get(
     "LTP_DOWNLOAD_HOST_ARCHIVE",
     "https://languagetool.org/download/archive/",
 )
-FILENAME_RELEASE = "LanguageTool-{version}.zip"
+_FILENAME_RELEASE = "LanguageTool-{version}.zip"
 
 LTP_DOWNLOAD_VERSION = "6.8"
-LT_SNAPSHOT_LATEST_VERSION = "latest"
-LTP_DOWNLOAD_SHA256_ENV_VAR = "LTP_DOWNLOAD_SHA256"
-LTP_BYPASS_VERIFIED_DOWNLOADS_ENV_VAR = "LTP_BYPASS_VERIFIED_DOWNLOADS"
-LTP_MAX_DOWNLOAD_BYTES_ENV_VAR = "LTP_MAX_DOWNLOAD_BYTES"
-DOWNLOAD_CHUNK_BYTES = 1024 * 1024
+_LT_SNAPSHOT_LATEST_VERSION = "latest"
+_LTP_DOWNLOAD_SHA256_ENV_VAR = "LTP_DOWNLOAD_SHA256"
+_LTP_BYPASS_VERIFIED_DOWNLOADS_ENV_VAR = "LTP_BYPASS_VERIFIED_DOWNLOADS"
+_LTP_MAX_DOWNLOAD_BYTES_ENV_VAR = "LTP_MAX_DOWNLOAD_BYTES"
+_DOWNLOAD_CHUNK_BYTES = 1024 * 1024
 _SAFE_ZIP_EXTRACTOR = SafeZipExtractor()
 
 
@@ -117,24 +124,24 @@ with (
     ) as hashes_path,
     hashes_path.open("rb") as f,
 ):
-    EXPECTED_DOWNLOAD_SHA256 = _load_expected_download_sha256(
+    _EXPECTED_DOWNLOAD_SHA256 = _load_expected_download_sha256(
         f.read().decode("utf-8"),
     )
 
-JAVA_VERSION_REGEX = re.compile(
+_JAVA_VERSION_REGEX = re.compile(
     r'^(?:java|openjdk) version "(?P<major1>\d+)(|\.(?P<major2>\d+)\.[^"]+)"',
     re.MULTILINE,
 )
 
 # Updated for later versions of java
-JAVA_VERSION_REGEX_UPDATED = re.compile(
+_JAVA_VERSION_REGEX_UPDATED = re.compile(
     r"^(?:java|openjdk) [version ]?(?P<major1>\d+)\.(?P<major2>\d+)",
     re.MULTILINE,
 )
 
 
-MAX_DOWNLOAD_BYTES = get_env_int(
-    LTP_MAX_DOWNLOAD_BYTES_ENV_VAR,
+_MAX_DOWNLOAD_BYTES = get_env_int(
+    _LTP_MAX_DOWNLOAD_BYTES_ENV_VAR,
     512 * 1024 * 1024,
 )  # 512 MiB, latest snapshot: 246.58 MiB archive
 
@@ -156,10 +163,11 @@ def _get_zip_hash(version_name: str) -> str | None:
     :rtype: str | None
     :raises PathError: If a configured checksum is not a valid SHA-256 value.
     """
-    if os.environ.get(LTP_BYPASS_VERIFIED_DOWNLOADS_ENV_VAR, "").lower() == "true":
+    if os.environ.get(_LTP_BYPASS_VERIFIED_DOWNLOADS_ENV_VAR, "").lower() == "true":
         err = (
             f"Verified downloads are bypassed. No SHA-256 checksum will be used for "
-            f"LanguageTool {version_name}. Set {LTP_BYPASS_VERIFIED_DOWNLOADS_ENV_VAR}="
+            f"LanguageTool {version_name}. Set "
+            f"{_LTP_BYPASS_VERIFIED_DOWNLOADS_ENV_VAR}="
             f"false to re-enable verification."
         )
         warn(err, RuntimeWarning, stacklevel=2)
@@ -168,8 +176,8 @@ def _get_zip_hash(version_name: str) -> str | None:
     version_env_var = f"LTP_DOWNLOAD_SHA256_{suffix}"
     configured = (
         (os.environ.get(version_env_var), version_env_var),
-        (os.environ.get(LTP_DOWNLOAD_SHA256_ENV_VAR), LTP_DOWNLOAD_SHA256_ENV_VAR),
-        (EXPECTED_DOWNLOAD_SHA256.get(version_name), f"manifest:{version_name}"),
+        (os.environ.get(_LTP_DOWNLOAD_SHA256_ENV_VAR), _LTP_DOWNLOAD_SHA256_ENV_VAR),
+        (_EXPECTED_DOWNLOAD_SHA256.get(version_name), f"manifest:{version_name}"),
     )
     for checksum, source in configured:
         if checksum:
@@ -203,22 +211,22 @@ def _validate_download_size(content_length: str | None) -> int | None:
         err = f"Invalid Content-Length header: {content_length!r}."
         raise PathError(err)
 
-    if total > MAX_DOWNLOAD_BYTES:
+    if total > _MAX_DOWNLOAD_BYTES:
         err = (
             f"Refusing to download {total} bytes. "
-            f"Maximum allowed download size is {MAX_DOWNLOAD_BYTES} bytes."
+            f"Maximum allowed download size is {_MAX_DOWNLOAD_BYTES} bytes."
         )
         raise PathError(err)
 
     return total
 
 
-def parse_java_version(version_text: str) -> tuple[int, int]:
+def _parse_java_version(version_text: str) -> tuple[int, int]:
     """Parse the Java version from a given version text.
 
     This function attempts to extract the major version numbers from the provided Java
     version string using regular expressions. It supports two different version formats
-    defined by JAVA_VERSION_REGEX and JAVA_VERSION_REGEX_UPDATED.
+    defined by _JAVA_VERSION_REGEX and _JAVA_VERSION_REGEX_UPDATED.
 
     :param version_text: The Java version string to parse.
     :type version_text: str
@@ -226,8 +234,8 @@ def parse_java_version(version_text: str) -> tuple[int, int]:
     :rtype: tuple[int, int]
     :raises SystemExit: If the version string cannot be parsed.
     """
-    match = re.search(JAVA_VERSION_REGEX, version_text) or re.search(
-        JAVA_VERSION_REGEX_UPDATED,
+    match = re.search(_JAVA_VERSION_REGEX, version_text) or re.search(
+        _JAVA_VERSION_REGEX_UPDATED,
         version_text,
     )
     if not match:
@@ -238,7 +246,7 @@ def parse_java_version(version_text: str) -> tuple[int, int]:
     return (major1, major2)
 
 
-def confirm_java_compatibility(
+def _confirm_java_compatibility(
     language_tool_version: str = LTP_DOWNLOAD_VERSION,
 ) -> None:
     """Confirm that the installed Java version is compatible with language-tool-python.
@@ -270,7 +278,7 @@ def confirm_java_compatibility(
 
     logger.debug("java -version output: %s", output.strip())
 
-    major_version, minor_version = parse_java_version(output)
+    major_version, minor_version = _parse_java_version(output)
 
     is_old_version = language_tool_version != LTP_DOWNLOAD_VERSION and (
         re.match(r"^\d+\.\d+$", language_tool_version)
@@ -284,10 +292,10 @@ def confirm_java_compatibility(
     if is_old_version:
         if (
             major_version == 1
-            and minor_version < MIN_JAVA_VERSION_FOR_OLD_LANGUAGE_TOOL
+            and minor_version < _MIN_JAVA_VERSION_FOR_OLD_LANGUAGE_TOOL
         ) or (
             major_version != 1
-            and major_version < MIN_JAVA_VERSION_FOR_OLD_LANGUAGE_TOOL
+            and major_version < _MIN_JAVA_VERSION_FOR_OLD_LANGUAGE_TOOL
         ):
             err = (
                 f"Detected java {major_version}.{minor_version}. LanguageTool "
@@ -296,10 +304,10 @@ def confirm_java_compatibility(
             raise SystemError(err)
     elif (
         major_version == 1
-        and minor_version < MIN_JAVA_VERSION_FOR_CURRENT_LANGUAGE_TOOL
+        and minor_version < _MIN_JAVA_VERSION_FOR_CURRENT_LANGUAGE_TOOL
     ) or (
         major_version != 1
-        and major_version < MIN_JAVA_VERSION_FOR_CURRENT_LANGUAGE_TOOL
+        and major_version < _MIN_JAVA_VERSION_FOR_CURRENT_LANGUAGE_TOOL
     ):
         err = (
             f"Detected java {major_version}.{minor_version}. LanguageTool "
@@ -336,7 +344,7 @@ class LocalLanguageTool(ABC):
         """
         if (
             re.match(r"^\d{8}$", version_name)
-            or version_name == LT_SNAPSHOT_LATEST_VERSION
+            or version_name == _LT_SNAPSHOT_LATEST_VERSION
         ):
             return SnapshotLocalLanguageTool(version_name)
         if re.match(r"^\d+\.\d+$", version_name):
@@ -410,13 +418,13 @@ class LocalLanguageTool(ABC):
         except requests.exceptions.Timeout as e:
             err = f"Request to {self.download_url} timed out."
             raise TimeoutError(err) from e
-        if req.status_code == HTTP_STATUS_NOT_FOUND:
+        if req.status_code == _HTTP_STATUS_NOT_FOUND:
             err = (
                 f"Could not find at URL {self.download_url}. "
                 f"The given version may not exist or is no longer available."
             )
             raise PathError(err)
-        if req.status_code == HTTP_STATUS_FORBIDDEN:
+        if req.status_code == _HTTP_STATUS_FORBIDDEN:
             err = (
                 f"Access forbidden to URL {self.download_url}. "
                 f"You may not have permission to access this resource. "
@@ -424,7 +432,7 @@ class LocalLanguageTool(ABC):
                 f"proxy settings)."
             )
             raise PathError(err)
-        if req.status_code != HTTP_STATUS_OK:
+        if req.status_code != _HTTP_STATUS_OK:
             err = (
                 f"Failed to download from {self.download_url}. "
                 f"HTTP status code: {req.status_code}."
@@ -439,13 +447,13 @@ class LocalLanguageTool(ABC):
             desc=f"Downloading LanguageTool {self.version_name}",
         )
         downloaded_bytes = 0
-        for chunk in req.iter_content(chunk_size=DOWNLOAD_CHUNK_BYTES):
+        for chunk in req.iter_content(chunk_size=_DOWNLOAD_CHUNK_BYTES):
             if chunk:  # filter out keep-alive new chunks
                 downloaded_bytes += len(chunk)
-                if downloaded_bytes > MAX_DOWNLOAD_BYTES:
+                if downloaded_bytes > _MAX_DOWNLOAD_BYTES:
                     progress.close()
                     err = (
-                        f"Refusing to download more than {MAX_DOWNLOAD_BYTES} bytes "
+                        f"Refusing to download more than {_MAX_DOWNLOAD_BYTES} bytes "
                         f"from {self.download_url}."
                     )
                     raise PathError(err)
@@ -730,7 +738,7 @@ class ReleaseLocalLanguageTool(LocalLanguageTool):
         :raises PathError: If the version is unsupported, the download fails, checksum
             validation fails, or ZIP extraction is unsafe.
         """
-        confirm_java_compatibility(self._version_name)
+        _confirm_java_compatibility(self._version_name)
 
         download_folder = get_language_tool_download_path()
 
@@ -787,14 +795,14 @@ class ReleaseLocalLanguageTool(LocalLanguageTool):
         :raises PathError: If the version is below 4.0 (unsupported).
         """
         version_num = version_tuple(self._version_name)
-        filename = FILENAME_RELEASE.format(version=self._version_name)
+        filename = _FILENAME_RELEASE.format(version=self._version_name)
         # Versions >= 6.7 from new release page
         if version_num >= (6, 7):  # 6.7
-            base_url = BASE_URL_NEW_RELEASES.format(version=self._version_name)
+            base_url = _BASE_URL_NEW_RELEASES.format(version=self._version_name)
             return urljoin(base_url, filename)
         # Versions >= 6.0 from main download page
         if version_num >= (6, 0):  # 6.0
-            return urljoin(BASE_URL_RELEASE, filename)
+            return urljoin(_BASE_URL_RELEASE, filename)
         if version_num < (4, 0):  # 4.0
             err = (
                 "LanguageTool versions below 4.0 are no longer supported for download."
@@ -803,7 +811,7 @@ class ReleaseLocalLanguageTool(LocalLanguageTool):
             )
             raise PathError(err)
         # Versions < 6.0 from archive
-        return urljoin(BASE_URL_ARCHIVE, filename)
+        return urljoin(_BASE_URL_ARCHIVE, filename)
 
 
 class SnapshotLocalLanguageTool(LocalLanguageTool):
@@ -823,7 +831,7 @@ class SnapshotLocalLanguageTool(LocalLanguageTool):
         self._version_name = version_name
         self._install_version_name = (
             datetime.now(timezone.utc).strftime("%Y%m%d")
-            if version_name == LT_SNAPSHOT_LATEST_VERSION
+            if version_name == _LT_SNAPSHOT_LATEST_VERSION
             else version_name
         )
 
@@ -839,7 +847,7 @@ class SnapshotLocalLanguageTool(LocalLanguageTool):
         :raises PathError: If the download fails, checksum validation fails, ZIP
             extraction is unsafe, or the extracted snapshot layout is invalid.
         """
-        confirm_java_compatibility(self._version_name)
+        _confirm_java_compatibility(self._version_name)
 
         download_folder = get_language_tool_download_path()
 
@@ -920,5 +928,5 @@ class SnapshotLocalLanguageTool(LocalLanguageTool):
         :return: The download URL for this snapshot.
         :rtype: str
         """
-        filename = FILENAME_SNAPSHOT.format(version=self._version_name)
-        return urljoin(BASE_URL_SNAPSHOT, filename)
+        filename = _FILENAME_SNAPSHOT.format(version=self._version_name)
+        return urljoin(_BASE_URL_SNAPSHOT, filename)

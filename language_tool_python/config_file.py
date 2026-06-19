@@ -11,17 +11,22 @@ from os import PathLike
 from pathlib import Path
 from typing import TypeVar, cast
 
+from ._internals.utils import SupportsBool
 from .exceptions import PathError
-from .utils import SupportsBool
+
+__all__ = [
+    "ConfigValue",
+    "LanguageToolConfig",
+]
 
 ConfigValue = PathLike[str] | SupportsBool | str | int | float | Iterable[str]
-ConfigValueT = TypeVar("ConfigValueT", bound=ConfigValue)
+_ConfigValueT = TypeVar("_ConfigValueT", bound=ConfigValue)
 
 logger = logging.getLogger(__name__)
 
-LANGUAGE_KEY_PARTS = 2
-LANGUAGE_KEY_WITH_DICT_PATH_PARTS = 3
-LANGUAGE_DICT_PATH_SEPARATOR_COUNT = 2
+_LANGUAGE_KEY_PARTS = 2
+_LANGUAGE_KEY_WITH_DICT_PATH_PARTS = 3
+_LANGUAGE_DICT_PATH_SEPARATOR_COUNT = 2
 
 
 def _reject_line_breaks(field_name: str, value: str) -> None:
@@ -45,7 +50,7 @@ def _reject_line_breaks(field_name: str, value: str) -> None:
 
 
 @dataclass(frozen=True)
-class OptionSpec:
+class _OptionSpec:
     """Specification for a configuration option.
 
     This class defines the structure and behavior of a configuration option, including
@@ -67,11 +72,11 @@ class OptionSpec:
 
 def _option_spec(
     py_types: type[object] | tuple[type[object], ...],
-    encoder: Callable[[ConfigValueT], str],
-    validator: Callable[[ConfigValueT], None] | None = None,
-) -> OptionSpec:
+    encoder: Callable[[_ConfigValueT], str],
+    validator: Callable[[_ConfigValueT], None] | None = None,
+) -> _OptionSpec:
     """Create a schema entry for a runtime-checked configuration option."""
-    return OptionSpec(
+    return _OptionSpec(
         py_types=py_types,
         encoder=cast("Callable[[ConfigValue], str]", encoder),
         validator=cast("Callable[[ConfigValue], None] | None", validator),
@@ -152,7 +157,7 @@ def _path_validator(v: PathLike[str] | str) -> None:
         raise PathError(err)
 
 
-CONFIG_SCHEMA: dict[str, OptionSpec] = {
+_CONFIG_SCHEMA: dict[str, _OptionSpec] = {
     "maxTextLength": _option_spec(int, _int_encoder),
     "maxTextHardLength": _option_spec(int, _int_encoder),
     "maxCheckTimeMillis": _option_spec(int, _int_encoder),
@@ -199,8 +204,8 @@ def _is_lang_key(key: str) -> bool:
         return False
 
     parts = key.split("-")
-    return (len(parts) == LANGUAGE_KEY_PARTS and len(parts[1]) > 0) or (  # lang-<code>
-        len(parts) == LANGUAGE_KEY_WITH_DICT_PATH_PARTS
+    return (len(parts) == _LANGUAGE_KEY_PARTS and len(parts[1]) > 0) or (  # lang-<code>
+        len(parts) == _LANGUAGE_KEY_WITH_DICT_PATH_PARTS
         and len(parts[1]) > 0
         and parts[2] == "dictPath"  # lang-<code>-dictPath
     )
@@ -234,7 +239,7 @@ def _encode_config(config: Mapping[str, ConfigValue]) -> dict[str, str]:
             _reject_line_breaks(key, encoded[key])
             continue
         if (
-            _is_lang_key(key) and key.count("-") == LANGUAGE_DICT_PATH_SEPARATOR_COUNT
+            _is_lang_key(key) and key.count("-") == _LANGUAGE_DICT_PATH_SEPARATOR_COUNT
         ):  # lang-<code>-dictPath
             logger.debug("Encoding language dictPath %s=%r", key, value)
             path_value = cast("PathLike[str] | str", value)
@@ -243,7 +248,7 @@ def _encode_config(config: Mapping[str, ConfigValue]) -> dict[str, str]:
             _reject_line_breaks(key, encoded[key])
             continue
 
-        spec = CONFIG_SCHEMA.get(key)
+        spec = _CONFIG_SCHEMA.get(key)
         if spec is None:
             err = f"unexpected key in config: {key}"
             raise ValueError(err)
