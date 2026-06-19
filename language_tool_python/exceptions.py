@@ -1,5 +1,13 @@
 """Exceptions used in the language_tool_python library."""
 
+__all__ = [
+    "JavaError",
+    "LanguageToolError",
+    "PathError",
+    "RateLimitError",
+    "ServerError",
+]
+
 
 class LanguageToolError(Exception):
     """Exception raised for errors in the LanguageTool library.

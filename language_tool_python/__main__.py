@@ -13,7 +13,7 @@ from logging.config import dictConfig
 from pathlib import Path
 from typing import TYPE_CHECKING, TypedDict, cast
 
-from ._compat import toml_loads
+from ._internals.compat import toml_loads
 from .exceptions import LanguageToolError
 from .server import LanguageTool
 

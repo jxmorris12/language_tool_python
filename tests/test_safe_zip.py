@@ -14,9 +14,9 @@ from pathlib import Path
 
 import pytest
 
-from language_tool_python import safe_zip, utils
+from language_tool_python._internals import safe_zip, utils
+from language_tool_python._internals.safe_zip import SafeZipExtractor, SafeZipLimits
 from language_tool_python.exceptions import PathError
-from language_tool_python.safe_zip import SafeZipExtractor, SafeZipLimits
 
 EXPECTED_MAX_ARCHIVE_BYTES = 11
 EXPECTED_MAX_EXTRACTED_BYTES = 22
