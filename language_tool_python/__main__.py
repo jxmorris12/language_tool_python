@@ -66,7 +66,9 @@ except PackageNotFoundError:
 
 logger = logging.getLogger(__name__)
 with importlib.resources.as_file(
-    importlib.resources.files("language_tool_python").joinpath("logging.toml"),
+    importlib.resources.files("language_tool_python")
+    .joinpath("_ressources")
+    .joinpath("logging.toml"),
 ) as config_path:
     log_config = _load_pyproject_and_logconfig(config_path)
 dictConfig(log_config)
