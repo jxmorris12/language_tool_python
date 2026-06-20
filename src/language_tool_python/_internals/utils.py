@@ -24,16 +24,9 @@ __all__ = [
 
 logger = logging.getLogger(__name__)
 
-JAR_NAMES = [
-    "languagetool-server.jar",
-    "LanguageTool.jar",
-]
 FAILSAFE_LANGUAGE = "en"
 
 LTP_PATH_ENV_VAR = "LTP_PATH"  # LanguageTool download path
-
-# Directory containing the LanguageTool jar file:
-LTP_JAR_DIR_PATH_ENV_VAR = "LTP_JAR_DIR_PATH"
 
 
 def parse_url(url_str: str) -> str:
@@ -189,7 +182,6 @@ class SupportsBool(Protocol):
 
     def __bool__(self) -> bool:
         """Define the interface for types that can be evaluated in a boolean context."""
-        ...
 
 
 def version_tuple(v: str) -> tuple[int, int]:
