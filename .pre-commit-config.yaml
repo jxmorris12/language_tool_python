@@ -15,7 +15,6 @@ repos:
     hooks:
       - id: mypy
         args: [--config-file=pyproject.toml]
-        files: ^(language_tool_python|tests)/
 
   # Standard pre-commit hooks
   - repo: https://github.com/pre-commit/pre-commit-hooks

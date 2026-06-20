@@ -72,12 +72,9 @@ language_tool_python = "language_tool_python.__main__:main"
 requires = ["uv_build>=0.11.14,<0.12"]
 build-backend = "uv_build"
 
-[tool.uv.build-backend]
-module-root = "" # uv expects the code to be in a "src/" directory by default, but our code is in the the current dir
-
 [tool.ruff]
 line-length = 88
-include = ["language_tool_python/*.py", "tests/*.py"]
+include = ["src/**/*.py", "tests/**/*.py"]
 
 [tool.ruff.lint]
 select = [
@@ -144,10 +141,10 @@ ignore = [
     "S101",  # Need to use assert statements in tests
     "SLF001" # Need to use private members of the library for testing
 ]
-"language_tool_python/__main__.py" = ["T201"] # Allow usage of print in the CLI entry point
+"src/language_tool_python/__main__.py" = ["T201"] # Allow usage of print in the CLI entry point
 
 [tool.mypy]
-files = ["language_tool_python", "tests"]
+files = ["src", "tests"]
 disallow_any_decorated = true
 disallow_any_explicit = true
 disallow_any_expr = true
