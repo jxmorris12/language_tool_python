@@ -3,7 +3,7 @@
 [![language tool python on pypi](https://img.shields.io/pypi/v/language-tool-python)](https://pypi.org/project/language-tool-python/)
 [![Documentation Status](https://readthedocs.org/projects/language-tool-python/badge/?version=latest)](https://language-tool-python.readthedocs.io/en/latest/)
 [![Test with PyTest](https://github.com/jxmorris12/language_tool_python/workflows/Test%20with%20PyTest/badge.svg)](https://github.com/jxmorris12/language_tool_python/actions)
-[![Coverage Status](https://raw.githubusercontent.com/jxmorris12/language_tool_python/master/coverage-badge.svg)](https://github.com/jxmorris12/language_tool_python/actions)
+[![Coverage Status](https://codecov.io/gh/jxmorris12/language_tool_python/branch/master/graph/badge.svg)](https://codecov.io/gh/jxmorris12/language_tool_python)
 [![Downloads](https://img.shields.io/pypi/dw/language-tool-python)](https://pypistats.org/packages/language-tool-python)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 [![Contributions Welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/jxmorris12/language_tool_python/pulls)

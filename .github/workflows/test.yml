@@ -15,6 +15,9 @@ jobs:
     timeout-minutes: 20
     name: Test on ${{ matrix.os }} Python ${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+      id-token: write # Required for Codecov OIDC authentication
     strategy:
       fail-fast: false
       matrix:
@@ -51,11 +54,19 @@ jobs:
     - name: Clone repository
       uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # 6.0.3
       with:
-        persist-credentials: false
+        persist-credentials: true # Required for Codecov OIDC authentication
 
     - name: Test with pytest
       run: |
         uv run --python ${{ matrix.python-version }} --group tests --locked pytest
+
+    - name: Upload coverage to Codecov
+      if: matrix.os == 'ubuntu-26.04' && matrix.python-version == '3.14'
+      uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+      with:
+        use_oidc: true
+        files: ./coverage.xml
+        fail_ci_if_error: false
 
   lint:
     timeout-minutes: 10
