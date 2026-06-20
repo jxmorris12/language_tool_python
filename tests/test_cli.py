@@ -74,14 +74,10 @@ def remote_server() -> Generator[tuple[str, int], None, None]:
     :return: A tuple containing the server host and port (host, port).
     :rtype: Generator[Tuple[str, int], None, None]
     """
-    tool = language_tool_python.LanguageTool("en-US")
-    host = tool._host
-    port = tool._port
-
-    try:
+    with language_tool_python.LanguageTool("en-US") as tool:
+        host = tool._host
+        port = tool._port
         yield host, port
-    finally:
-        tool.close()
 
 
 def test_cli_remote_ok(remote_server: tuple[str, int]) -> None:

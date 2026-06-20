@@ -26,7 +26,6 @@ import tqdm
 from ._internals.compat import toml_loads
 from ._internals.safe_zip import SafeZipExtractor
 from ._internals.utils import (
-    LTP_JAR_DIR_PATH_ENV_VAR,
     get_env_int,
     get_language_tool_download_path,
     version_tuple,
@@ -80,6 +79,7 @@ _LT_SNAPSHOT_LATEST_VERSION = "latest"
 _LTP_DOWNLOAD_SHA256_ENV_VAR = "LTP_DOWNLOAD_SHA256"
 _LTP_BYPASS_VERIFIED_DOWNLOADS_ENV_VAR = "LTP_BYPASS_VERIFIED_DOWNLOADS"
 _LTP_MAX_DOWNLOAD_BYTES_ENV_VAR = "LTP_MAX_DOWNLOAD_BYTES"
+_LTP_JAR_DIR_PATH_ENV_VAR = "LTP_JAR_DIR_PATH"
 _DOWNLOAD_CHUNK_BYTES = 1024 * 1024
 _SAFE_ZIP_EXTRACTOR = SafeZipExtractor()
 
@@ -746,7 +746,7 @@ class ReleaseLocalLanguageTool(LocalLanguageTool):
 
         # Use the env var to the jar directory if it is defined
         # otherwise look in the download directory
-        if os.environ.get(LTP_JAR_DIR_PATH_ENV_VAR):
+        if os.environ.get(_LTP_JAR_DIR_PATH_ENV_VAR):
             return
 
         if self not in self.get_installed_versions():
@@ -815,6 +815,28 @@ class ReleaseLocalLanguageTool(LocalLanguageTool):
         # Versions < 6.0 from archive
         return urljoin(_BASE_URL_ARCHIVE, filename)
 
+    def __eq__(self, other: object) -> bool:
+        """Check equality between two ReleaseLocalLanguageTool instances.
+
+        Two instances are considered equal if they have the same version name.
+
+        :param other: The object to compare with.
+        :type other: object
+        :return: True if the instances are equal, False otherwise.
+        :rtype: bool
+        """
+        return super().__eq__(other)
+
+    def __hash__(self) -> int:
+        """Return the hash of the ReleaseLocalLanguageTool instance.
+
+        If the version name is modified, the hash will change.
+
+        :return: The hash of the version name.
+        :rtype: int
+        """
+        return super().__hash__()
+
 
 class SnapshotLocalLanguageTool(LocalLanguageTool):
     """Represents a snapshot (development) version of LanguageTool.
@@ -855,7 +877,7 @@ class SnapshotLocalLanguageTool(LocalLanguageTool):
 
         # Use the env var to the jar directory if it is defined
         # otherwise look in the download directory
-        if os.environ.get(LTP_JAR_DIR_PATH_ENV_VAR):
+        if os.environ.get(_LTP_JAR_DIR_PATH_ENV_VAR):
             return
 
         if self not in self.get_installed_versions():
@@ -932,3 +954,25 @@ class SnapshotLocalLanguageTool(LocalLanguageTool):
         """
         filename = _FILENAME_SNAPSHOT.format(version=self._version_name)
         return urljoin(_BASE_URL_SNAPSHOT, filename)
+
+    def __eq__(self, other: object) -> bool:
+        """Check equality between two SnapshotLocalLanguageTool instances.
+
+        Two instances are considered equal if they have the same version name.
+
+        :param other: The object to compare with.
+        :type other: object
+        :return: True if the instances are equal, False otherwise.
+        :rtype: bool
+        """
+        return super().__eq__(other)
+
+    def __hash__(self) -> int:
+        """Return the hash of the SnapshotLocalLanguageTool instance.
+
+        If the version name is modified, the hash will change.
+
+        :return: The hash of the version name.
+        :rtype: int
+        """
+        return super().__hash__()
