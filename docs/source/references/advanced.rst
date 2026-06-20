@@ -37,10 +37,11 @@ Accepted formats:
 Authenticating with a premium API key
 --------------------------------------
 
-If you have a LanguageTool premium key, assign it to
+If you have a LanguageTool premium account, assign your username and API key to
+:attr:`~language_tool_python.server.LanguageTool.premium_username` and
 :attr:`~language_tool_python.server.LanguageTool.premium_key` before calling
-:meth:`~language_tool_python.server.LanguageTool.check`. The key is forwarded to the
-public API as the ``apiKey`` parameter:
+:meth:`~language_tool_python.server.LanguageTool.check`. They are forwarded to the
+public API as the ``username`` and ``apiKey`` parameters respectively:
 
 .. code-block:: python
 
@@ -48,6 +49,7 @@ public API as the ``apiKey`` parameter:
    import language_tool_python
 
    with language_tool_python.LanguageToolPublicAPI("en-US") as tool:
+       tool.premium_username = os.environ["LANGUAGETOOL_USERNAME"]
        tool.premium_key = os.environ["LANGUAGETOOL_API_KEY"]
        print(tool.correct("A sentence with a error in the Hitchhiker's Guide tot he Galaxy"))
        # → A sentence with an error in the Hitchhiker's Guide to the Galaxy
