@@ -141,19 +141,19 @@ def _path_encoder(v: PathLike[str] | str) -> str:
 
 
 def _path_validator(v: PathLike[str] | str) -> None:
-    """Validate that a given path exists and is a file.
+    """Validate that a given path exists and is a file or directory.
 
     :param v: The path to validate, which will be converted to a Path object
     :type v: PathLike[str] | str
     :raises PathError: If the path does not exist
-    :raises PathError: If the path exists but is not a file
+    :raises PathError: If the path exists but is not a file or directory
     """
     p = Path(v)
     if not p.exists():
         err = f"path does not exist: {p}"
         raise PathError(err)
-    if not p.is_file():
-        err = f"path is not a file: {p}"
+    if not p.is_file() and not p.is_dir():
+        err = f"path is not a file/directory: {p}"
         raise PathError(err)
 
 
