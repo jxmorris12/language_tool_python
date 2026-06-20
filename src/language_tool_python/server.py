@@ -210,6 +210,9 @@ class LanguageTool:
     _proxies: dict[str, str] | None
     """A dictionary of proxies for network requests (used in requests to the server)."""
 
+    _premium_username: str | None
+    """The premium API username for the LanguageTool API."""
+
     _premium_key: str | None
     """The premium API key for the LanguageTool API."""
 
@@ -291,6 +294,7 @@ class LanguageTool:
         self._enabled_rules_only = False
         self._preferred_variants = set()
         self._picky = False
+        self._premium_username = None
         self._premium_key = None
 
     def __enter__(self) -> LanguageTool:
@@ -586,6 +590,24 @@ class LanguageTool:
         self._picky = value
 
     @property
+    def premium_username(self) -> str | None:
+        """Get the premium API username.
+
+        :return: The premium API username if set, otherwise None.
+        :rtype: str | None
+        """
+        return self._premium_username
+
+    @premium_username.setter
+    def premium_username(self, value: str | None) -> None:
+        """Set the premium API username.
+
+        :param value: The premium API username.
+        :type value: str | None
+        """
+        self._premium_username = value
+
+    @property
     def premium_key(self) -> str | None:
         """Get the premium API key.
 
@@ -740,7 +762,7 @@ class LanguageTool:
 
         return sorted(all_matches, key=_match_offset)
 
-    def _create_params(self, text: str) -> dict[str, str]:
+    def _create_params(self, text: str) -> dict[str, str]:  # noqa: C901  # Too complex, but it needs to handle many different parameters for the server request.
         """Create a dictionary of parameters for the language tool server request.
 
         :param text: The text to be checked.
@@ -782,6 +804,8 @@ class LanguageTool:
             params["preferredVariants"] = ",".join(self._preferred_variants)
         if self._picky:
             params["level"] = "picky"
+        if self._premium_username:
+            params["username"] = self._premium_username
         if self._premium_key:
             params["apiKey"] = self._premium_key
         return params
