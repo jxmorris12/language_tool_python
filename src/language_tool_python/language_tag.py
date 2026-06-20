@@ -17,7 +17,7 @@ class LanguageTag:
     :param tag: The language tag.
     :type tag: str
     :param languages: An iterable of supported language tags.
-    :type languages: Iterable[str]
+    :type languages: collections.abc.Iterable[str]
     :raises ValueError: If the tag is empty or unsupported.
     """
 

@@ -20,6 +20,12 @@ __all__ = [
 ]
 
 ConfigValue = PathLike[str] | SupportsBool | str | int | float | Iterable[str]
+"""Union of types accepted as values in the :class:`LanguageToolConfig` dictionary.
+
+:class:`os.PathLike`\\ [:class:`str`], :class:`.SupportsBool`, :class:`str`,
+:class:`int`, :class:`float`, :class:`collections.abc.Iterable`\\ [:class:`str`]
+"""
+
 _ConfigValueT = TypeVar("_ConfigValueT", bound=ConfigValue)
 
 logger = logging.getLogger(__name__)
@@ -115,7 +121,7 @@ def _comma_list_encoder(v: str | Iterable[str]) -> str:
     it's an iterable, its elements are converted to strings and joined with commas.
 
     :param v: The value to encode. Can be a string or an iterable of values.
-    :type v: str | Iterable[str]
+    :type v: str | collections.abc.Iterable[str]
     :return: A comma-separated string representation of the input value.
     :rtype: str
     """
@@ -219,7 +225,7 @@ def _encode_config(config: Mapping[str, ConfigValue]) -> dict[str, str]:
     specification.
 
     :param config: A dictionary containing configuration keys and values to be encoded.
-    :type config: Mapping[str, ConfigValue]
+    :type config: collections.abc.Mapping[str, ConfigValue]
     :return: A dictionary with the same keys but with all values encoded as strings.
     :rtype: dict[str, str]
     :raises ValueError: If a key in the config is not found in the CONFIG_SCHEMA and is
@@ -267,7 +273,7 @@ class LanguageToolConfig:
     """Configuration class for LanguageTool.
 
     :param config: Dictionary containing configuration keys and values.
-    :type config: Mapping[str, ConfigValue]
+    :type config: collections.abc.Mapping[str, ConfigValue]
     """
 
     config: dict[str, str]

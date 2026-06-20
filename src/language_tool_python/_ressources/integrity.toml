@@ -1,5 +1,5 @@
 # Hashes of languagetool zip files that are available at
-# https://languagetool.org/download/ and https://languagetool.org/download/archive/
+# https://languagetool.org/download/, https://languagetool.org/download/archive/ and https://github.com/jxmorris12/language_tool_python/releases/ (for LT releases after and including 6.7).
 # The hashes are calculated with sha256 and are used to check the integrity of the downloaded zip files.
 # This manifest only contains hashes for archives and releases and not for snapshots because
 # they are not stable.

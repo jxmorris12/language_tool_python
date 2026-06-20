@@ -31,7 +31,6 @@ check:
 
 test:
 	uv run --group tests --locked pytest
-	uvx --with defusedxml genbadge coverage --input-file coverage.xml --silent
 
 doc:
 	uv run --group docs --locked sphinx-build -M html docs/source docs/build

@@ -74,7 +74,8 @@ _BASE_URL_ARCHIVE = os.environ.get(
 )
 _FILENAME_RELEASE = "LanguageTool-{version}.zip"
 
-LTP_DOWNLOAD_VERSION = "6.8"
+LTP_DOWNLOAD_VERSION: str = "6.8"
+"""Default LanguageTool version downloaded and used by the library."""
 _LT_SNAPSHOT_LATEST_VERSION = "latest"
 _LTP_DOWNLOAD_SHA256_ENV_VAR = "LTP_DOWNLOAD_SHA256"
 _LTP_BYPASS_VERIFIED_DOWNLOADS_ENV_VAR = "LTP_BYPASS_VERIFIED_DOWNLOADS"
@@ -362,7 +363,7 @@ class LocalLanguageTool(ABC):
         and creates the appropriate instance.
 
         :param path: The path to a LanguageTool installation directory.
-        :type path: Path
+        :type path: pathlib.Path
         :return: An instance of the appropriate LocalLanguageTool subclass.
         :rtype: LocalLanguageTool
         :raises ValueError: If the version cannot be determined from the path or the
@@ -520,7 +521,7 @@ class LocalLanguageTool(ABC):
         version's name.
 
         :return: The path to the LanguageTool installation directory.
-        :rtype: Path
+        :rtype: pathlib.Path
         :raises FileNotFoundError: If the LanguageTool version directory is not found.
         """
         download_folder = get_language_tool_download_path()
@@ -549,7 +550,7 @@ class LocalLanguageTool(ABC):
         languagetool.jar) within the installation directory.
 
         :return: The path to the LanguageTool JAR file.
-        :rtype: Path
+        :rtype: pathlib.Path
         :raises FileNotFoundError: If no LanguageTool JAR file is found.
         """
         directory_path = self.get_directory_path()
@@ -629,7 +630,7 @@ class LocalLanguageTool(ABC):
         for comparison purposes.
 
         :return: A tuple of integers for releases or datetime for snapshots.
-        :rtype: tuple[int, int] | datetime
+        :rtype: tuple[int, int] | datetime.datetime
         :raises NotImplementedError: Always, unless implemented by a subclass.
         """
         raise NotImplementedError
@@ -938,7 +939,7 @@ class SnapshotLocalLanguageTool(LocalLanguageTool):
         current date.
 
         :return: A datetime object representing the snapshot date.
-        :rtype: datetime
+        :rtype: datetime.datetime
         :raises ValueError: If the snapshot version is not a valid ``YYYYMMDD`` date.
         """
         return datetime.strptime(self.version_name, "%Y%m%d")  # noqa: DTZ007  # Constructing a datetime without timezone because it is the format of the version string

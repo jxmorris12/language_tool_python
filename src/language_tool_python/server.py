@@ -116,7 +116,7 @@ class LanguageTool:
     :param host: The host address for the LanguageTool server. Defaults to 'localhost'.
     :type host: str | None
     :param config: Configuration options for the local LanguageTool server.
-    :type config: Mapping[str, ConfigValue] | None
+    :type config: collections.abc.Mapping[str, ConfigValue] | None
     :param language_tool_download_version: The version of LanguageTool to download if
         needed.
     :type language_tool_download_version: str
@@ -195,7 +195,8 @@ class LanguageTool:
     """A set of explicitly enabled categories (used in requests to the server)."""
 
     _enabled_rules_only: bool
-    """A flag to use only explicitly enabled rules (used in requests to the server)."""
+    """A flag to use only explicitly enabled rules/categories
+    (used in requests to the server)."""
 
     _preferred_variants: set[str]
     """A set of preferred language variants (used in requests to the server)."""
@@ -523,7 +524,7 @@ class LanguageTool:
 
     @property
     def enabled_rules_only(self) -> bool:
-        """Get whether only enabled rules should be used.
+        """Get whether only enabled rules/categories should be used.
 
         :return: True if using only enabled rules, False otherwise.
         :rtype: bool
@@ -532,9 +533,10 @@ class LanguageTool:
 
     @enabled_rules_only.setter
     def enabled_rules_only(self, value: bool) -> None:
-        """Set whether to use only explicitly enabled rules.
+        """Set whether to use only explicitly enabled rules/categories.
 
-        When set to True, only rules in enabled_rules will be applied.
+        When set to True, only rules in enabled_rules will be applied,
+        and categories in enabled_categories will be applied.
 
         :param value: True to use only enabled rules, False to use default rules.
         :type value: bool
@@ -788,6 +790,7 @@ class LanguageTool:
         """Corrects the given text by applying language tool suggestions.
 
         Applies only the first suggestion for each issue.
+
         :param text: The text to be corrected.
         :type text: str
         :return: The corrected text.
@@ -801,7 +804,7 @@ class LanguageTool:
     def enable_spellchecking(self) -> None:
         """Enable spellchecking by removing spellcheck category exclusions.
 
-        This method updates the ``disabled_categories`` attribute by removing any
+        This method updates the :attr:`disabled_categories` attribute by removing any
         categories that are related to spell checking, which are defined in the
         ``_SPELL_CHECKING_CATEGORIES`` class constant.
         """
@@ -1200,8 +1203,8 @@ class LanguageTool:
 class LanguageToolPublicAPI(LanguageTool):
     """A class to interact with the public LanguageTool API.
 
-    This class extends the ``LanguageTool`` class and initializes it with the remote
-    server set to the public LanguageTool API endpoint.
+    This class extends the :class:`LanguageTool` class and initializes it with the
+    remote server set to the public LanguageTool API endpoint.
 
     :param language: The language code to use for checking text (e.g., 'en-US').
     :type language: str | None
