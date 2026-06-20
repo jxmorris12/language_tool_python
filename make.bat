@@ -57,9 +57,6 @@ uvx --with defusedxml genbadge coverage --input-file coverage.xml --silent
 exit /b %errorlevel%
 
 :doc
-call uv run --group docs --locked sphinx-apidoc -o docs\source\references language_tool_python
-if errorlevel 1 exit /b %errorlevel%
-
 call uv run --group docs --locked sphinx-build -M html docs/source docs/build
 exit /b %errorlevel%
 
