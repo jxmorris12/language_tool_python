@@ -24,6 +24,7 @@ If applicable, include links to any relevant documentation, articles, or resourc
 - [ ] Documentation update (changes to documentation only)
 - [ ] Refactor / code style update (non-breaking change that improves code structure or readability)
 - [ ] Tests / CI improvement (adding or updating tests or CI configuration only)
+- [ ] Chore / maintenance (non-breaking change that does not affect functionality, such as updating dependencies or fixing typos)
 - [ ] Other (please describe):
 
 ## Checklist
@@ -32,3 +33,4 @@ If applicable, include links to any relevant documentation, articles, or resourc
 - [ ] Updated any relevant documentation.
 - [ ] Added comments to your code where necessary.
 - [ ] Formatted your code, run the linters, checked types and tests.
+- [ ] Added your changes to the [CHANGELOG](./CHANGELOG.md) file, if applicable.

@@ -16,7 +16,7 @@ The best contributions are those that try to resolve the [issues](https://github
 
 ### 2. Fork the repository and make your changes
 
-If you want to contribute, you first need to fork the repo (and preferably create a branch with a name that says something about the changes you're going to make).
+If you want to contribute, you first need to fork the repo and create a branch with a name that says something about the changes you're going to make (e.g., `fix/issue-123`, `feature/new-function`).
 
 To start developing, you can install all the necessary packages in your python environment with this command (optional dependencies will be installed):
 ```shell
@@ -47,9 +47,10 @@ Please do not manually bump the version number in [pyproject.toml](./pyproject.t
 Before pushing and creating your pull request, you should make sure you've done the following:
 
 - Updated any relevant tests.
-- Updated any relevant documentation. This includes docstrings and [README](./README.md) file.
+- Updated any relevant documentation. This includes docstrings, [README](./README.md) file, and [sphinx documentation](./docs/source/references).
 - Added comments to your code where necessary (especially if the code is not self-explanatory).
 - Formatted your code, run the linters and tests.
+- Added your changes to the [CHANGELOG](./CHANGELOG.md) file, if applicable. You have to follow the [Keep a Changelog](https://keepachangelog.com/en/2.0.0/) format for this, and make sure to add your changes under the "Unreleased" section.
 
 ### 4. Create your pull request
 
