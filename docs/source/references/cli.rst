@@ -36,8 +36,13 @@ Options
      - Comma-separated list of rule IDs to disable.
    * - ``-e, --enable RULES``
      - Comma-separated list of rule IDs to enable.
+   * - ``-D, --disable-categories CATEGORIES``
+     - Comma-separated list of category IDs to disable (e.g. ``TYPOS``, ``GRAMMAR``).
+   * - ``-E, --enable-categories CATEGORIES``
+     - Comma-separated list of category IDs to enable.
    * - ``--enabled-only``
-     - Run only the rules listed with ``--enable``, ignoring all others.
+     - Run only the rules listed with ``--enable`` and the categories listed with
+       ``--enable-categories``, ignoring all others.
    * - ``-p, --picky``
      - Enable stricter (picky) checking mode.
    * - ``-a, --apply``
@@ -90,6 +95,12 @@ Examples
 
    # Disable specific rules
    language_tool_python -l en-US -d RULE_ID1,RULE_ID2 input.txt
+
+   # Disable an entire category
+   language_tool_python -l en-US -D TYPOS input.txt
+
+   # Disable multiple categories
+   language_tool_python -l en-US -D TYPOS,GRAMMAR input.txt
 
    # Run only one specific rule
    language_tool_python -l en-US --enabled-only -e MORFOLOGIK_RULE_EN_US input.txt
