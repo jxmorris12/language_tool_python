@@ -94,7 +94,7 @@ For the full API reference, configuration options, CLI usage, and more examples,
 
 ## Versioning
 
-This project follows [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`):
+This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html) (`MAJOR.MINOR.PATCH`):
 
 - **PATCH** - backwards-compatible bug fixes.
 - **MINOR** - new backwards-compatible features.
