@@ -1,0 +1,40 @@
+version: 2
+updates:
+  - package-ecosystem: "uv"
+    directory: "/"
+    versioning-strategy: lockfile-only
+    schedule:
+      interval: "weekly"
+    cooldown:
+      semver-patch-days: 7
+      semver-minor-days: 14
+      semver-major-days: 30
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    groups:
+      dev-dependencies:
+        dependency-type: "development"
+  
+  - package-ecosystem: "pre-commit"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    cooldown:
+      default-days: 14
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    ignore:
+      - dependency-name: "https://github.com/astral-sh/ruff-pre-commit" # Because we want to keep the ruff version in sync with pyproject.toml
+      - dependency-name: "https://github.com/pre-commit/mirrors-mypy" # Because we want to keep the mypy version in sync with pyproject.toml
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    cooldown:
+      default-days: 14
+    commit-message:
+      prefix: "chore"
+      include: "scope"
