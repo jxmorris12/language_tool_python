@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 ## [Unreleased]
 
 ### Added
+- Added `-D`/`--disable-categories` and `-E`/`--enable-categories` CLI options to disable or enable LanguageTool rule categories (e.g. `TYPOS`, `GRAMMAR`). `--enabled-only` now also applies to categories specified via `--enable-categories`.
 - Added `premium_key` property to `language_tool_python.server.LanguageTool` to attach a premium API key for LanguageTool API requests.
 - Added `premium_username` property to `language_tool_python.server.LanguageTool` to attach a username for premium LanguageTool API requests.
 - Added `language_tool_python.match.is_check_match` type guard function to verify that a value is a `CheckMatch` (type from `language_tool_python._internals`).

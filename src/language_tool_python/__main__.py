@@ -85,6 +85,8 @@ class CliArgs(argparse.Namespace):
     mother_tongue: str | None
     disable: set[str]
     enable: set[str]
+    disable_categories: set[str]
+    enable_categories: set[str]
     enabled_only: bool
     picky: bool
     apply: bool
@@ -138,9 +140,28 @@ def parse_args(argv: Sequence[str] | None = None) -> CliArgs:
         help="list of rule IDs to be enabled",
     )
     parser.add_argument(
+        "-D",
+        "--disable-categories",
+        metavar="CATEGORIES",
+        type=get_rules,
+        action=RulesAction,
+        default=set[str](),
+        help="list of category IDs to be disabled",
+    )
+    parser.add_argument(
+        "-E",
+        "--enable-categories",
+        metavar="CATEGORIES",
+        type=get_rules,
+        action=RulesAction,
+        default=set[str](),
+        help="list of category IDs to be enabled",
+    )
+    parser.add_argument(
         "--enabled-only",
         action="store_true",
-        help="disable all rules except those specified in --enable",
+        help="disable all rules and categories except those specified in "
+        "--enable or --enable-categories",
     )
     parser.add_argument(
         "-p",
@@ -185,8 +206,11 @@ def parse_args(argv: Sequence[str] | None = None) -> CliArgs:
         if args.disable:
             parser.error("--enabled-only cannot be used with --disable")
 
-        if not args.enable:
-            parser.error("--enabled-only requires --enable")
+        if args.disable_categories:
+            parser.error("--enabled-only cannot be used with --disable-categories")
+
+        if not args.enable and not args.enable_categories:
+            parser.error("--enabled-only requires --enable or --enable-categories")
 
     return args
 
@@ -230,6 +254,10 @@ class RulesAction(argparse.Action):
             cli_args.disable.update(rule_values)
         elif self.dest == "enable":
             cli_args.enable.update(rule_values)
+        elif self.dest == "disable_categories":
+            cli_args.disable_categories.update(rule_values)
+        elif self.dest == "enable_categories":
+            cli_args.enable_categories.update(rule_values)
         else:
             err = f"unexpected rules destination: {self.dest}"
             raise ValueError(err)
@@ -362,6 +390,8 @@ def process_file(
 
             lang_tool.disabled_rules.update(args.disable)
             lang_tool.enabled_rules.update(args.enable)
+            lang_tool.disabled_categories.update(args.disable_categories)
+            lang_tool.enabled_categories.update(args.enable_categories)
             lang_tool.enabled_rules_only = args.enabled_only
 
             if args.picky:
