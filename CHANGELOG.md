@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 - Added `language_tool_python.config_file.ConfigValue` public type alias representing all accepted value types for `LanguageToolConfig`.
 
 ### Changed
+- HTTP requests to the LanguageTool server now reuse a persistent `requests.Session`, reducing TCP connection overhead for repeated calls to `.check()`.
 - **Breaking:** Dropped Python 3.9 support, now supports Python 3.10-3.15.
 - **Breaking:** Moved internal utilities to a private `_internals` subpackage:
     - `language_tool_python.safe_zip` -> `language_tool_python._internals.safe_zip`

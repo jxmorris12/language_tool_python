@@ -210,6 +210,10 @@ class LanguageTool:
     _proxies: dict[str, str] | None
     """A dictionary of proxies for network requests (used in requests to the server)."""
 
+    _session: requests.Session
+    """The HTTP session used for all requests, enabling connection reuse across
+    calls."""
+
     _premium_username: str | None
     """The premium API username for the LanguageTool API."""
 
@@ -255,6 +259,9 @@ class LanguageTool:
         self._port = self._available_ports.pop()
         self._server = None
         self._proxies = proxies
+        self._session = requests.Session()
+        if proxies:
+            self._session.proxies.update(proxies)
 
         if remote_server and config is not None:
             err = "Cannot use both remote_server and config parameters."
@@ -363,10 +370,12 @@ class LanguageTool:
         """Close the server and perform necessary cleanup operations.
 
         This method performs the following actions:
-        1. Checks if the server is alive, not remote and terminates it if necessary.
-        2. If new spellings are not set to persist and there are new spellings,
+        1. Closes the HTTP session to release connection pool resources cleanly.
+        2. Checks if the server is alive, not remote and terminates it if necessary.
+        3. If new spellings are not set to persist and there are new spellings,
         it unregisters the spellings and clears the list of new spellings.
         """
+        self._session.close()
         if self._remote is not True and self._server_is_alive():
             self._terminate_server()
         if not self._new_spellings_persist and self._new_spellings:
@@ -439,7 +448,7 @@ class LanguageTool:
         """Set the proxies for server requests.
 
         Proxies can only be used with remote servers. Local LanguageTool servers do not
-        support proxy configuration.
+        support proxy configuration. The underlying HTTP session is updated accordingly.
 
         :param proxies: A dictionary of proxies (e.g., {'http': 'http://proxy:port'}),
             or None to unset.
@@ -453,6 +462,9 @@ class LanguageTool:
             )
             raise ValueError(err)
         self._proxies = proxies
+        self._session.proxies.clear()
+        if proxies:
+            self._session.proxies.update(proxies)
 
     @property
     def disabled_rules(self) -> set[str]:
@@ -1030,18 +1042,16 @@ class LanguageTool:
         for n in range(num_tries):
             try:
                 if method == "post":
-                    response_context = requests.post(
+                    response_context = self._session.post(
                         url,
                         data=params,
                         timeout=self._TIMEOUT,
-                        proxies=self._proxies,
                     )
                 else:
-                    response_context = requests.get(
+                    response_context = self._session.get(
                         url,
                         params=params,
                         timeout=self._TIMEOUT,
-                        proxies=self._proxies,
                     )
                 with response_context as response:
                     try:
@@ -1182,7 +1192,7 @@ class LanguageTool:
 
             # Attempt to connect
             with contextlib.suppress(requests.RequestException):
-                r = requests.get(url, timeout=2)
+                r = self._session.get(url, timeout=2)
                 if r.ok:
                     return
 
