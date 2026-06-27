@@ -72,6 +72,10 @@ language_tool_python = "language_tool_python.__main__:main"
 requires = ["uv_build>=0.11.14,<0.12"]
 build-backend = "uv_build"
 
+[tool.uv]
+exclude-newer = "7 days"
+required-version = ">=0.11.25,<0.12"
+
 [tool.ruff]
 line-length = 88
 include = ["src/**/*.py", "tests/**/*.py"]

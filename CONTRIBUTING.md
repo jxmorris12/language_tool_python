@@ -23,6 +23,13 @@ To start developing, you can install all the necessary packages in your python e
 make install
 ```
 
+> **Note on dependency management**
+>
+> This project uses [uv](https://docs.astral.sh/uv/) with two constraints worth knowing:
+>
+> - **uv version**: a specific version range is required (see `pyproject.toml`). If uv refuses to run, update it with `uv self update`.
+> - **Dependency cooldown**: packages published to PyPI less than 7 days ago are ignored during resolution, as a supply chain security measure.
+
 When pushing commits, please use the project naming conventions, which are available in [this guide](https://www.conventionalcommits.org/en/v1.0.0/).
 If you haven't respected these conventions, do a rebase before making the pull request.
 
