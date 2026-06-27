@@ -175,17 +175,7 @@ warn_unused_configs = true
 warn_unused_ignores = true
 
 [[tool.mypy.overrides]]
-module = ["tests.benchmarks.*"]
-# pytest-benchmark is untyped; relax Any restrictions for benchmark files only
-disallow_any_unimported = false
-disallow_any_expr = false
-disallow_any_explicit = false
-disallow_any_decorated = false
-
-[[tool.mypy.overrides]]
 module = ["tests.property.*"]
-# hypothesis is untyped; relax Any restrictions for property test files only
-disallow_any_unimported = false
-disallow_any_expr = false
-disallow_any_explicit = false
+# hypothesis decorators contain Any expressions, so we need to disable the following checks for tests using hypothesis
 disallow_any_decorated = false
+disallow_any_expr = false

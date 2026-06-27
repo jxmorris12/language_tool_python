@@ -13,11 +13,11 @@ import sys
 if sys.version_info >= (3, 11):
     from tomllib import loads as toml_loads
 else:
-    from tomli import loads as toml_loads
+    from tomli import loads as toml_loads  # pragma: no cover
 
 if sys.version_info >= (3, 13):
     from warnings import deprecated
 else:
-    from typing_extensions import deprecated
+    from typing_extensions import deprecated  # pragma: no cover
 
 __all__ = ["deprecated", "toml_loads"]
