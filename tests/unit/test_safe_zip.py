@@ -1,4 +1,4 @@
-"""Tests for safe ZIP extraction."""
+"""Unit tests for safe ZIP extraction."""
 
 import contextlib
 import hashlib

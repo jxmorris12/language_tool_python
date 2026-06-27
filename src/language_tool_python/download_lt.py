@@ -385,7 +385,7 @@ class LocalLanguageTool(ABC):
 
         :raises NotImplementedError: Always, unless implemented by a subclass.
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     def _get_remote_zip(
         self,
