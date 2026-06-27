@@ -1,4 +1,4 @@
-"""Tests for the local server functionality of LanguageTool."""
+"""Integration tests for the local server functionality of LanguageTool."""
 
 from __future__ import annotations
 

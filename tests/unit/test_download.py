@@ -1,4 +1,7 @@
-"""Tests for the download/language functionality of LanguageTool."""
+"""Unit tests for download logic, URL construction, HTTP handling, and integrity checks.
+
+These tests use mocks and monkeypatching to avoid real network requests.
+"""
 
 import contextlib
 import hashlib
@@ -10,7 +13,7 @@ import uuid
 import zipfile
 from collections.abc import Iterator
 from contextlib import contextmanager
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import patch
 
@@ -23,7 +26,7 @@ from language_tool_python.download_lt import (
     _LTP_MAX_DOWNLOAD_BYTES_ENV_VAR,
     LocalLanguageTool,
 )
-from language_tool_python.exceptions import LanguageToolError, PathError
+from language_tool_python.exceptions import PathError
 
 EXPECTED_DOWNLOAD_BYTES_OVERRIDE = 123
 
@@ -87,51 +90,8 @@ def workspace_temp_dir() -> Iterator[Path]:
             root.rmdir()
 
 
-def test_install_inexistent_version() -> None:
-    """Test errors when downloading a non-existent LanguageTool version.
-
-    This test verifies that the tool correctly handles invalid version numbers by
-    raising a LanguageToolError when trying to initialize with a version that does not
-    exist.
-
-    :raises AssertionError: If LanguageToolError is not raised for an invalid version.
-    """
-    with pytest.raises(LanguageToolError):
-        language_tool_python.LanguageTool(language_tool_download_version="0.0")
-
-
-def test_install_too_old_version() -> None:
-    """Test that attempting to download a too-old LanguageTool version raises an error.
-
-    This test verifies that the tool correctly handles versions that are no longer
-    supported by raising a PathError when trying to initialize with an outdated version.
-
-    :raises AssertionError: If PathError is not raised for a too-old version.
-    """
-    with pytest.raises(PathError):
-        language_tool_python.LanguageTool(language_tool_download_version="3.9")
-
-
-def test_inexistent_language() -> None:
-    """Test that creating a LanguageTag with an invalid language code raises an error.
-
-    This test verifies that the LanguageTag constructor correctly validates language
-    codes and raises a ValueError when given a language code that is not supported.
-
-    :raises AssertionError: If ValueError is not raised for an invalid language code.
-    """
-    with (
-        language_tool_python.LanguageTool("en-US") as tool,
-        pytest.raises(ValueError, match="unsupported language"),
-    ):
-        language_tool_python.LanguageTag("xx-XX", tool._get_languages())
-
-
 def test_http_get_403_forbidden() -> None:
     """Test that http_get raises PathError when receiving a 403 Forbidden status code.
-
-    This test verifies that the function correctly handles forbidden access errors when
-    attempting to download files.
 
     :raises AssertionError: If PathError is not raised for a 403 status code.
     """
@@ -152,9 +112,6 @@ def test_http_get_403_forbidden() -> None:
 
 def test_http_get_other_error_codes() -> None:
     """Test PathError handling for unexpected HTTP status codes.
-
-    This test verifies that the function correctly handles different HTTP error codes
-    like 500 (Internal Server Error), 503 (Service Unavailable), etc.
 
     :raises AssertionError: If PathError is not raised for error status codes.
     """
@@ -562,49 +519,3 @@ def test_latest_snapshot_download_renames_archive_root_to_current_date(
             local_language_tool.download()
 
         get_mock.assert_not_called()
-
-
-def test_install_oldest_supported_version() -> None:
-    """Test that downloading the oldest supported LanguageTool version works correctly.
-
-    This test verifies that the tool can successfully download and initialize with the
-    oldest version that is still supported.
-
-    :raises AssertionError: If the tool fails to initialize with the oldest supported
-        version.
-    """
-    try:
-        with language_tool_python.LanguageTool(
-            "en-US",
-            language_tool_download_version="4.0",
-        ) as tool:
-            assert tool.language_tool_download_version == "4.0"
-    except LanguageToolError:
-        pytest.fail("Failed to download or initialize the oldest supported version.")
-
-
-def test_install_snapshot_version() -> None:
-    """Test that downloading the snapshot version of LanguageTool works correctly.
-
-    This test verifies that the tool can successfully download and initialize with the
-    snapshot of yesterday.
-
-    :raises AssertionError: If the tool fails to initialize with the snapshot version.
-    """
-    try:
-        with language_tool_python.LanguageTool(
-            "en-US",
-            language_tool_download_version=(
-                (datetime.now(timezone.utc) - timedelta(days=3)).strftime("%Y%m%d")
-            ),
-        ) as tool:
-            assert tool.language_tool_download_version == (
-                datetime.now(timezone.utc) - timedelta(days=3)
-            ).strftime("%Y%m%d")
-    except LanguageToolError:
-        pytest.skip(
-            (
-                "Failed to download or initialize the snapshot version. This may be "
-                "due to a missing snapshot for the expected date."
-            ),
-        )

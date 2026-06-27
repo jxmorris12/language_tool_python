@@ -42,7 +42,9 @@ changelog = "https://github.com/jxmorris12/language_tool_python/blob/master/CHAN
 [dependency-groups]
 tests = [
     "pytest",
+    "pytest-benchmark",
     "pytest-cov",
+    "hypothesis",
 ]
 
 docs = [
@@ -141,9 +143,10 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*.py" = [
-    "S101",  # Need to use assert statements in tests
-    "SLF001" # Need to use private members of the library for testing
+"tests/**/*.py" = [
+    "S101",   # Need to use assert statements in tests
+    "SLF001", # Need to use private members of the library for testing
+    "RUF001", # LanguageTool output contains typographic quotes (‘’“”)
 ]
 "src/language_tool_python/__main__.py" = ["T201"] # Allow usage of print in the CLI entry point
 
@@ -170,3 +173,19 @@ warn_return_any = true
 warn_unreachable = true
 warn_unused_configs = true
 warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+module = ["tests.benchmarks.*"]
+# pytest-benchmark is untyped; relax Any restrictions for benchmark files only
+disallow_any_unimported = false
+disallow_any_expr = false
+disallow_any_explicit = false
+disallow_any_decorated = false
+
+[[tool.mypy.overrides]]
+module = ["tests.property.*"]
+# hypothesis is untyped; relax Any restrictions for property test files only
+disallow_any_unimported = false
+disallow_any_expr = false
+disallow_any_explicit = false
+disallow_any_decorated = false

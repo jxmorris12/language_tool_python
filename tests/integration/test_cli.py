@@ -1,4 +1,4 @@
-"""Tests for the command-line interface (CLI) functionality."""
+"""Integration tests for the CLI using real LanguageTool server instances."""
 
 import io
 import sys
@@ -7,7 +7,39 @@ from collections.abc import Generator
 import pytest
 
 import language_tool_python
-from language_tool_python.__main__ import main, parse_args
+from language_tool_python.__main__ import main
+
+
+def main_with_stdin(argv: list[str], stdin: str) -> int:
+    """Execute the main CLI with simulated stdin input.
+
+    :param argv: Command-line arguments to pass to the main function.
+    :param stdin: Input text to simulate as stdin.
+    :return: Exit code returned by the main function.
+    :rtype: int
+    """
+    old_stdin = sys.stdin
+    sys.stdin = io.StringIO(stdin)
+    try:
+        return main(argv)
+    finally:
+        sys.stdin = old_stdin
+
+
+@pytest.fixture(scope="module")
+def remote_server() -> Generator[tuple[str, int], None, None]:
+    """Fixture that provides a remote LanguageTool server for testing.
+
+    This fixture initializes a LanguageTool instance and yields its host and port,
+    ensuring proper cleanup after all tests in the module complete.
+
+    :return: A tuple containing the server host and port (host, port).
+    :rtype: Generator[Tuple[str, int], None, None]
+    """
+    with language_tool_python.LanguageTool("en-US") as tool:
+        host = tool._host
+        port = tool._port
+        yield host, port
 
 
 @pytest.mark.parametrize(
@@ -89,22 +121,6 @@ def test_cli_exit_codes(
         assert code != 0
 
 
-@pytest.fixture(scope="module")
-def remote_server() -> Generator[tuple[str, int], None, None]:
-    """Fixture that provides a remote LanguageTool server for testing.
-
-    This fixture initializes a LanguageTool instance and yields its host and port,
-    ensuring proper cleanup after all tests in the module complete.
-
-    :return: A tuple containing the server host and port (host, port).
-    :rtype: Generator[Tuple[str, int], None, None]
-    """
-    with language_tool_python.LanguageTool("en-US") as tool:
-        host = tool._host
-        port = tool._port
-        yield host, port
-
-
 def test_cli_remote_ok(remote_server: tuple[str, int]) -> None:
     """Test the CLI with a remote server using valid input text.
 
@@ -155,78 +171,3 @@ def test_cli_remote_error(remote_server: tuple[str, int]) -> None:
         "This is noot okay.\n",
     )
     assert code != 0
-
-
-def test_parse_args_enabled_only_with_enable_categories() -> None:
-    """Test that --enabled-only is accepted when only --enable-categories is provided.
-
-    :raises AssertionError: If parse_args raises an error for this valid combination.
-    """
-    args = parse_args(["-l", "en-US", "--enabled-only", "-E", "TYPOS", "file.txt"])
-    assert args.enabled_only is True
-    assert args.enable_categories == {"TYPOS"}
-
-
-def test_parse_args_enabled_only_rejects_disable_categories() -> None:
-    """Test that --enabled-only cannot be combined with --disable-categories.
-
-    :raises SystemExit: Expected, as argparse calls sys.exit on error.
-    """
-    with pytest.raises(SystemExit):
-        parse_args(
-            ["-l", "en-US", "--enabled-only", "-e", "RULE", "-D", "TYPOS", "file.txt"]
-        )
-
-
-def test_parse_args_enabled_only_requires_enable_or_enable_categories() -> None:
-    """Test that --enabled-only requires at least --enable or --enable-categories.
-
-    :raises SystemExit: Expected, as argparse calls sys.exit on error.
-    """
-    with pytest.raises(SystemExit):
-        parse_args(["-l", "en-US", "--enabled-only", "file.txt"])
-
-
-def test_parse_args_categories() -> None:
-    """Test that --disable-categories and --enable-categories are parsed correctly.
-
-    :raises AssertionError: If the parsed category sets do not match the expected
-    values.
-    """
-    args = parse_args(
-        ["-l", "en-US", "-D", "TYPOS,GRAMMAR", "-E", "PUNCTUATION", "file.txt"]
-    )
-    assert args.disable_categories == {"TYPOS", "GRAMMAR"}
-    assert args.enable_categories == {"PUNCTUATION"}
-
-
-def test_parse_args_categories_multiple_flags() -> None:
-    """Test that repeated -D/-E flags accumulate into the same set.
-
-    :raises AssertionError: If the category sets do not accumulate correctly.
-    """
-    args = parse_args(
-        ["-l", "en-US", "-D", "TYPOS", "-D", "GRAMMAR", "-E", "PUNCTUATION", "file.txt"]
-    )
-    assert args.disable_categories == {"TYPOS", "GRAMMAR"}
-    assert args.enable_categories == {"PUNCTUATION"}
-
-
-def main_with_stdin(argv: list[str], stdin: str) -> int:
-    """Execute the main CLI with simulated stdin input.
-
-    This utility function temporarily replaces sys.stdin with a StringIO object
-    containing the provided input, executes the main CLI function, and then restores the
-    original stdin.
-
-    :param argv: Command-line arguments to pass to the main function.
-    :param stdin: Input text to simulate as stdin.
-    :return: Exit code returned by the main function.
-    :rtype: int
-    """
-    old_stdin = sys.stdin
-    sys.stdin = io.StringIO(stdin)
-    try:
-        return main(argv)
-    finally:
-        sys.stdin = old_stdin

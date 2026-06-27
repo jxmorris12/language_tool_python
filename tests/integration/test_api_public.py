@@ -1,4 +1,4 @@
-"""Tests for the public API functionality."""
+"""Integration tests for the public API functionality."""
 
 import pytest
 
@@ -34,7 +34,7 @@ def test_remote_es() -> None:
                    'INCORRECT_EXPRESSIONS', 'rule_issue_type': 'grammar', 'sentence':
                    'LanguageTool le ayudará a afrentar algunas dificultades propias de
                    la escritura.'}), Match({'rule_id': 'PRON_HABER_PARTICIPIO',
-                   'message': 'El v. \u2018haber\u2019 se escribe con hache.',
+                   'message': 'El v. ‘haber’ se escribe con hache.',
                    'replacements': ['ha'], 'offset_in_context': 43, 'context':
                    '...ificultades propias de la escritura. Se a hecho un esfuerzo para
                    detectar errores...', 'offset': 107, 'error_length': 1, 'category':
@@ -50,8 +50,8 @@ def test_remote_es() -> None:
                    'misspelling', 'sentence': 'Se a hecho un esfuerzo para detectar
                    errores tipográficos, ortograficos y incluso gramaticales.'}),
                    Match({'rule_id': 'Y_E_O_U', 'message': 'Cuando precede a palabras
-                   que comienzan por \u2018i\u2019, la conjunción \u2018y\u2019 se
-                   transforma en \u2018e\u2019.', 'replacements': ['e'],
+                   que comienzan por ‘i’, la conjunción ‘y’ se
+                   transforma en ‘e’.', 'replacements': ['e'],
                    'offset_in_context': 43, 'context': '...ctar errores tipográficos,
                    ortograficos y incluso gramaticales. También algunos e...', 'offset':
                    176, 'error_length': 1, 'category': 'GRAMMAR', 'rule_issue_type':
