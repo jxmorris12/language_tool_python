@@ -34,6 +34,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 - Corrected a bug in `language_tool_python.config_file.LanguageToolConfig` where directory paths were incorrectly rejected by the path validator.
 - Fixed a bug in `LanguageTool._start_server_on_free_port` where `_url` was not updated when retrying on a different port, causing all subsequent server requests to target the wrong (original) port.
 - Fixed a bug in `LanguageTool._query_server` where `RateLimitError` was only raised when the rate-limit response body was invalid JSON, a valid JSON body with status 426 was silently returned as data instead (for now, the body from LanguageTool for rate-limiting responses is "Upgrade Required", which is not valid JSON, but this may change in the future).
+- Fixed a bug in `LanguageTool._terminate_server` where `_RUNNING_SERVER_PROCESSES.remove()` could raise `ValueError` if the server process was not yet in the list or was no longer in it.
 
 ### Removed
 - **Breaking:** Removed all functions and classes previously deprecated in v3.3.0:
