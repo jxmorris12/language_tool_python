@@ -6,6 +6,7 @@ import importlib
 import io
 import shutil
 import stat
+import unittest.mock
 import uuid
 import zipfile
 from collections.abc import Iterator
@@ -532,3 +533,92 @@ def test_safe_extract_checks_total_compression_ratio_after_all_members() -> None
         assert (
             temp_dir / "LanguageTool" / "already-compressed.bin"
         ).read_bytes() == already_compressed
+
+
+def test_normalize_member_path_empty_name_raises() -> None:
+    """_normalize_member_path rejects an empty filename."""
+    with pytest.raises(PathError, match="Unsafe ZIP member name"):
+        SafeZipExtractor()._normalize_member_path("")
+
+
+def test_normalize_member_path_control_char_raises() -> None:
+    """_normalize_member_path rejects a filename containing a control character."""
+    with pytest.raises(PathError, match="Unsafe ZIP member name"):
+        SafeZipExtractor()._normalize_member_path("foo\x01bar")
+
+
+def test_validate_member_type_explicit_regular_file_passes() -> None:
+    """_validate_member_type accepts a ZipInfo with an explicit S_IFREG mode."""
+    member = zipfile.ZipInfo("LanguageTool/file.txt")
+    member.external_attr = stat.S_IFREG << 16
+    SafeZipExtractor()._validate_member_type(member)
+
+
+def test_validate_member_compression_ratio_zero_compress_size_raises() -> None:
+    """_validate_member_compression_ratio rejects a member with zero compressed size."""
+    member = zipfile.ZipInfo("LanguageTool/file.txt")
+    member.compress_size = 0
+    member.file_size = 100
+    with pytest.raises(PathError, match="zero compressed size"):
+        SafeZipExtractor()._validate_member_compression_ratio(member)
+
+
+def test_validate_total_compression_ratio_zero_compressed_skips() -> None:
+    """_validate_total_compression_ratio returns early when total_compressed is zero."""
+    SafeZipExtractor()._validate_total_compression_ratio(0, 0)
+
+
+def test_validate_member_sizes_negative_compress_size_raises() -> None:
+    """_validate_member_sizes rejects a member with a negative compressed size."""
+    member = zipfile.ZipInfo("LanguageTool/file.txt")
+    member.compress_size = -1
+    member.file_size = 100
+    with pytest.raises(PathError, match="Invalid ZIP member size"):
+        SafeZipExtractor()._validate_member_sizes(member)
+
+
+def test_validate_member_sizes_negative_file_size_raises() -> None:
+    """_validate_member_sizes rejects a member with a negative uncompressed size."""
+    member = zipfile.ZipInfo("LanguageTool/file.txt")
+    member.compress_size = 100
+    member.file_size = -1
+    with pytest.raises(PathError, match="Invalid ZIP member size"):
+        SafeZipExtractor()._validate_member_sizes(member)
+
+
+def _open_returning_large(_m: object, _mode: str = "r") -> io.BytesIO:
+    """Fake ZipFile.open that yields more bytes than any small declared file_size."""
+    return io.BytesIO(b"hello world - content longer than 3 bytes")
+
+
+def _open_returning_small(_m: object, _mode: str = "r") -> io.BytesIO:
+    """Fake ZipFile.open that yields only 2 bytes regardless of declared size."""
+    return io.BytesIO(b"hi")
+
+
+def test_copy_member_raises_when_content_exceeds_declared_size() -> None:
+    """_copy_member raises when decompressed bytes exceed the declared file_size."""
+    payload = make_zip_payload({"LanguageTool/file.txt": b"hello world"})
+    with zipfile.ZipFile(io.BytesIO(payload)) as zf:
+        member = zf.infolist()[0]
+        member.file_size = 3
+        with (
+            unittest.mock.patch.object(zf, "open", new=_open_returning_large),
+            workspace_temp_dir() as temp_dir,
+            pytest.raises(PathError, match="expanded beyond declared size"),
+        ):
+            SafeZipExtractor()._copy_member(zf, member, temp_dir / "file.txt")
+
+
+def test_copy_member_raises_when_content_is_less_than_declared_size() -> None:
+    """_copy_member raises when fewer bytes are read than the declared file_size."""
+    payload = make_zip_payload({"LanguageTool/file.txt": b"hello world"})
+    with zipfile.ZipFile(io.BytesIO(payload)) as zf:
+        member = zf.infolist()[0]
+        member.file_size = 1000
+        with (
+            unittest.mock.patch.object(zf, "open", new=_open_returning_small),
+            workspace_temp_dir() as temp_dir,
+            pytest.raises(PathError, match="extracted size mismatch"),
+        ):
+            SafeZipExtractor()._copy_member(zf, member, temp_dir / "file.txt")

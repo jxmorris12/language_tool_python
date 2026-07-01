@@ -58,7 +58,7 @@ try:
     __version__ = version("language_tool_python")
     # If the package is not installed in the environment,
     # read the version from pyproject.toml
-except PackageNotFoundError:  # pragma: no cover
+except PackageNotFoundError:  # pragma: no cover  # package installed in test env
     project_root = Path(__file__).resolve().parent.parent
     pyproject = project_root / "pyproject.toml"
     __version__ = _read_project_version(pyproject)
@@ -258,7 +258,7 @@ class RulesAction(argparse.Action):
             cli_args.disable_categories.update(rule_values)
         elif self.dest == "enable_categories":
             cli_args.enable_categories.update(rule_values)
-        else:  # pragma: no cover
+        else:  # pragma: no cover  # defensive: all known dest values are handled above
             err = f"unexpected rules destination: {self.dest}"
             raise ValueError(err)
 
@@ -449,5 +449,5 @@ def main(argv: Sequence[str] | None = None) -> int:
     return status
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     raise SystemExit(main())

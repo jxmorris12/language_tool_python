@@ -16,8 +16,9 @@ if "%1"=="check" goto check
 if "%1"=="test" goto test
 if "%1"=="doc" goto doc
 if "%1"=="publish" goto publish
+if "%1"=="clean" goto clean
 
-echo Usage: make.bat [install^|format^|fix^|ruff-check^|mypy-check^|check^|test^|doc^|publish]
+echo Usage: make.bat [install^|format^|fix^|ruff-check^|mypy-check^|check^|test^|doc^|publish^|clean]
 exit /b 1
 
 :install
@@ -58,7 +59,7 @@ call uv run --group docs --locked sphinx-build -M html docs/source docs/build
 exit /b %errorlevel%
 
 :publish
-if exist dist\ rmdir /s /q dist\
+call .\make.bat clean
 
 uv build
 if errorlevel 1 exit /b %errorlevel%
@@ -67,4 +68,8 @@ uvx twine check .\dist\*
 if errorlevel 1 exit /b %errorlevel%
 
 uv publish
+exit /b %errorlevel%
+
+:clean
+git clean -xfd --exclude .venv
 exit /b %errorlevel%

@@ -8,8 +8,8 @@ import pytest
 
 from language_tool_python.match import (
     Match,
-    _four_byte_char_positions,
     _get_match_ordered_dict,
+    four_byte_char_positions,
     is_check_match,
 )
 
@@ -60,7 +60,7 @@ def _make_attrib(  # noqa: PLR0913
 
 
 def _make_match(text: str = "This is noot okay.", **kwargs: object) -> Match:
-    return Match(_make_attrib(**kwargs), text)  # type: ignore[arg-type]
+    return Match(_make_attrib(**kwargs), four_byte_char_positions(text))  # type: ignore[arg-type]
 
 
 class TestMatchInit:
@@ -102,7 +102,7 @@ class TestMatchInit:
             context_offset=3,
             sentence="🌅 hello world",
         )
-        m = Match(attrib, text)
+        m = Match(attrib, four_byte_char_positions(text))
         adjusted_offset = 2
         assert m.offset == adjusted_offset
 
@@ -118,15 +118,16 @@ class TestMatchInit:
                 context_offset=expected_offset,
                 sentence=text,
             ),
-            text,
+            four_byte_char_positions(text),
         )
         assert m.offset == expected_offset
 
-    def test_same_text_reuses_cache(self) -> None:
-        """Two matches on the same text share the cached position list."""
+    def test_same_text_reuses_positions(self) -> None:
+        """Two matches sharing a precomputed positions list both get correct offsets."""
         text = "Same text here."
         explicit_offset = 5
-        m1 = Match(_make_attrib(context_text=text, sentence=text), text)
+        four_byte_positions = four_byte_char_positions(text)
+        m1 = Match(_make_attrib(context_text=text, sentence=text), four_byte_positions)
         m2 = Match(
             _make_attrib(
                 context_text=text,
@@ -135,36 +136,35 @@ class TestMatchInit:
                 length=_DEFAULT_LENGTH,
                 context_offset=explicit_offset,
             ),
-            text,
+            four_byte_positions,
         )
-        assert text == Match.PREVIOUS_MATCHES_TEXT
         assert m1.offset == _DEFAULT_OFFSET
         assert m2.offset == explicit_offset
 
 
 class TestFourByteCharPositions:
-    """Tests for _four_byte_char_positions() helper."""
+    """Tests for four_byte_char_positions() helper."""
 
     def test_empty_string(self) -> None:
         """An empty string has no 4-byte char positions."""
-        assert _four_byte_char_positions("") == []
+        assert four_byte_char_positions("") == []
 
     def test_ascii_only(self) -> None:
         """A pure-ASCII string has no 4-byte char positions."""
-        assert _four_byte_char_positions("hello") == []
+        assert four_byte_char_positions("hello") == []
 
     def test_emoji_at_start(self) -> None:
         """An emoji at position 0 is reported at index 0."""
-        assert _four_byte_char_positions("🌅abc") == [0]
+        assert four_byte_char_positions("🌅abc") == [0]
 
     def test_multiple_emojis(self) -> None:
-        """Two consecutive emojis are reported at their Python indices."""
-        positions = _four_byte_char_positions("🌅🎉abc")
+        """Two consecutive emojis are reported with adjusted indices."""
+        positions = four_byte_char_positions("🌅🎉abc")
         assert positions == [0, 2]
 
     def test_emoji_in_middle(self) -> None:
         """An emoji in the middle of ASCII text is reported at the correct index."""
-        positions = _four_byte_char_positions("ab🌅cd")
+        positions = four_byte_char_positions("ab🌅cd")
         assert positions == [2]
 
 
@@ -350,6 +350,7 @@ class TestMatchComparisons:
     def test_lt(self) -> None:
         """A match at an earlier offset is less than one at a later offset."""
         text = "This is noot okay, and also baaad."
+        positions = four_byte_char_positions(text)
         m_early = Match(
             _make_attrib(
                 offset=0,
@@ -358,7 +359,7 @@ class TestMatchComparisons:
                 context_offset=0,
                 sentence=text,
             ),
-            text,
+            positions,
         )
         m_later = Match(
             _make_attrib(
@@ -368,7 +369,7 @@ class TestMatchComparisons:
                 context_offset=_DEFAULT_OFFSET,
                 sentence=text,
             ),
-            text,
+            positions,
         )
         assert m_early < m_later
 

@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from language_tool_python.match import Match
+from language_tool_python.match import Match, four_byte_char_positions
 from language_tool_python.utils import TextStatus, classify_matches, correct
 
 if TYPE_CHECKING:
@@ -37,7 +37,7 @@ def _make_match(
         "ignoreForIncompleteSentence": False,
         "contextForSureMatch": 0,
     }
-    return Match(attrib, "text here.")
+    return Match(attrib, four_byte_char_positions("text here."))
 
 
 class TestClassifyMatches:
@@ -103,7 +103,7 @@ class TestCorrect:
             "ignoreForIncompleteSentence": False,
             "contextForSureMatch": 0,
         }
-        m = Match(attrib, text)
+        m = Match(attrib, four_byte_char_positions(text))
         result = correct(text, [m])
         assert result == "Hello world"
 
@@ -155,8 +155,9 @@ class TestCorrect:
             "ignoreForIncompleteSentence": False,
             "contextForSureMatch": 0,
         }
-        m1 = Match(attrib1, text)
-        m2 = Match(attrib2, text)
+        positions = four_byte_char_positions(text)
+        m1 = Match(attrib1, positions)
+        m2 = Match(attrib2, positions)
         result = correct(text, [m1, m2])
         assert result == "xxxxxxbbc"
 
@@ -199,8 +200,9 @@ class TestCorrect:
             "ignoreForIncompleteSentence": False,
             "contextForSureMatch": 0,
         }
-        m1 = Match(attrib1, text)
-        m2 = Match(attrib2, text)
+        positions = four_byte_char_positions(text)
+        m1 = Match(attrib1, positions)
+        m2 = Match(attrib2, positions)
         result = correct(text, [m1, m2])
         assert result == "AAA BBB c"
 

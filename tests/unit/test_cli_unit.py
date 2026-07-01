@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+import logging
 from pathlib import Path
 
 import pytest
@@ -14,9 +15,14 @@ from language_tool_python.__main__ import (
     get_remote_server,
     get_rules,
     get_text,
+    main,
     parse_args,
     print_exception,
+    process_file,
 )
+from language_tool_python.exceptions import LanguageToolError
+
+NUMBER_OF_DOTS_IN_VERSION = 2  # e.g. "3.4.0" has two dots
 
 
 class TestGetRules:
@@ -101,7 +107,9 @@ class TestPrintException:
     ) -> None:
         """Without debug=True, only the message is printed to stderr."""
         print_exception(ValueError("test error"), debug=False)
-        assert "test error" in capsys.readouterr().err
+        result = capsys.readouterr()
+        assert "test error" in result.err
+        assert "ValueError" not in result.err
 
     def test_with_debug_prints_traceback(
         self, capsys: pytest.CaptureFixture[str]
@@ -112,8 +120,9 @@ class TestPrintException:
             raise ValueError(msg)
         except ValueError:
             print_exception(ValueError("current error"), debug=True)
-        captured = capsys.readouterr()
-        assert "ValueError" in captured.err
+        result = capsys.readouterr()
+        assert "original error" in result.err
+        assert "ValueError" in result.err
 
 
 class TestGetText:
@@ -174,6 +183,7 @@ class TestGetInputText:
         result = get_input_text("-", self._args(ignore_lines=r"#.*"))
         assert "# skip" not in result
         assert "keep" in result
+        assert "keep2" in result
 
     def test_uses_encoding(self, tmp_path: Path) -> None:
         """Non-UTF-8 files are decoded with the specified encoding."""
@@ -192,4 +202,229 @@ class TestReadProjectVersion:
         pyproject = Path(__file__).parent.parent.parent / "pyproject.toml"
         version = _read_project_version(pyproject)
         assert isinstance(version, str)
-        assert version.count(".") >= 1
+        assert version.count(".") == NUMBER_OF_DOTS_IN_VERSION
+
+
+class _MockMatch:
+    """Minimal match object for process_file unit tests."""
+
+    def __init__(
+        self,
+        rule_id: str = "RULE",
+        message: str = "A suggestion.",
+        replacements: list[str] | None = None,
+    ) -> None:
+        self.rule_id = rule_id
+        self.message = message
+        self.replacements: list[str] = replacements or []
+
+    def get_line_and_column(self, _text: str) -> tuple[int, int]:
+        return (1, 0)
+
+
+class _MockLangTool:
+    """Minimal LanguageTool mock for process_file unit tests."""
+
+    _last_instance: _MockLangTool | None = None
+
+    def __init__(self, **_kw: object) -> None:
+        _MockLangTool._last_instance = self
+        self.disabled_rules: set[str] = set()
+        self.enabled_rules: set[str] = set()
+        self.disabled_categories: set[str] = set()
+        self.enabled_categories: set[str] = set()
+        self.enabled_rules_only: bool = False
+        self.picky: bool = False
+        self._spellcheck_disabled: bool = False
+        self._matches: list[_MockMatch] = []
+
+    def __enter__(self) -> _MockLangTool:
+        return self
+
+    def __exit__(self, *_: object) -> None:
+        pass
+
+    def disable_spellchecking(self) -> None:
+        self._spellcheck_disabled = True
+
+    def check(self, _text: str) -> list[_MockMatch]:
+        return self._matches
+
+    def correct(self, text: str) -> str:
+        return text + " (corrected)"
+
+
+class _RaisingLangTool:
+    """LanguageTool mock that raises LanguageToolError on context entry."""
+
+    def __init__(self, **_kw: object) -> None:
+        pass
+
+    def __enter__(self) -> _RaisingLangTool:
+        err = "server failed"
+        raise LanguageToolError(err)
+
+    def __exit__(self, *_: object) -> None:
+        pass
+
+
+def _parse_file_args(filename: str, **overrides: object) -> CliArgs:
+    """Build CliArgs from parse_args defaults with optional field overrides."""
+    args = parse_args([filename])
+    for k, v in overrides.items():
+        setattr(args, k, v)
+    return args
+
+
+class TestProcessFile:
+    """Tests for process_file() with LanguageTool mocked."""
+
+    def test_prints_filename_to_stderr_for_multiple_files(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        """Filename is printed to stderr when processing multiple files."""
+        f = tmp_path / "a.txt"
+        f.write_text("hello", encoding="utf-8")
+        monkeypatch.setattr(
+            "language_tool_python.__main__.LanguageTool",
+            _MockLangTool,
+        )
+        args = _parse_file_args(str(f), files=[str(f), "other.txt"])
+        process_file(str(f), args, None)
+        assert str(f) in capsys.readouterr().err
+
+    def test_returns_zero_on_file_not_found(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        """Returns 0 when get_input_text raises FileNotFoundError."""
+        monkeypatch.setattr(
+            "language_tool_python.__main__.LanguageTool",
+            _MockLangTool,
+        )
+        missing = str(tmp_path / "does_not_exist.txt")
+        result = process_file(missing, _parse_file_args(missing), None)
+        assert result == 0
+
+    def test_disables_spellcheck_when_flag_off(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        """disable_spellchecking() is called when spell_check=False."""
+        f = tmp_path / "text.txt"
+        f.write_text("hello", encoding="utf-8")
+        monkeypatch.setattr(_MockLangTool, "_last_instance", None)
+        monkeypatch.setattr(
+            "language_tool_python.__main__.LanguageTool",
+            _MockLangTool,
+        )
+        process_file(str(f), _parse_file_args(str(f), spell_check=False), None)
+        assert _MockLangTool._last_instance is not None
+        assert _MockLangTool._last_instance._spellcheck_disabled
+
+    def test_sets_picky_when_flag_on(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        """Picky is set to True on the tool when args.picky=True."""
+        f = tmp_path / "text.txt"
+        f.write_text("hello", encoding="utf-8")
+        monkeypatch.setattr(_MockLangTool, "_last_instance", None)
+        monkeypatch.setattr(
+            "language_tool_python.__main__.LanguageTool",
+            _MockLangTool,
+        )
+        process_file(str(f), _parse_file_args(str(f), picky=True), None)
+        assert _MockLangTool._last_instance is not None
+        assert _MockLangTool._last_instance.picky is True
+
+    def test_apply_prints_corrected_text_and_returns_zero(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        """--apply prints corrected text to stdout and returns 0."""
+        f = tmp_path / "text.txt"
+        f.write_text("hello", encoding="utf-8")
+        monkeypatch.setattr(
+            "language_tool_python.__main__.LanguageTool",
+            _MockLangTool,
+        )
+        result = process_file(str(f), _parse_file_args(str(f), apply=True), None)
+        assert result == 0
+        assert "corrected" in capsys.readouterr().out
+
+    def test_returns_zero_on_language_tool_error(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        """Returns 0 when LanguageTool raises LanguageToolError on entry."""
+        f = tmp_path / "text.txt"
+        f.write_text("hello", encoding="utf-8")
+        monkeypatch.setattr(
+            "language_tool_python.__main__.LanguageTool",
+            _RaisingLangTool,
+        )
+        result = process_file(str(f), _parse_file_args(str(f)), None)
+        assert result == 0
+
+    def test_prints_match_and_returns_two_when_issues_found(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        """Match details are printed and status 2 is returned when issues are found."""
+
+        class _MatchingLangTool(_MockLangTool):
+            def check(self, _text: str) -> list[_MockMatch]:
+                return [
+                    _MockMatch(
+                        rule_id="SOME_RULE",
+                        message="Fix this.",
+                        replacements=["fix"],
+                    ),
+                ]
+
+        f = tmp_path / "text.txt"
+        f.write_text("hello", encoding="utf-8")
+        monkeypatch.setattr(
+            "language_tool_python.__main__.LanguageTool",
+            _MatchingLangTool,
+        )
+        status_issues = 2
+        result = process_file(str(f), _parse_file_args(str(f)), None)
+        assert result == status_issues
+        out = capsys.readouterr().out
+        assert "SOME_RULE" in out
+        assert "fix" in out
+
+
+class TestMain:
+    """Tests for main() with LanguageTool mocked."""
+
+    def test_verbose_flag_sets_debug_logging(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        """--verbose sets the root logger level to DEBUG."""
+        f = tmp_path / "text.txt"
+        f.write_text("hello", encoding="utf-8")
+        monkeypatch.setattr(
+            "language_tool_python.__main__.LanguageTool",
+            _MockLangTool,
+        )
+        root = logging.getLogger()
+        monkeypatch.setattr(root, "level", root.level)
+        result = main(["--verbose", str(f)])
+        assert result == 0
+        assert root.level == logging.DEBUG

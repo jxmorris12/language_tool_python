@@ -18,6 +18,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+import requests
 
 import language_tool_python
 from language_tool_python.download_lt import (
@@ -477,6 +478,68 @@ def test_snapshot_download_renames_archive_root_to_requested_date(
             local_language_tool.download()
 
         get_mock.assert_not_called()
+
+
+def test_http_get_404_raises_path_error() -> None:
+    """_do_download raises PathError when the server returns 404 Not Found."""
+    mock_response = MockDownloadResponse(b"", status_code=404)
+    mock_response.headers = {}
+    out_file = io.BytesIO()
+    local_language_tool = LocalLanguageTool.from_version_name()
+    with (
+        patch(
+            "language_tool_python.download_lt.requests.get",
+            return_value=mock_response,
+        ),
+        pytest.raises(PathError, match="Could not find at URL"),
+    ):
+        local_language_tool._get_remote_zip(out_file)
+
+
+def test_http_get_timeout_raises_timeout_error() -> None:
+    """_do_download raises TimeoutError when the HTTP request times out."""
+    out_file = io.BytesIO()
+    local_language_tool = LocalLanguageTool.from_version_name()
+    with (
+        patch(
+            "language_tool_python.download_lt.requests.get",
+            side_effect=requests.exceptions.Timeout("timed out"),
+        ),
+        pytest.raises(TimeoutError, match="timed out"),
+    ):
+        local_language_tool._get_remote_zip(out_file)
+
+
+def test_snapshot_download_raises_when_archive_has_multiple_root_dirs(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """download() raises PathError when the snapshot archive has multiple root dirs."""
+    payload = make_zip_payload(
+        {
+            "Dir1/file.txt": b"content1",
+            "Dir2/file.txt": b"content2",
+        }
+    )
+    local_language_tool = LocalLanguageTool.from_version_name("20240102")
+    monkeypatch.setattr(
+        language_tool_python.download_lt,
+        "_confirm_java_compatibility",
+        skip_java_compatibility_check,
+    )
+    with (
+        workspace_temp_dir() as temp_dir,
+        patch(
+            "language_tool_python.download_lt.requests.get",
+            return_value=MockDownloadResponse(payload),
+        ),
+    ):
+        monkeypatch.setattr(
+            language_tool_python.download_lt,
+            "get_language_tool_download_path",
+            lambda: temp_dir,
+        )
+        with pytest.raises(PathError, match="Expected snapshot archive"):
+            local_language_tool.download()
 
 
 def test_latest_snapshot_download_renames_archive_root_to_current_date(

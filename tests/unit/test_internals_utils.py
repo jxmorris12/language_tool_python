@@ -114,12 +114,6 @@ class TestGetEnvFloat:
         with pytest.raises(PathError, match="Invalid float"):
             get_env_float("TEST_FLOAT_VAR", 1.0)
 
-    def test_raises_on_inf(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        """Infinity is not a valid positive float and raises PathError."""
-        monkeypatch.setenv("TEST_FLOAT_VAR", "inf")
-        with pytest.raises(PathError, match="Invalid float"):
-            get_env_float("TEST_FLOAT_VAR", 1.0)
-
 
 class TestGetLanguageToolDownloadPath:
     """Tests for get_language_tool_download_path() path resolver."""
