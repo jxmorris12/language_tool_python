@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -16,40 +17,45 @@ from language_tool_python.config_file import (
     _number_encoder,
     _path_encoder,
     _path_validator,
+    _reject_line_breaks,
 )
 from language_tool_python.exceptions import PathError
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterator, Mapping
+
+    from language_tool_python.config_file import ConfigValue
 
 
 class TestBoolEncoder:
     """Tests for the _bool_encoder() function."""
 
-    def test_true(self) -> None:
-        """True is encoded as the string 'true'."""
-        assert _bool_encoder(v=True) == "true"
-
-    def test_false(self) -> None:
-        """False is encoded as the string 'false'."""
-        assert _bool_encoder(v=False) == "false"
-
-    def test_truthy_int(self) -> None:
-        """A truthy integer is encoded as 'true'."""
-        assert _bool_encoder(1) == "true"
-
-    def test_falsy_int(self) -> None:
-        """A falsy integer is encoded as 'false'."""
-        assert _bool_encoder(0) == "false"
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [
+            (True, "true"),
+            (False, "false"),
+            (1, "true"),
+            (0, "false"),
+        ],
+        ids=["true", "false", "truthy_int", "falsy_int"],
+    )
+    def test_encodes_bool_value(self, value: bool, expected: str) -> None:
+        """Truthy/falsy values are encoded as lowercase 'true'/'false'."""
+        assert _bool_encoder(value) == expected
 
 
 class TestIntEncoder:
     """Tests for the _int_encoder() function."""
 
-    def test_positive(self) -> None:
-        """A positive integer is converted to its decimal string."""
-        assert _int_encoder(42) == "42"
-
-    def test_zero(self) -> None:
-        """Zero is converted to '0'."""
-        assert _int_encoder(0) == "0"
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [(42, "42"), (0, "0")],
+        ids=["positive", "zero"],
+    )
+    def test_encodes_int_value(self, value: int, expected: str) -> None:
+        """Integers are converted to their decimal string representation."""
+        assert _int_encoder(value) == expected
 
 
 class TestNumberEncoder:
@@ -67,21 +73,21 @@ class TestNumberEncoder:
 class TestCommaListEncoder:
     """Tests for the _comma_list_encoder() function."""
 
-    def test_string_passthrough(self) -> None:
-        """A plain string is returned unchanged."""
-        assert _comma_list_encoder("a,b,c") == "a,b,c"
-
-    def test_list_joined(self) -> None:
-        """A list of strings is joined with commas."""
-        assert _comma_list_encoder(["a", "b", "c"]) == "a,b,c"
-
-    def test_tuple_joined(self) -> None:
-        """A tuple of strings is joined with commas."""
-        assert _comma_list_encoder(("x", "y")) == "x,y"
-
-    def test_single_item(self) -> None:
-        """A single-element list returns the element without a comma."""
-        assert _comma_list_encoder(["only"]) == "only"
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [
+            ("a,b,c", "a,b,c"),
+            (["a", "b", "c"], "a,b,c"),
+            (("x", "y"), "x,y"),
+            (["only"], "only"),
+        ],
+        ids=["string_passthrough", "list_joined", "tuple_joined", "single_item"],
+    )
+    def test_encodes_comma_list_value(
+        self, value: str | list[str] | tuple[str, ...], expected: str
+    ) -> None:
+        """Strings pass through unchanged; iterables are comma-joined."""
+        assert _comma_list_encoder(value) == expected
 
 
 class TestPathEncoder:
@@ -118,28 +124,62 @@ class TestPathValidator:
             _path_validator(tmp_path / "nonexistent.txt")
 
 
+class TestRejectLineBreaks:
+    """Tests for the _reject_line_breaks() config-value validator."""
+
+    @pytest.mark.parametrize(
+        "value",
+        ["line\nbreak", "line\rbreak", "line\r\nbreak"],
+        ids=["lf", "cr", "crlf"],
+    )
+    def test_raises_on_line_break(self, value: str) -> None:
+        """Any value containing a line-break character raises ValueError."""
+        with pytest.raises(ValueError, match="line breaks"):
+            _reject_line_breaks("field", value)
+
+    @pytest.mark.parametrize(
+        "value",
+        ["one\\", "three\\\\\\"],
+        ids=["one", "three"],
+    )
+    def test_raises_on_odd_trailing_backslashes(self, value: str) -> None:
+        """A value ending with an odd number of backslashes raises ValueError."""
+        with pytest.raises(ValueError, match="odd number of backslashes"):
+            _reject_line_breaks("field", value)
+
+    @pytest.mark.parametrize(
+        "value",
+        ["no backslash at all", "two\\\\", "four\\\\\\\\"],
+        ids=["none", "two", "four"],
+    )
+    def test_accepts_even_trailing_backslashes(self, value: str) -> None:
+        """A value ending with an even number of backslashes does not raise."""
+        _reject_line_breaks("field", value)  # must not raise
+
+
 class TestIsLangKey:
     """Tests for the _is_lang_key() predicate."""
 
-    def test_lang_code_format(self) -> None:
-        """A key of the form 'lang-XX' is recognized as a language key."""
-        assert _is_lang_key("lang-en") is True
-
-    def test_lang_code_dict_path_format(self) -> None:
-        """A key of the form 'lang-XX-dictPath' is recognized as a language key."""
-        assert _is_lang_key("lang-en-dictPath") is True
-
-    def test_not_lang_prefix(self) -> None:
-        """A key without the 'lang-' prefix is not a language key."""
-        assert _is_lang_key("cacheSize") is False
-
-    def test_lang_only_no_code(self) -> None:
-        """'lang-' with no language code is not a valid language key."""
-        assert _is_lang_key("lang-") is False
-
-    def test_lang_too_many_parts(self) -> None:
-        """A key with more than three parts is not a valid language key."""
-        assert _is_lang_key("lang-en-dictPath-extra") is False
+    @pytest.mark.parametrize(
+        ("key", "expected"),
+        [
+            ("lang-en", True),
+            ("lang-en-dictPath", True),
+            ("cacheSize", False),
+            ("lang-", False),
+            ("lang-en-dictPath-extra", False),
+        ],
+        ids=[
+            "lang_code_format",
+            "lang_code_dict_path_format",
+            "not_lang_prefix",
+            "lang_only_no_code",
+            "lang_too_many_parts",
+        ],
+    )
+    def test_is_lang_key(self, key: str, expected: bool) -> None:
+        """_is_lang_key() correctly classifies each key shape."""
+        assert _is_lang_key(key) is expected
 
 
 class TestEncodeConfig:
@@ -195,41 +235,86 @@ class TestEncodeConfig:
 class TestLanguageToolConfig:
     """Tests for the LanguageToolConfig class."""
 
+    @pytest.fixture()  # noqa: PT001  # bare @pytest.fixture resolves to Any under mypy strict here
+    def make_config(
+        self,
+    ) -> Iterator[Callable[[Mapping[str, ConfigValue]], LanguageToolConfig]]:
+        """Build a LanguageToolConfig factory that deletes its temp files afterwards.
+
+        LanguageToolConfig() creates a real temporary file (normally cleaned up via
+        an atexit hook that only runs at interpreter shutdown), so without this
+        fixture, every test in this class would leak a file for the rest of the
+        test session.
+        """
+        created: list[LanguageToolConfig] = []
+
+        def _make(config: Mapping[str, ConfigValue]) -> LanguageToolConfig:
+            cfg = LanguageToolConfig(config)
+            created.append(cfg)
+            return cfg
+
+        yield _make
+
+        for cfg in created:
+            Path(cfg.path).unlink(missing_ok=True)
+
     def test_empty_config_raises(self) -> None:
         """Constructing with an empty dict raises ValueError."""
         with pytest.raises(ValueError, match="cannot be empty"):
             LanguageToolConfig({})
 
-    def test_valid_config_creates_file(self) -> None:
+    def test_valid_config_creates_file(
+        self, make_config: Callable[[Mapping[str, ConfigValue]], LanguageToolConfig]
+    ) -> None:
         """A valid config creates a temporary .properties file on disk."""
-        cfg = LanguageToolConfig({"cacheSize": 500})
+        cfg = make_config({"cacheSize": 500})
         assert cfg.path
         assert Path(cfg.path).exists()
 
-    def test_config_file_content(self) -> None:
+    def test_config_file_content(
+        self, make_config: Callable[[Mapping[str, ConfigValue]], LanguageToolConfig]
+    ) -> None:
         """The .properties file contains the expected key=value pair."""
-        cfg = LanguageToolConfig({"cacheSize": 500})
+        cfg = make_config({"cacheSize": 500})
         content = Path(cfg.path).read_text(encoding="utf-8")
         assert "cacheSize=500" in content
 
-    def test_multiple_options(self) -> None:
+    def test_multiple_options(
+        self, make_config: Callable[[Mapping[str, ConfigValue]], LanguageToolConfig]
+    ) -> None:
         """Multiple config options all appear in the .properties file."""
-        cfg = LanguageToolConfig({"cacheSize": 100, "pipelineCaching": True})
+        cfg = make_config({"cacheSize": 100, "pipelineCaching": True})
         content = Path(cfg.path).read_text(encoding="utf-8")
         assert "cacheSize=100" in content
         assert "pipelineCaching=true" in content
 
-    def test_config_dict_stored(self) -> None:
+    def test_config_dict_stored(
+        self, make_config: Callable[[Mapping[str, ConfigValue]], LanguageToolConfig]
+    ) -> None:
         """The encoded config is stored on the .config attribute."""
-        cfg = LanguageToolConfig({"cacheSize": 200})
+        cfg = make_config({"cacheSize": 200})
         assert cfg.config == {"cacheSize": "200"}
 
-    def test_boolean_config(self) -> None:
+    def test_boolean_config(
+        self, make_config: Callable[[Mapping[str, ConfigValue]], LanguageToolConfig]
+    ) -> None:
         """A boolean config value is encoded as 'true' or 'false'."""
-        cfg = LanguageToolConfig({"premiumOnly": False})
+        cfg = make_config({"premiumOnly": False})
         assert cfg.config == {"premiumOnly": "false"}
 
-    def test_list_config(self) -> None:
+    def test_list_config(
+        self, make_config: Callable[[Mapping[str, ConfigValue]], LanguageToolConfig]
+    ) -> None:
         """A list config value is encoded as a comma-separated string."""
-        cfg = LanguageToolConfig({"disabledRuleIds": ["RULE_A", "RULE_B"]})
+        cfg = make_config({"disabledRuleIds": ["RULE_A", "RULE_B"]})
         assert cfg.config["disabledRuleIds"] == "RULE_A,RULE_B"
+
+    def test_lang_dict_path_end_to_end(
+        self,
+        make_config: Callable[[Mapping[str, ConfigValue]], LanguageToolConfig],
+        tmp_path: Path,
+    ) -> None:
+        """A full LanguageToolConfig with a lang-xx-dictPath key writes it to disk."""
+        cfg = make_config({"lang-en-dictPath": str(tmp_path)})
+        content = Path(cfg.path).read_text(encoding="utf-8")
+        assert "lang-en-dictPath=" in content

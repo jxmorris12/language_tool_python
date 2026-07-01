@@ -46,19 +46,14 @@ class TestInit:
 class TestNormalizePosix:
     """Tests for POSIX/C locale fallback behaviour."""
 
-    def test_c_locale_falls_back_to_en_us(self) -> None:
-        """'C' locale resolves to en-US when available."""
-        lt = _tag("C")
-        assert lt.normalized_tag == "en-US"
-
-    def test_posix_locale_falls_back_to_en_us(self) -> None:
-        """'POSIX' locale resolves to en-US when available."""
-        lt = _tag("POSIX")
-        assert lt.normalized_tag == "en-US"
-
-    def test_c_dot_variant(self) -> None:
-        """'C.UTF-8' resolves to en-US when available."""
-        lt = _tag("C.UTF-8")
+    @pytest.mark.parametrize(
+        "tag",
+        ["C", "POSIX", "C.UTF-8"],
+        ids=["c_locale", "posix_locale", "c_dot_variant"],
+    )
+    def test_posix_like_tag_falls_back_to_en_us(self, tag: str) -> None:
+        """POSIX-like locale tags resolve to en-US when available."""
+        lt = _tag(tag)
         assert lt.normalized_tag == "en-US"
 
     def test_posix_prefers_en_gb_when_no_en_us(self) -> None:
@@ -80,35 +75,36 @@ class TestNormalizePosix:
 class TestNormalizeFallback:
     """Tests for regex-based region-stripping fallback."""
 
-    def test_language_only_matches_base(self) -> None:
-        """A bare language code matches the base language entry."""
-        lt = _tag("en")
-        assert lt.normalized_tag == "en"
-
-    def test_regex_fallback_to_base_language(self) -> None:
-        """An exact-match tag is returned as-is."""
-        lt = _tag("pt-BR")
-        assert lt.normalized_tag == "pt-BR"
+    @pytest.mark.parametrize(
+        ("tag", "expected"),
+        [("en", "en"), ("pt-BR", "pt-BR")],
+        ids=["language_only_matches_base", "regex_fallback_to_base_language"],
+    )
+    def test_normalizes_against_default_languages(
+        self, tag: str, expected: str
+    ) -> None:
+        """A bare or exact-match tag normalizes as expected against _LANGS."""
+        lt = _tag(tag)
+        assert lt.normalized_tag == expected
 
     def test_regex_fallback_strips_region(self) -> None:
         """A tag with an unavailable region falls back to the base language."""
         lt = LanguageTag("en-AU", ["en", "de-DE"])
         assert lt.normalized_tag == "en"
 
-    def test_empty_tag_raises(self) -> None:
-        """An empty tag string raises ValueError."""
-        with pytest.raises(ValueError, match="empty language tag"):
-            _tag("")
-
-    def test_unsupported_tag_raises(self) -> None:
-        """A tag with no match raises ValueError."""
-        with pytest.raises(ValueError, match="unsupported language"):
-            _tag("zz-ZZ")
-
-    def test_unmatched_pattern_raises(self) -> None:
-        """A non-language-like string raises ValueError."""
-        with pytest.raises(ValueError, match="unsupported language"):
-            _tag("123invalid")
+    @pytest.mark.parametrize(
+        ("tag", "match"),
+        [
+            ("", "empty language tag"),
+            ("zz-ZZ", "unsupported language"),
+            ("123invalid", "unsupported language"),
+        ],
+        ids=["empty_tag", "unsupported_tag", "unmatched_pattern"],
+    )
+    def test_invalid_tag_raises(self, tag: str, match: str) -> None:
+        """Empty, unsupported, or unmatched tags all raise ValueError."""
+        with pytest.raises(ValueError, match=match):
+            _tag(tag)
 
 
 class TestComparisons:

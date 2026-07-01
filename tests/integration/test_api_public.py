@@ -1,69 +1,65 @@
 """Integration tests for the public API functionality."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import pytest
 
 import language_tool_python
 from language_tool_python.exceptions import RateLimitError
 
+if TYPE_CHECKING:
+    from language_tool_python.match import Match
 
-def test_remote_es() -> None:
-    """Test the public API with Spanish language text.
+_ES_TEXT = (
+    "Escriba un texto aquí. LanguageTool le ayudará a afrentar "
+    "algunas dificultades propias de la escritura. Se a hecho un esfuerzo "
+    "para detectar errores tipográficos, ortograficos y incluso "
+    "gramaticales. También algunos errores de estilo, a grosso modo."
+)
 
-    This test verifies that the LanguageToolPublicAPI correctly identifies various
-    errors in a Spanish text sample.
 
-    :raises AssertionError: If the detected matches do not match the expected output.
+@pytest.fixture(scope="module")
+def es_matches() -> list[Match]:
+    """Check ``_ES_TEXT`` once against the public API and share the result.
+
+    The check is only performed once (module-scoped) to limit the number of
+    requests sent to the public API. If the request is rate-limited, every test
+    depending on this fixture is skipped silently rather than failing.
     """
     try:
         with language_tool_python.LanguageToolPublicAPI("es") as tool:
-            es_text = (
-                "Escriba un texto aquí. LanguageTool le ayudará a afrentar "
-                "algunas dificultades propias de la escritura. Se a hecho un esfuerzo "
-                "para detectar errores tipográficos, ortograficos y incluso "
-                "gramaticales. También algunos errores de estilo, a grosso modo."
-            )
-            matches = tool.check(es_text)
-            assert (
-                str(matches)
-                == """[Match({'rule_id': 'AFRENTAR_DIFICULTADES', 'message': 'Confusión
-                   entre «afrontar» y «afrentar».', 'replacements': ['afrontar'],
-                   'offset_in_context': 43, 'context': '...n texto aquí.
-
-                   LanguageTool le ayudará a afrentar algunas dificultades propias de la
-                   escr...', 'offset': 49, 'error_length': 8, 'category':
-                   'INCORRECT_EXPRESSIONS', 'rule_issue_type': 'grammar', 'sentence':
-                   'LanguageTool le ayudará a afrentar algunas dificultades propias de
-                   la escritura.'}), Match({'rule_id': 'PRON_HABER_PARTICIPIO',
-                   'message': 'El v. ‘haber’ se escribe con hache.',
-                   'replacements': ['ha'], 'offset_in_context': 43, 'context':
-                   '...ificultades propias de la escritura. Se a hecho un esfuerzo para
-                   detectar errores...', 'offset': 107, 'error_length': 1, 'category':
-                   'MISSPELLING', 'rule_issue_type': 'misspelling', 'sentence': 'Se a
-                   hecho un esfuerzo para detectar errores tipográficos, ortograficos y
-                   incluso gramaticales.'}), Match({'rule_id': 'MORFOLOGIK_RULE_ES',
-                   'message': 'Se ha encontrado un posible error ortográfico.',
-                   'replacements': ['ortográficos', 'ortográficas', 'ortográfico',
-                   'orográficos', 'ortografiaos', 'ortografíeos'], 'offset_in_context':
-                   43, 'context': '...rzo para detectar errores tipográficos,
-                   ortograficos y incluso gramaticales. También algunos...', 'offset':
-                   163, 'error_length': 12, 'category': 'TYPOS', 'rule_issue_type':
-                   'misspelling', 'sentence': 'Se a hecho un esfuerzo para detectar
-                   errores tipográficos, ortograficos y incluso gramaticales.'}),
-                   Match({'rule_id': 'Y_E_O_U', 'message': 'Cuando precede a palabras
-                   que comienzan por ‘i’, la conjunción ‘y’ se
-                   transforma en ‘e’.', 'replacements': ['e'],
-                   'offset_in_context': 43, 'context': '...ctar errores tipográficos,
-                   ortograficos y incluso gramaticales. También algunos e...', 'offset':
-                   176, 'error_length': 1, 'category': 'GRAMMAR', 'rule_issue_type':
-                   'grammar', 'sentence': 'Se a hecho un esfuerzo para detectar errores
-                   tipográficos, ortograficos y incluso gramaticales.'}),
-                   Match({'rule_id': 'GROSSO_MODO', 'message': 'Esta expresión latina se
-                   usa sin preposición.', 'replacements': ['grosso modo'],
-                   'offset_in_context': 43, 'context': '...les. También algunos errores
-                   de estilo, a grosso modo.', 'offset': 235, 'error_length': 13,
-                   'category': 'GRAMMAR', 'rule_issue_type': 'grammar', 'sentence':
-                   'También algunos errores de estilo, a grosso modo.'})]
-                   """
-            )
+            return tool.check(_ES_TEXT)
     except RateLimitError:
         pytest.skip("Rate limit exceeded for public API.")
+
+
+@pytest.mark.parametrize(
+    ("rule_id", "category", "offset"),
+    [
+        ("AFRENTAR_DIFICULTADES", "INCORRECT_EXPRESSIONS", 49),
+        ("PRON_HABER_PARTICIPIO", "MISSPELLING", 107),
+        ("MORFOLOGIK_RULE_ES", "TYPOS", 163),
+        ("Y_E_O_U", "GRAMMAR", 176),
+        ("GROSSO_MODO", "GRAMMAR", 235),
+    ],
+)
+def test_remote_es(
+    es_matches: list[Match],
+    rule_id: str,
+    category: str,
+    offset: int,
+) -> None:
+    """Test that the public API detects a specific known error in Spanish text.
+
+    LanguageTool rules can change over time, so this asserts on individual match
+    fields (rule_id, category, offset) rather than requiring the entire response
+    to match a frozen snapshot exactly.
+
+    :raises AssertionError: If no match with the expected fields is found.
+    """
+    assert any(
+        m.rule_id == rule_id and m.category == category and m.offset == offset
+        for m in es_matches
+    )

@@ -58,7 +58,6 @@ def test_process_starts_and_stops_on_close() -> None:
     # Make sure process stopped after close() was called.
     time.sleep(0.5)  # Give some time for process to stop after close() call.
     assert proc.poll() is not None, "tool._server should stop running after deletion"
-    # remember --> if poll is None: # p.subprocess is alive
 
 
 def test_local_client_server_connection() -> None:
@@ -72,7 +71,7 @@ def test_local_client_server_connection() -> None:
         server.
     """
     with language_tool_python.LanguageTool("en-US", host="127.0.0.1") as tool1:
-        url = f"http://{tool1._host}:{tool1._port}/"
+        url = f"http://{tool1.host}:{tool1.port}/"
         with language_tool_python.LanguageTool("en-US", remote_server=url) as tool2:
             assert len(tool2.check("helo darknes my old frend"))
 
@@ -104,27 +103,30 @@ def test_session_only_new_spellings() -> None:
     initial_checksum = hashlib.sha256(initial_spelling_file_contents.encode())
 
     new_spellings = ["word1", "word2", "word3"]
-    with language_tool_python.LanguageTool(
-        "en-US",
-        new_spellings=new_spellings,
-        new_spellings_persist=False,
-    ) as tool:
-        tool.enabled_rules_only = True
-        tool.enabled_rules = {"MORFOLOGIK_RULE_EN_US"}
-        matches = tool.check(" ".join(new_spellings))
+    try:
+        with language_tool_python.LanguageTool(
+            "en-US",
+            new_spellings=new_spellings,
+            new_spellings_persist=False,
+        ) as tool:
+            tool.enabled_rules_only = True
+            tool.enabled_rules = {"MORFOLOGIK_RULE_EN_US"}
+            matches = tool.check(" ".join(new_spellings))
 
-    with spelling_file_path.open("r", encoding="utf-8") as spelling_file:
-        subsequent_spelling_file_contents = spelling_file.read()
-    subsequent_checksum = hashlib.sha256(subsequent_spelling_file_contents.encode())
+        with spelling_file_path.open("r", encoding="utf-8") as spelling_file:
+            subsequent_spelling_file_contents = spelling_file.read()
+        subsequent_checksum = hashlib.sha256(subsequent_spelling_file_contents.encode())
 
-    if initial_checksum != subsequent_checksum:
+        assert not matches
+        assert initial_checksum.hexdigest() == subsequent_checksum.hexdigest()
+    finally:
+        # Restore unconditionally (not just when a diff was detected) so that a
+        # failed assertion above can never leave the shared spelling file corrupted
+        # for the rest of the test session.
         with spelling_file_path.open(
             "w", encoding="utf-8", newline="\n"
         ) as spelling_file:
             spelling_file.write(initial_spelling_file_contents)
-
-    assert not matches
-    assert initial_checksum.hexdigest() == subsequent_checksum.hexdigest()
 
 
 def test_new_spellins_in_es() -> None:

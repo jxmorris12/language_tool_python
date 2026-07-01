@@ -160,27 +160,26 @@ class TestMatchInit:
 class TestFourByteCharPositions:
     """Tests for four_byte_char_positions() helper."""
 
-    def test_empty_string(self) -> None:
-        """An empty string has no 4-byte char positions."""
-        assert four_byte_char_positions("") == []
-
-    def test_ascii_only(self) -> None:
-        """A pure-ASCII string has no 4-byte char positions."""
-        assert four_byte_char_positions("hello") == []
-
-    def test_emoji_at_start(self) -> None:
-        """An emoji at position 0 is reported at index 0."""
-        assert four_byte_char_positions("🌅abc") == [0]
-
-    def test_multiple_emojis(self) -> None:
-        """Two consecutive emojis are reported with adjusted indices."""
-        positions = four_byte_char_positions("🌅🎉abc")
-        assert positions == [0, 2]
-
-    def test_emoji_in_middle(self) -> None:
-        """An emoji in the middle of ASCII text is reported at the correct index."""
-        positions = four_byte_char_positions("ab🌅cd")
-        assert positions == [2]
+    @pytest.mark.parametrize(
+        ("text", "expected"),
+        [
+            ("", []),
+            ("hello", []),
+            ("🌅abc", [0]),
+            ("🌅🎉abc", [0, 2]),
+            ("ab🌅cd", [2]),
+        ],
+        ids=[
+            "empty_string",
+            "ascii_only",
+            "emoji_at_start",
+            "multiple_emojis",
+            "emoji_in_middle",
+        ],
+    )
+    def test_four_byte_char_positions(self, text: str, expected: list[int]) -> None:
+        """4-byte encoded character positions are reported correctly."""
+        assert four_byte_char_positions(text) == expected
 
 
 class TestMatchOrderedDict:
@@ -218,11 +217,14 @@ class TestIsCheckMatch:
         """A fully populated attrib dict is recognised as a CheckMatch."""
         assert is_check_match(_make_attrib())
 
-    def test_not_dict(self) -> None:
+    @pytest.mark.parametrize(
+        "value",
+        ["not a dict", None, 42],
+        ids=["string", "none", "int"],
+    )
+    def test_not_dict(self, value: object) -> None:
         """Non-dict values are rejected."""
-        assert not is_check_match("not a dict")
-        assert not is_check_match(None)
-        assert not is_check_match(42)
+        assert not is_check_match(value)
 
     def test_missing_field(self) -> None:
         """A dict missing a required field is rejected."""
@@ -266,6 +268,21 @@ class TestMatchStr:
         m = _make_match(replacements=[])
         assert "Suggestion" not in str(m)
 
+    def test_str_indicator_line_position_and_length(self) -> None:
+        """The '^^^^' indicator line is padded and sized to offset_in_context/length."""
+        context_text = "This is noot okay."
+        context_offset = 8
+        length = 4
+        m = _make_match(
+            text=context_text,
+            context_text=context_text,
+            context_offset=context_offset,
+            length=length,
+        )
+        lines = str(m).splitlines()
+        indicator_line = lines[-1]
+        assert indicator_line == " " * context_offset + "^" * length
+
 
 class TestMatchRepr:
     """Tests for Match.__repr__() machine-readable formatter."""
@@ -279,6 +296,44 @@ class TestMatchRepr:
         """The rule ID appears in the repr."""
         m = _make_match()
         assert "MORFOLOGIK_RULE_EN_US" in repr(m)
+
+    def test_repr_full_structure_and_field_order(self) -> None:
+        """The repr contains every field, in the documented order, exactly once."""
+        m = _make_match()
+        r = repr(m)
+        assert r.startswith("Match({")
+        assert r.endswith("})")
+
+        expected_field_order = [
+            "rule_id",
+            "message",
+            "replacements",
+            "offset_in_context",
+            "context",
+            "offset",
+            "error_length",
+            "category",
+            "rule_issue_type",
+            "sentence",
+        ]
+        field_positions = [r.index(f"'{field}':") for field in expected_field_order]
+        assert field_positions == sorted(field_positions)
+
+        expected_repr = (
+            "Match({"
+            "'rule_id': 'MORFOLOGIK_RULE_EN_US', "
+            "'message': 'Possible spelling mistake.', "
+            "'replacements': ['not', 'noon'], "
+            "'offset_in_context': 8, "
+            "'context': 'This is noot okay.', "
+            "'offset': 8, "
+            "'error_length': 4, "
+            "'category': 'TYPOS', "
+            "'rule_issue_type': 'misspelling', "
+            "'sentence': 'This is noot okay.'"
+            "})"
+        )
+        assert r == expected_repr
 
 
 class TestMatchedText:

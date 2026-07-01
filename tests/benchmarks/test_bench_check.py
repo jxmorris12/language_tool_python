@@ -1,6 +1,10 @@
 """Benchmark tests for LanguageTool grammar checking performance.
 
 Run with: pytest tests/benchmarks/ -v
+
+A JVM is required to run these benchmarks. If the local LanguageTool JAR cache is
+empty, the first ``LanguageTool(...)`` call in this module triggers a real download
+of the LanguageTool archive over the network.
 """
 
 from __future__ import annotations
@@ -23,18 +27,36 @@ _LONG_TEXT = (_SHORT_TEXT * 100).strip()
 
 @pytest.fixture(scope="module")
 def tool() -> Generator[language_tool_python.LanguageTool, None, None]:
-    """Provide a LanguageTool instance shared across benchmarks in this module."""
+    """Provide a LanguageTool instance shared across benchmarks in this module.
+
+    Performs one warm-up ``check()`` call before yielding, since pytest.ini does
+    not configure ``--benchmark-warmup``: without it, whichever benchmark happens
+    to run first in this module would absorb the server's cold-start JIT cost.
+    """
     with language_tool_python.LanguageTool("en-US") as t:
+        t.check("warm-up")
         yield t
 
 
 @pytest.fixture(scope="module")
 def cached_tool() -> Generator[language_tool_python.LanguageTool, None, None]:
-    """Provide a pipeline-caching LanguageTool instance for cache benchmarks."""
+    """Provide a pipeline-caching LanguageTool instance for cache benchmarks.
+
+    ``cacheSize=1000`` sets the maximum number of previously checked sentences the
+    server keeps in memory, ``pipelineCaching=True`` additionally caches the
+    internal per-language analysis pipeline (tokenizer, tagger, etc.) so it is not
+    rebuilt on every request. Together they let repeated checks of the same
+    sentence skip most of the analysis work.
+
+    Performs one warm-up ``check()`` call (on text distinct from the benchmarked
+    sentence, so it does not itself pre-populate the cache for that sentence)
+    before yielding, for the same cold-start reason as the ``tool`` fixture above.
+    """
     with language_tool_python.LanguageTool(
         "en-US",
         config={"cacheSize": 1000, "pipelineCaching": True},
     ) as t:
+        t.check("warm-up, unrelated to any benchmarked sentence")
         yield t
 
 
@@ -76,6 +98,10 @@ def test_bench_check_with_pipeline_cache(
 ) -> None:
     """Benchmark grammar checking with pipeline caching enabled.
 
-    Compare with test_bench_check_short_text to measure cache speedup.
+    Every round checks the same ``_SHORT_TEXT`` on the same server instance, so
+    (after the fixture's warm-up call) all rounds but the very first are cache
+    hits. Compare the resulting numbers with ``test_bench_check_short_text``
+    (same text, no caching configured) to estimate the cache's speedup, this
+    test alone does not exercise a cache miss/hit contrast within itself.
     """
     benchmark(cached_tool.check, _SHORT_TEXT)

@@ -33,21 +33,6 @@ def test_install_too_old_version() -> None:
         language_tool_python.LanguageTool(language_tool_download_version="3.9")
 
 
-def test_inexistent_language() -> None:
-    """Test that creating a LanguageTag with an invalid language code raises an error.
-
-    This test verifies that the LanguageTag constructor correctly validates language
-    codes and raises a ValueError when given a language code that is not supported.
-
-    :raises AssertionError: If ValueError is not raised for an invalid language code.
-    """
-    with (
-        language_tool_python.LanguageTool("en-US") as tool,
-        pytest.raises(ValueError, match="unsupported language"),
-    ):
-        language_tool_python.LanguageTag("xx-XX", tool._get_languages())
-
-
 def test_install_oldest_supported_version() -> None:
     """Test that downloading the oldest supported LanguageTool version works correctly.
 

@@ -1,4 +1,4 @@
-"""Unit tests for server.py — no Java, no network required."""
+"""Unit tests for server.py, no Java, no network required."""
 
 from __future__ import annotations
 
@@ -148,7 +148,7 @@ class _MockLocalLTWithCmd:
         """No-op download."""
 
     def get_directory_path(self) -> None:
-        """No-op — not needed for start_local_server tests."""
+        """No-op, not needed for start_local_server tests."""
 
     def get_server_cmd(self, _port: int | None, _config: object) -> list[str]:
         """Return a fake Java command."""
@@ -261,6 +261,22 @@ class TestLanguageToolConstructorValidation:
         ):
             assert str(lt.language) == "en"
 
+    def test_explicit_host_is_used_instead_of_localhost(self) -> None:
+        """An explicitly passed host is stored instead of the localhost default."""
+        explicit_host = "192.0.2.1"
+        with (
+            patch(
+                "language_tool_python.server.get_locale_language",
+                return_value="en",
+            ),
+            patch.object(LanguageTool, "_get_languages", return_value=_LANGUAGES),
+            LanguageTool(
+                remote_server="http://fake/",
+                host=explicit_host,
+            ) as lt,
+        ):
+            assert lt.host == explicit_host
+
 
 class TestLanguageToolDel:
     """Tests for __del__ resource warning."""
@@ -324,6 +340,24 @@ class TestLanguageToolProperties:
         lt = _bare_lt()
         lt.mother_tongue = "fr"
         assert lt._mother_tongue == "fr"
+
+    def test_language_setter_raises_for_unsupported_tag(self) -> None:
+        """Language setter raises ValueError immediately for an unsupported tag."""
+        lt = _bare_lt()
+        with (
+            patch.object(lt, "_get_languages", return_value=_LANGUAGES),
+            pytest.raises(ValueError, match="unsupported language"),
+        ):
+            lt.language = "zz-ZZ"
+
+    def test_mother_tongue_getter_raises_for_unsupported_tag(self) -> None:
+        """Mother_tongue getter raises ValueError when the stored tag is unsupported."""
+        lt = _bare_lt(_mother_tongue="zz-ZZ")
+        with (
+            patch.object(lt, "_get_languages", return_value=_LANGUAGES),
+            pytest.raises(ValueError, match="unsupported language"),
+        ):
+            _ = lt.mother_tongue
 
     def test_proxies_getter_returns_stored_value(self) -> None:
         """Proxies getter returns _proxies."""
@@ -547,6 +581,32 @@ class TestCheckMatchingRegions:
         expected_offset = 2
         assert len(results) == 1
         assert results[0].offset == expected_offset
+
+    def test_sorts_matches_from_multiple_regions_by_final_offset(self) -> None:
+        """Matches from a later region can sort before matches from an earlier one.
+
+        The first region ("AAA") is mocked to return a match with a large local
+        offset, while the second region ("BBB") is mocked to return a match with a
+        small local offset. After offset adjustment, the second region's match ends
+        up earlier in the text than the first region's, so the insertion order
+        (region order) genuinely differs from the final sorted order, this
+        exercises the ``sorted(..., key=_match_offset)`` call, not just a no-op sort
+        on an already-ordered single-region result.
+        """
+        lt = _bare_lt()
+
+        def _check_side_effect(region_text: str) -> list[_MockMatchWithOffset]:
+            if region_text == "AAA":
+                return [_MockMatchWithOffset(offset=10)]
+            return [_MockMatchWithOffset(offset=1)]
+
+        with patch.object(lt, "check", side_effect=_check_side_effect):
+            results = lt.check_matching_regions("AAA BBB", r"\w+")
+
+        # region "AAA" (start_offset=0) -> final offset 0+10=10
+        # region "BBB" (start_offset=4) -> final offset 4+1=5
+        # insertion order is [10, 5]; sorted order must be [5, 10]
+        assert [match.offset for match in results] == [5, 10]
 
 
 class TestCreateParams:
@@ -817,6 +877,35 @@ class TestQueryServer:
             lt._query_server("http://fake/", num_tries=1)
         mock_term.assert_called_once()
         mock_start.assert_called_once()
+
+    def test_retries_and_succeeds_on_second_attempt(self) -> None:
+        """A transient OSError on the first attempt is retried and can succeed."""
+
+        class _FlakyThenOkSession(requests.Session):
+            def __init__(self, response: requests.Response) -> None:
+                super().__init__()
+                self._response = response
+                self.call_count = 0
+
+            def get(  # type: ignore[override]
+                self,
+                _url: str | bytes,
+                **_kw: object,
+            ) -> requests.Response:
+                self.call_count += 1
+                if self.call_count == 1:
+                    err = "transient failure"
+                    raise OSError(err)
+                return self._response
+
+        expected_call_count = 2
+        response = _make_json_response(b'{"ok": true}')
+        lt = _bare_lt(_remote=True)
+        session = _FlakyThenOkSession(response)
+        lt._session = session
+        result = lt._query_server("http://fake/", num_tries=2)
+        assert result == {"ok": True}
+        assert session.call_count == expected_call_count
 
 
 class TestStartServerOnFreePort:

@@ -57,6 +57,11 @@ def _check_output_java17(*_args: object, **_kw: object) -> str:
     return "openjdk 17.0.1 2021-10-19"
 
 
+def _check_output_java9(*_args: object, **_kw: object) -> str:
+    """Stub for subprocess.check_output returning a Java 9 version string."""
+    return 'java version "9.0.4"'
+
+
 def _noop(_v: object) -> None:
     """No-operation stub for monkeypatching void functions."""
 
@@ -365,6 +370,12 @@ class TestConfirmJavaCompatibility:
         monkeypatch.setattr(subprocess, "check_output", _check_output_java17)
         _dl._confirm_java_compatibility("6.8")
 
+    def test_java_9_passes_for_old_lt(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Java 9 satisfies an old LT version's lower requirement without error."""
+        monkeypatch.setattr("language_tool_python.download_lt.which", _which_java)
+        monkeypatch.setattr(subprocess, "check_output", _check_output_java9)
+        _dl._confirm_java_compatibility("5.0")
+
 
 class TestGetInstalledVersions:
     """Tests for LocalLanguageTool.get_installed_versions()."""
@@ -388,6 +399,20 @@ class TestGetInstalledVersions:
         version_names = [v.version_name for v in versions]
         assert "6.8" in version_names
         assert "6.7" in version_names
+
+    def test_skips_malformed_version_directory(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """A directory matching 'LanguageTool-*' but with an unparseable version name
+        is silently skipped (the ValueError from from_path() is suppressed) rather
+        than propagating.
+        """  # noqa: D205
+        (tmp_path / "LanguageTool-not-a-real-version").mkdir()
+        (tmp_path / "LanguageTool-6.8").mkdir()
+        monkeypatch.setenv("LTP_PATH", str(tmp_path))
+        versions = _dl.LocalLanguageTool.get_installed_versions()
+        version_names = [v.version_name for v in versions]
+        assert version_names == ["6.8"]
 
 
 class TestGetLatestInstalledVersion:

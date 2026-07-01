@@ -5,8 +5,12 @@ from __future__ import annotations
 import io
 import logging
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 from language_tool_python.__main__ import (
     CliArgs,
@@ -279,6 +283,17 @@ def _parse_file_args(filename: str, **overrides: object) -> CliArgs:
 class TestProcessFile:
     """Tests for process_file() with LanguageTool mocked."""
 
+    @pytest.fixture(autouse=True)
+    def _reset_last_instance(self) -> Iterator[None]:
+        """Reset _MockLangTool._last_instance before and after each test.
+
+        Without this, only tests that explicitly reset the class attribute could
+        reliably assert on the instance created by the test they belong to.
+        """
+        _MockLangTool._last_instance = None
+        yield
+        _MockLangTool._last_instance = None
+
     def test_prints_filename_to_stderr_for_multiple_files(
         self,
         monkeypatch: pytest.MonkeyPatch,
@@ -318,7 +333,6 @@ class TestProcessFile:
         """disable_spellchecking() is called when spell_check=False."""
         f = tmp_path / "text.txt"
         f.write_text("hello", encoding="utf-8")
-        monkeypatch.setattr(_MockLangTool, "_last_instance", None)
         monkeypatch.setattr(
             "language_tool_python.__main__.LanguageTool",
             _MockLangTool,
@@ -335,7 +349,6 @@ class TestProcessFile:
         """Picky is set to True on the tool when args.picky=True."""
         f = tmp_path / "text.txt"
         f.write_text("hello", encoding="utf-8")
-        monkeypatch.setattr(_MockLangTool, "_last_instance", None)
         monkeypatch.setattr(
             "language_tool_python.__main__.LanguageTool",
             _MockLangTool,
@@ -424,7 +437,61 @@ class TestMain:
             _MockLangTool,
         )
         root = logging.getLogger()
-        monkeypatch.setattr(root, "level", root.level)
-        result = main(["--verbose", str(f)])
-        assert result == 0
-        assert root.level == logging.DEBUG
+        original_level = root.level
+        try:
+            result = main(["--verbose", str(f)])
+            assert result == 0
+            assert root.level == logging.DEBUG
+        finally:
+            root.setLevel(original_level)
+
+    def test_status_is_max_across_multiple_files(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        """main() aggregates status via max() across all processed files."""
+
+        class _ConditionalLangTool(_MockLangTool):
+            def check(self, text: str) -> list[_MockMatch]:
+                if text == "bad text":
+                    return [_MockMatch(rule_id="SOME_RULE")]
+                return []
+
+        clean_file = tmp_path / "clean.txt"
+        clean_file.write_text("good text", encoding="utf-8")
+        bad_file = tmp_path / "bad.txt"
+        bad_file.write_text("bad text", encoding="utf-8")
+
+        monkeypatch.setattr(
+            "language_tool_python.__main__.LanguageTool",
+            _ConditionalLangTool,
+        )
+        status_issues = 2
+        result = main([str(clean_file), str(bad_file)])
+        assert result == status_issues
+
+    def test_remote_server_propagates_to_language_tool_constructor(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        """--remote-host/--remote-port flow through to the LanguageTool constructor."""
+        f = tmp_path / "text.txt"
+        f.write_text("hello", encoding="utf-8")
+        captured_kwargs: list[dict[str, object]] = []
+
+        class _CapturingLangTool(_MockLangTool):
+            def __init__(self, **kw: object) -> None:
+                super().__init__(**kw)
+                captured_kwargs.append(kw)
+
+        monkeypatch.setattr(
+            "language_tool_python.__main__.LanguageTool",
+            _CapturingLangTool,
+        )
+
+        main(["--remote-host", "example.test", "--remote-port", "8081", str(f)])
+
+        assert len(captured_kwargs) == 1
+        assert captured_kwargs[0]["remote_server"] == "example.test:8081"

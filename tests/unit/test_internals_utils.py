@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-import subprocess
-import sys
-import time
 from typing import TYPE_CHECKING
 
 import psutil
@@ -153,6 +150,33 @@ class TestGetLocaleLanguage:
         assert len(result) > 0
 
 
+class _MockPsutilProcess:
+    """Minimal stand-in for psutil.Process used in kill_process_force tests."""
+
+    def __init__(
+        self,
+        pid: int,
+        children: list[_MockPsutilProcess] | None = None,
+        *,
+        raise_on_kill: bool = False,
+    ) -> None:
+        """Initialise with a pid, optional children, and an optional kill() failure."""
+        self.pid = pid
+        self.killed = False
+        self._children = children or []
+        self._raise_on_kill = raise_on_kill
+
+    def children(self, *, recursive: bool = False) -> list[_MockPsutilProcess]:  # noqa: ARG002
+        """Return the configured child processes."""
+        return self._children
+
+    def kill(self) -> None:
+        """Mark the process as killed, or raise NoSuchProcess if so configured."""
+        if self._raise_on_kill:
+            raise psutil.NoSuchProcess(self.pid)
+        self.killed = True
+
+
 class TestKillProcessForce:
     """Tests for kill_process_force() process terminator."""
 
@@ -161,44 +185,51 @@ class TestKillProcessForce:
         with pytest.raises(ValueError, match="Must pass either pid or proc"):
             kill_process_force()
 
-    def test_kills_by_pid(self) -> None:
+    def test_kills_by_pid(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """A process is terminated when its pid is given."""
-        proc = subprocess.Popen(
-            [sys.executable, "-c", "import time; time.sleep(60)"],
-        )
-        kill_process_force(pid=proc.pid)
-        proc.wait(timeout=5)
+        mock_proc = _MockPsutilProcess(pid=123)
+
+        def _fake_process(_pid: int) -> _MockPsutilProcess:
+            return mock_proc
+
+        monkeypatch.setattr(psutil, "Process", _fake_process)
+        kill_process_force(pid=123)
+        assert mock_proc.killed
 
     def test_kills_by_proc(self) -> None:
         """A process is terminated when a psutil.Process object is given."""
-        proc = subprocess.Popen(
-            [sys.executable, "-c", "import time; time.sleep(60)"],
-        )
-        ps_proc = psutil.Process(proc.pid)
-        kill_process_force(proc=ps_proc)
-        proc.wait(timeout=5)
+        mock_proc = _MockPsutilProcess(pid=123)
+        kill_process_force(proc=mock_proc)  # type: ignore[arg-type]
+        assert mock_proc.killed
 
     def test_kills_process_with_children(self) -> None:
         """A process and its children are all terminated."""
-        parent = subprocess.Popen(
-            [
-                sys.executable,
-                "-c",
-                (
-                    "import subprocess, sys, time; "
-                    "subprocess.Popen([sys.executable, '-c', "
-                    "'import time; time.sleep(60)']); "
-                    "time.sleep(60)"
-                ),
-            ],
-        )
-        time.sleep(0.3)
-        kill_process_force(pid=parent.pid)
-        parent.wait(timeout=10)
+        child = _MockPsutilProcess(pid=456)
+        parent = _MockPsutilProcess(pid=123, children=[child])
+        kill_process_force(proc=parent)  # type: ignore[arg-type]
+        assert child.killed
+        assert parent.killed
 
-    def test_nonexistent_pid_is_silent(self) -> None:
+    def test_nonexistent_pid_is_silent(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """A nonexistent pid is silently ignored."""
-        kill_process_force(pid=999999999)
+
+        def _raise_no_such_process(pid: int) -> _MockPsutilProcess:
+            raise psutil.NoSuchProcess(pid)
+
+        monkeypatch.setattr(psutil, "Process", _raise_no_such_process)
+        kill_process_force(pid=999999999)  # must not raise
+
+    def test_suppresses_no_such_process_on_child_race(self) -> None:
+        """A child that vanishes before kill() (NoSuchProcess) is silently skipped."""
+        child = _MockPsutilProcess(pid=456, raise_on_kill=True)
+        parent = _MockPsutilProcess(pid=123, children=[child])
+        kill_process_force(proc=parent)  # type: ignore[arg-type]  # must not raise
+        assert parent.killed
+
+    def test_suppresses_no_such_process_on_parent_race(self) -> None:
+        """A parent that vanishes before kill() (NoSuchProcess) is silently skipped."""
+        parent = _MockPsutilProcess(pid=123, raise_on_kill=True)
+        kill_process_force(proc=parent)  # type: ignore[arg-type]  # must not raise
 
 
 class TestVersionTuple:

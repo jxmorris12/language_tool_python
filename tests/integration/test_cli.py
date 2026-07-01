@@ -37,9 +37,7 @@ def remote_server() -> Generator[tuple[str, int], None, None]:
     :rtype: Generator[Tuple[str, int], None, None]
     """
     with language_tool_python.LanguageTool("en-US") as tool:
-        host = tool._host
-        port = tool._port
-        yield host, port
+        yield tool.host, tool.port
 
 
 @pytest.mark.parametrize(

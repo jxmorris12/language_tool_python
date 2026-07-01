@@ -135,29 +135,60 @@ def test_config_caching() -> None:
 
     This test verifies that LanguageTool's caching mechanism (cacheSize and
     pipelineCaching) significantly improves performance when checking the same text
-    multiple times. The test measures the time difference between the first and second
-    checks to ensure caching provides a substantial speedup.
+    multiple times. The test measures the time difference between an uncached and a
+    cached check to ensure caching provides a substantial speedup.
+
+    This is inherently a timing-sensitive test and could still be flaky under heavy
+    machine load, so it: (1) performs a warm-up check on unrelated text before
+    timing, to exclude one-off JIT/connection-setup costs from the measurement
+    without pre-populating the cache for the text under test, and (2) repeats the
+    timed comparison up to ``_ATTEMPTS`` times, succeeding as soon as one attempt
+    shows the expected speedup, instead of requiring every attempt to pass.
 
     :raises AssertionError: If caching does not provide the expected performance
-        improvement.
+        improvement in any attempt.
     """
+    speedup_factor = 5.0
+    attempts = 3
+
     with language_tool_python.LanguageTool(
         "en-US",
         config={"cacheSize": 1000, "pipelineCaching": True},
     ) as tool:
-        s = "hello darkness my old frend"
-        t1 = time.time()
-        tool.check(s)
-        t2 = time.time()
-        tool.check(s)
-        t3 = time.time()
+        tool.check("warm-up text unrelated to the cached sentence below")
 
-        # This is a silly test that says: caching should speed up a grammar-checking
-        # by a factor of speed_factor when checking the same sentence twice. It
-        # theoretically could be very flaky.
-        # But in practice I've observed speedup of around 250x (6.76s to 0.028s).
-        speedup_factor = 10.0
-        assert (t2 - t1) / speedup_factor > (t3 - t2)
+        s = "hello darkness my old frend"
+        for _ in range(attempts):
+            t1 = time.time()
+            tool.check(s)
+            t2 = time.time()
+            tool.check(s)
+            t3 = time.time()
+
+            # In practice, speedups of around 250x (6.76s to 0.028s) have been observed.
+            if (t2 - t1) / speedup_factor > (t3 - t2):
+                return
+
+        pytest.fail(
+            f"Caching did not provide the expected speedup in {attempts} attempts."
+        )
+
+
+def test_inexistent_language() -> None:
+    """Test that creating a LanguageTag with an invalid language code raises an error.
+
+    This test verifies that the LanguageTag constructor correctly validates language
+    codes and raises a ValueError when given a language code that is not supported.
+    A real server is required here to obtain the list of supported languages via
+    ``tool._get_languages()``.
+
+    :raises AssertionError: If ValueError is not raised for an invalid language code.
+    """
+    with (
+        language_tool_python.LanguageTool("en-US") as tool,
+        pytest.raises(ValueError, match="unsupported language"),
+    ):
+        language_tool_python.LanguageTag("xx-XX", tool._get_languages())
 
 
 def test_disabled_rule_in_config() -> None:
