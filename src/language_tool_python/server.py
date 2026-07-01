@@ -1226,7 +1226,8 @@ class LanguageTool:
         if self._server:
             logger.info("Terminating LanguageTool server on port %s", self._port)
             _kill_processes([self._server])
-            _RUNNING_SERVER_PROCESSES.remove(self._server)
+            with contextlib.suppress(ValueError):
+                _RUNNING_SERVER_PROCESSES.remove(self._server)
 
             if self._server.stdin:
                 self._server.stdin.close()
