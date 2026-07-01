@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
     from ._internals.api_types import CheckMatch
 
-__all__ = ["Match", "is_check_match"]
+__all__ = ["Match", "four_byte_char_positions", "is_check_match"]
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +61,7 @@ def _get_match_ordered_dict() -> OrderedDictType[str, type]:
     )
 
 
-def _four_byte_char_positions(text: str) -> list[int]:
+def four_byte_char_positions(text: str) -> list[int]:
     """Identify positions of 4-byte encoded characters in a UTF-8 string.
 
     This function scans through the input text and identifies the positions of
@@ -123,9 +123,10 @@ class Match:  # noqa: PLW1641  # Doesn't implement hash because it's mutable
         and ``text``), ``replacements`` (items with ``value``), ``length``, and
         ``message``.
     :type attrib: CheckMatch
-    :param text: The original text in which the error occurred (the whole text,
-     not just the context).
-    :type text: str
+    :param four_byte_positions: The positions of 4-byte encoded characters in the
+        original text in which the error occurred (the whole text, not just the
+        context), as returned by :func:`four_byte_char_positions`.
+    :type four_byte_positions: list[int]
 
     Example of a match object received from the LanguageTool API :
 
@@ -176,13 +177,6 @@ class Match:  # noqa: PLW1641  # Doesn't implement hash because it's mutable
 
     """
 
-    PREVIOUS_MATCHES_TEXT: str | None = None
-    """The text of the previous match object."""
-
-    FOUR_BYTES_POSITIONS: list[int] | None = None
-    """The positions of 4-byte encoded characters in the text, registered by the
-    previous match object (kept for optimization purposes if the text is the same)."""
-
     rule_id: str
     """The ID of the rule that was violated."""
 
@@ -213,12 +207,24 @@ class Match:  # noqa: PLW1641  # Doesn't implement hash because it's mutable
     sentence: str
     """The sentence that contains the rule violation."""
 
-    def __init__(self, attrib: CheckMatch, text: str) -> None:
+    def __init__(
+        self,
+        attrib: CheckMatch,
+        four_byte_positions: list[int],
+    ) -> None:
         """Initialize a Match object with the given attributes.
 
         The method processes and normalizes the attributes before storing them on the
         object. This method adjusts the positions of 4-byte encoded characters in the
         text to ensure the offsets of the matches are correct.
+
+        :param attrib: The raw LanguageTool API match.
+        :type attrib: CheckMatch
+        :param four_byte_positions: The positions of 4-byte encoded characters in the
+            original text (the whole text, not just the context), as returned by
+            :func:`four_byte_char_positions`. Callers processing multiple matches for
+            the same text should compute this once and reuse it across all matches.
+        :type four_byte_positions: list[int]
         """
         # Process rule.
         custom_match: dict[str, str | int | list[str]] = {}
@@ -242,15 +248,15 @@ class Match:  # noqa: PLW1641  # Doesn't implement hash because it's mutable
         for k, v in custom_match.items():
             setattr(self, k, v)
 
-        if text != Match.PREVIOUS_MATCHES_TEXT:
-            Match.PREVIOUS_MATCHES_TEXT = text
-            Match.FOUR_BYTES_POSITIONS = _four_byte_char_positions(text)
-        # Get the positions of 4-byte encoded characters in the text because without
-        # carrying out this step, the offsets of the matches could be incorrect.
-        if Match.FOUR_BYTES_POSITIONS is not None:
-            self.offset -= sum(
-                1 for pos in Match.FOUR_BYTES_POSITIONS if pos < self.offset
-            )
+        # Adjust the offset for 4-byte encoded characters because without carrying out
+        # this step, the offsets of the matches could be incorrect.
+        offset = self.offset
+        adjustment = 0
+        for pos in four_byte_positions:
+            if pos >= offset:
+                break
+            adjustment += 1
+        self.offset = offset - adjustment
 
     def _ordered_items(self) -> list[tuple[str, _MatchValue]]:
         """Return public match attributes in the documented order."""
