@@ -1054,6 +1054,12 @@ class LanguageTool:
                         timeout=self._TIMEOUT,
                     )
                 with response_context as response:
+                    if response.status_code == _HTTP_STATUS_RATE_LIMIT:
+                        err = (
+                            "You have exceeded the rate limit for the free "
+                            "LanguageTool API. Please try again later."
+                        )
+                        raise RateLimitError(err)
                     try:
                         data: object = response.json()
                     except json.decoder.JSONDecodeError as e:
@@ -1063,12 +1069,6 @@ class LanguageTool:
                             e,
                         )
                         logger.debug("Status code: %s", response.status_code)
-                        if response.status_code == _HTTP_STATUS_RATE_LIMIT:
-                            err = (
-                                "You have exceeded the rate limit for the free "
-                                "LanguageTool API. Please try again later."
-                            )
-                            raise RateLimitError(err) from e
                         raise LanguageToolError(
                             _decode_response_content(response),
                         ) from e
