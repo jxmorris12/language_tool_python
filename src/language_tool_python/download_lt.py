@@ -385,7 +385,8 @@ class LocalLanguageTool(ABC):
 
         :raises NotImplementedError: Always, unless implemented by a subclass.
         """
-        raise NotImplementedError
+        # Unreachable: ABC prevents direct instantiation of this abstract method.
+        raise NotImplementedError  # pragma: no cover
 
     def _get_remote_zip(
         self,
@@ -618,7 +619,7 @@ class LocalLanguageTool(ABC):
         :rtype: str
         :raises NotImplementedError: Always, unless implemented by a subclass.
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover  # abstract body
 
     @property
     @abstractmethod
@@ -633,7 +634,7 @@ class LocalLanguageTool(ABC):
         :rtype: tuple[int, int] | datetime.datetime
         :raises NotImplementedError: Always, unless implemented by a subclass.
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover  # abstract body
 
     @property
     @abstractmethod
@@ -647,7 +648,7 @@ class LocalLanguageTool(ABC):
         :rtype: str
         :raises NotImplementedError: Always, unless implemented by a subclass.
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover  # abstract body
 
     def __eq__(self, other: object) -> bool:
         """Check equality between two LocalLanguageTool instances.
@@ -751,7 +752,7 @@ class ReleaseLocalLanguageTool(LocalLanguageTool):
             return
 
         if self not in self.get_installed_versions():
-            with (
+            with (  # pragma: no cover  # integration: HTTP download + extraction
                 tempfile.TemporaryDirectory(dir=download_folder) as temp_dir,
                 tempfile.NamedTemporaryFile(
                     suffix=".zip",
@@ -905,7 +906,9 @@ class SnapshotLocalLanguageTool(LocalLanguageTool):
                     raise PathError(err)
 
                 expected_dir = download_folder / f"LanguageTool-{self.version_name}"
-                if expected_dir.exists() or expected_dir.is_symlink():
+                if (  # pragma: no cover  # TOCTOU: dir appears between check and rename
+                    expected_dir.exists() or expected_dir.is_symlink()
+                ):
                     err = (
                         "Refusing to overwrite existing LanguageTool snapshot "
                         f"directory: {expected_dir}."
