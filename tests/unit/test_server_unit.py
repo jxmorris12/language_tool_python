@@ -882,6 +882,16 @@ class TestQueryServerResponseHandling:
         with pytest.raises(RateLimitError):
             lt._query_server("http://fake/", num_tries=1)
 
+    def test_raises_rate_limit_error_on_http_426_with_valid_json(self) -> None:
+        """RateLimitError is raised on HTTP 426 even when the body is valid JSON."""
+        r = _make_json_response(
+            b'{"error": "rate limited"}', status_code=_HTTP_RATE_LIMIT_STATUS
+        )
+        lt = _bare_lt(_remote=True)
+        lt._session = _MockSession(get_response=r)
+        with pytest.raises(RateLimitError):
+            lt._query_server("http://fake/", num_tries=1)
+
     def test_returns_none_with_zero_tries(self) -> None:
         """Returns None immediately when num_tries=0 (loop never executes)."""
         lt = _bare_lt()
@@ -938,6 +948,18 @@ class TestTerminateServer:
         ):
             lt._terminate_server()
         assert mock_stdin.closed
+
+    def test_does_not_raise_when_process_not_in_running_list(self) -> None:
+        """_terminate_server() does not raise if the process is absent from the list."""
+        mock_proc = _MockProcess(poll_return=None)
+        lt = _bare_lt()
+        lt._server = mock_proc  # type: ignore[assignment]
+        with (
+            patch("language_tool_python.server._RUNNING_SERVER_PROCESSES", []),
+            patch("language_tool_python.server._kill_processes"),
+        ):
+            lt._terminate_server()
+        assert lt._server is None
 
 
 class TestStartLocalServer:

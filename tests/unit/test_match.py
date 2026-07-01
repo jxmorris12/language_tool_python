@@ -106,6 +106,21 @@ class TestMatchInit:
         adjusted_offset = 2
         assert m.offset == adjusted_offset
 
+    def test_four_byte_char_after_match_is_not_counted(self) -> None:
+        """A 4-byte emoji after the match does not shift the offset."""
+        # "🌅" at position 6 is after the match at offset 0, so the adjustment
+        # loop must break on its first iteration instead of counting it.
+        text = "hello 🌅"
+        attrib = _make_attrib(
+            offset=0,
+            length=5,
+            context_text=text,
+            context_offset=0,
+            sentence=text,
+        )
+        m = Match(attrib, four_byte_char_positions(text))
+        assert m.offset == 0
+
     def test_no_adjustment_without_four_byte_chars(self) -> None:
         """Offsets are unchanged when no 4-byte characters precede the match."""
         text = "Hello world today"
