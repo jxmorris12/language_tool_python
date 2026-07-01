@@ -1101,6 +1101,7 @@ class LanguageTool:
                 if len(self._available_ports) > 0:
                     old_port = self._port
                     self._port = self._available_ports.pop()
+                    self._url = f"http://{self._host}:{self._port}/v2/"
                     logger.debug("Port %s failed, trying port %s", old_port, self._port)
                 else:
                     raise
