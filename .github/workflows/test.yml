@@ -46,7 +46,7 @@ jobs:
       uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # 8.2.0
     
     - name: Set up JDK 26
-      uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # 5.2.0
+      uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287 # 5.3.0
       with:
         distribution: 'temurin'
         java-version: '26'
