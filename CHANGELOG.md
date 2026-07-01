@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 - Added `premium_key` property to `language_tool_python.server.LanguageTool` to attach a premium API key for LanguageTool API requests.
 - Added `premium_username` property to `language_tool_python.server.LanguageTool` to attach a username for premium LanguageTool API requests.
 - Added `language_tool_python.match.is_check_match` type guard function to verify that a value is a `CheckMatch` (type from `language_tool_python._internals`).
+- Added `language_tool_python.match.four_byte_char_positions` public function returning the positions of 4-byte encoded characters in a string (previously private).
 - Added `language_tool_python.config_file.ConfigValue` public type alias representing all accepted value types for `LanguageToolConfig`.
 
 ### Changed
@@ -31,6 +32,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 - Added `typing_extensions` as a dependency for Python < 3.13 (fallback for the stdlib `warnings.deprecated`).
 
 ### Fixed
+- **Breaking:** Fixed a bug in `language_tool_python.match.Match` where a shared class-level cache of 4-byte character positions could be overwritten by a concurrent `.check()` call from another thread on a different text, producing incorrect match offsets. `language_tool_python.match.Match.__init__` now takes a `four_byte_positions: list[int]` argument instead of `text: str`. Removed the `Match.PREVIOUS_MATCHES_TEXT` and `Match.FOUR_BYTES_POSITIONS` class attributes.
 - Corrected a bug in `language_tool_python.config_file.LanguageToolConfig` where directory paths were incorrectly rejected by the path validator.
 - Fixed a bug in `LanguageTool._start_server_on_free_port` where `_url` was not updated when retrying on a different port, causing all subsequent server requests to target the wrong (original) port.
 - Fixed a bug in `LanguageTool._query_server` where `RateLimitError` was only raised when the rate-limit response body was invalid JSON, a valid JSON body with status 426 was silently returned as data instead (for now, the body from LanguageTool for rate-limiting responses is "Upgrade Required", which is not valid JSON, but this may change in the future).

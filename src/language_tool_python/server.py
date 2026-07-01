@@ -40,7 +40,7 @@ from .exceptions import (
     ServerError,
 )
 from .language_tag import LanguageTag
-from .match import Match
+from .match import Match, four_byte_char_positions
 from .utils import correct
 
 _startupinfo: object | None = None
@@ -732,7 +732,10 @@ class LanguageTool:
             err = f"Invalid response received from the LanguageTool server: {response}"
             raise ServerError(err)
         matches = response["matches"]
-        return [Match(match, text) for match in matches]
+        if not matches:
+            return []
+        positions = four_byte_char_positions(text)
+        return [Match(match, positions) for match in matches]
 
     def check_matching_regions(
         self,
