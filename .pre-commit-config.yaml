@@ -16,6 +16,13 @@ repos:
       - id: mypy
         args: [--config-file=pyproject.toml]
 
+  # zizmor for github actions linting
+  - repo: https://github.com/zizmorcore/zizmor-pre-commit
+    rev: v1.26.1 # Keep in sync zizmor version with pyproject.toml
+    hooks:
+      - id: zizmor
+        args: [--no-progress, --fix, --persona=auditor]
+
   # Standard pre-commit hooks
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0

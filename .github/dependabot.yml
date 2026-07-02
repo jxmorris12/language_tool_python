@@ -9,6 +9,7 @@ updates:
       semver-patch-days: 7
       semver-minor-days: 14
       semver-major-days: 30
+      default-days: 7
     commit-message:
       prefix: "chore"
       include: "scope"

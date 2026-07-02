@@ -12,6 +12,7 @@ if "%1"=="format" goto format
 if "%1"=="fix" goto fix
 if "%1"=="ruff-check" goto ruff-check
 if "%1"=="mypy-check" goto mypy-check
+if "%1"=="zizmor-check" goto zizmor-check
 if "%1"=="check" goto check
 if "%1"=="benchmark-test" goto benchmark-test
 if "%1"=="integration-test" goto integration-test
@@ -22,7 +23,7 @@ if "%1"=="doc" goto doc
 if "%1"=="publish" goto publish
 if "%1"=="clean" goto clean
 
-echo Usage: make.bat [install^|format^|fix^|ruff-check^|mypy-check^|check^|benchmark-test^|integration-test^|property-test^|unit-test^|test^|doc^|publish^|clean]
+echo Usage: make.bat [install^|format^|fix^|ruff-check^|mypy-check^|zizmor-check^|check^|benchmark-test^|integration-test^|property-test^|unit-test^|test^|doc^|publish^|clean]
 exit /b 1
 
 :install
@@ -35,6 +36,8 @@ exit /b %errorlevel%
 
 :fix
 uv run --group quality --locked ruff check --fix
+if errorlevel 1 exit /b %errorlevel%
+uv run --group quality --locked zizmor --collect=all --no-progress --fix --persona=auditor .
 exit /b %errorlevel%
 
 :ruff-check
@@ -48,10 +51,16 @@ exit /b %errorlevel%
 uv run --group tests --group types --group quality --locked mypy
 exit /b %errorlevel%
 
+:zizmor-check
+uv run --group quality --locked zizmor --collect=all --no-progress --persona=auditor .
+exit /b %errorlevel%
+
 :check
 call :ruff-check
 if errorlevel 1 exit /b %errorlevel%
 call :mypy-check
+if errorlevel 1 exit /b %errorlevel%
+call :zizmor-check
 exit /b %errorlevel%
 
 :benchmark-test
