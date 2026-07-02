@@ -1,4 +1,4 @@
-.PHONY: default install format fix ruff-check mypy-check check test doc publish clean
+.PHONY: default install format fix ruff-check mypy-check check benchmark-test integration-test property-test unit-test test doc publish clean
 
 UV := $(shell command -v uv 2>/dev/null || true)
 ifeq ($(UV),)
@@ -6,7 +6,7 @@ $(warning uv not found. Install uv (curl -LsSf https://astral.sh/uv/install.sh |
 endif
 
 default:
-	@echo "Usage: make [install|format|fix|ruff-check|mypy-check|check|test|doc|publish|clean]"
+	@echo "Usage: make [install|format|fix|ruff-check|mypy-check|check|benchmark-test|integration-test|property-test|unit-test|test|doc|publish|clean]"
 	@exit 1
 
 install:
@@ -28,6 +28,18 @@ mypy-check:
 check:
 	make ruff-check
 	make mypy-check
+
+benchmark-test:
+	uv run --group tests --locked pytest -m perf
+
+integration-test:
+	uv run --group tests --locked pytest -m integration
+
+property-test:
+	uv run --group tests --locked pytest -m property
+
+unit-test:
+	uv run --group tests --locked pytest -m unit
 
 test:
 	uv run --group tests --locked pytest
