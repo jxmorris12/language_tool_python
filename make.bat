@@ -13,11 +13,16 @@ if "%1"=="fix" goto fix
 if "%1"=="ruff-check" goto ruff-check
 if "%1"=="mypy-check" goto mypy-check
 if "%1"=="check" goto check
+if "%1"=="benchmark-test" goto benchmark-test
+if "%1"=="integration-test" goto integration-test
+if "%1"=="property-test" goto property-test
+if "%1"=="unit-test" goto unit-test
 if "%1"=="test" goto test
 if "%1"=="doc" goto doc
 if "%1"=="publish" goto publish
+if "%1"=="clean" goto clean
 
-echo Usage: make.bat [install^|format^|fix^|ruff-check^|mypy-check^|check^|test^|doc^|publish]
+echo Usage: make.bat [install^|format^|fix^|ruff-check^|mypy-check^|check^|benchmark-test^|integration-test^|property-test^|unit-test^|test^|doc^|publish^|clean]
 exit /b 1
 
 :install
@@ -49,6 +54,22 @@ if errorlevel 1 exit /b %errorlevel%
 call :mypy-check
 exit /b %errorlevel%
 
+:benchmark-test
+uv run --group tests --locked pytest -m perf
+exit /b %errorlevel%
+
+:integration-test
+uv run --group tests --locked pytest -m integration
+exit /b %errorlevel%
+
+:property-test
+uv run --group tests --locked pytest -m property
+exit /b %errorlevel%
+
+:unit-test
+uv run --group tests --locked pytest -m unit
+exit /b %errorlevel%
+
 :test
 uv run --group tests --locked pytest
 exit /b %errorlevel%
@@ -58,7 +79,7 @@ call uv run --group docs --locked sphinx-build -M html docs/source docs/build
 exit /b %errorlevel%
 
 :publish
-if exist dist\ rmdir /s /q dist\
+call .\make.bat clean
 
 uv build
 if errorlevel 1 exit /b %errorlevel%
@@ -67,4 +88,8 @@ uvx twine check .\dist\*
 if errorlevel 1 exit /b %errorlevel%
 
 uv publish
+exit /b %errorlevel%
+
+:clean
+git clean -xfd --exclude .venv
 exit /b %errorlevel%

@@ -1,4 +1,4 @@
-"""Tests for the Match functionality of LanguageTool."""
+"""Integration tests for the Match functionality of LanguageTool."""
 
 from typing import TypedDict
 
@@ -122,15 +122,15 @@ def test_match() -> None:
         expected format.
     """
     with language_tool_python.LanguageTool("en-US") as tool:
-        text = "A sentence with a error in the Hitchhiker\u2019s Guide tot he Galaxy"
+        text = "A sentence with a error in the Hitchhiker’s Guide tot he Galaxy"
         matches = tool.check(text)
         assert len(matches) == EXPECTED_MATCH_COUNT
         assert str(matches[0]) == (
             "Offset 16, length 1, Rule ID: EN_A_VS_AN\n"
-            "Message: Use “an” instead of \u2018a\u2019 if the following word starts "
-            "with a vowel sound, e.g. \u2018an article\u2019, \u2018an hour\u2019.\n"
+            "Message: Use “an” instead of ‘a’ if the following word starts "
+            "with a vowel sound, e.g. ‘an article’, ‘an hour’.\n"
             "Suggestion: an\n"
-            "A sentence with a error in the Hitchhiker\u2019s Guide tot he ..."
+            "A sentence with a error in the Hitchhiker’s Guide tot he ..."
             "\n                ^"
         )
 

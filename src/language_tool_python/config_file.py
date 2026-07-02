@@ -158,7 +158,9 @@ def _path_validator(v: PathLike[str] | str) -> None:
     if not p.exists():
         err = f"path does not exist: {p}"
         raise PathError(err)
-    if not p.is_file() and not p.is_dir():
+    # Defensive: a path that exists but is neither file nor directory (e.g. socket,
+    # device node, FIFO) cannot be created portably in unit tests.
+    if not p.is_file() and not p.is_dir():  # pragma: no cover
         err = f"path is not a file/directory: {p}"
         raise PathError(err)
 

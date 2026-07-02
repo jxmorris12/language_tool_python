@@ -94,7 +94,7 @@ def _decode_response_content(response: requests.Response) -> str:
     content: object = response.content
     if isinstance(content, bytes):
         return content.decode()
-    return str(content)
+    return str(content)  # pragma: no cover  # requests always returns bytes
 
 
 class LanguageTool:

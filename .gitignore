@@ -204,6 +204,9 @@ cython_debug/
 # Ruff stuff:
 .ruff_cache/
 
+# Pytest tmp_path base directory (project-relative to avoid Windows temp permission issues)
+.pytest_tmp/
+
 # PyPI configuration file
 .pypirc
 

@@ -36,6 +36,10 @@ class LanguageTag:
     def __init__(self, tag: str, languages: Iterable[str]) -> None:
         """Initialize a LanguageTag instance.
 
+        :param tag: The language tag to normalize.
+        :type tag: str
+        :param languages: An iterable of supported language tags.
+        :type languages: collections.abc.Iterable[str]
         :raises ValueError: If the tag is empty or unsupported.
         """
         self.tag = tag
