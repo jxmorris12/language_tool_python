@@ -5,6 +5,7 @@ from __future__ import annotations
 import contextlib
 import hashlib
 import importlib.resources
+import inspect
 import logging
 import os
 import re
@@ -83,6 +84,35 @@ _LTP_MAX_DOWNLOAD_BYTES_ENV_VAR = "LTP_MAX_DOWNLOAD_BYTES"
 _LTP_JAR_DIR_PATH_ENV_VAR = "LTP_JAR_DIR_PATH"
 _DOWNLOAD_CHUNK_BYTES = 1024 * 1024
 _SAFE_ZIP_EXTRACTOR = SafeZipExtractor()
+_PACKAGE_DIR = Path(__file__).resolve().parent
+
+
+def _external_stacklevel() -> int:
+    """Compute the stacklevel of the first caller located outside this package.
+
+    The call chain leading into a warning here varies in depth depending on how it is
+    reached (e.g. through ``LanguageTool.__init__()`` versus calling
+    ``LocalLanguageTool.download()`` directly), so a hardcoded stacklevel would point
+    to the wrong line, or nothing at all, depending on the caller. Walking the stack
+    until leaving this package keeps the warning attributed to the caller's code.
+
+    :return: The stacklevel to pass to :func:`warnings.warn`, from the perspective of
+        the caller of this function.
+    :rtype: int
+    """
+    frame = inspect.currentframe()
+    try:
+        frame = frame.f_back if frame is not None else None
+        stacklevel = 1
+        while frame is not None:
+            frame_dir = Path(frame.f_code.co_filename).resolve().parent
+            if frame_dir != _PACKAGE_DIR:
+                break
+            frame = frame.f_back
+            stacklevel += 1
+        return stacklevel
+    finally:
+        del frame  # Avoid reference cycles
 
 
 def _loads_manifest(raw_manifest: str) -> object:
@@ -156,7 +186,9 @@ def _get_zip_hash(version_name: str) -> str | None:
     for the given version. It normalizes the version name to construct the environment
     variable name. If no specific environment variable is found for the version, it
     falls back to a general environment variable or a manifest lookup. If the bypass
-    environment variable is set, it will skip verification and return None.
+    environment variable is set, it will skip verification and return None. If no
+    checksum is configured for the version (typically snapshots, which are absent from
+    the bundled manifest), a RuntimeWarning is emitted before returning None.
 
     :param version_name: The version name of LanguageTool (e.g., '6.0', '20240101', or
         'latest').
@@ -173,7 +205,7 @@ def _get_zip_hash(version_name: str) -> str | None:
             f"{_LTP_BYPASS_VERIFIED_DOWNLOADS_ENV_VAR}="
             f"false to re-enable verification."
         )
-        warn(err, RuntimeWarning, stacklevel=2)
+        warn(err, RuntimeWarning, stacklevel=_external_stacklevel())
         return None
     suffix = re.sub(r"[^A-Za-z0-9]+", "_", version_name).strip("_").upper()
     version_env_var = f"LTP_DOWNLOAD_SHA256_{suffix}"
@@ -189,6 +221,12 @@ def _get_zip_hash(version_name: str) -> str | None:
                 err = f"Invalid SHA-256 checksum configured by {source}."
                 raise PathError(err)
             return normalized
+    err = (
+        f"No SHA-256 checksum available for LanguageTool {version_name}. "
+        f"Integrity will not be verified for this download. "
+        f"You can provide one via the {version_env_var} environment variable."
+    )
+    warn(err, RuntimeWarning, stacklevel=_external_stacklevel())
     return None
 
 

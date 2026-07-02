@@ -48,7 +48,10 @@ resolved in this order:
 3. The bundled ``language_tool_python/_ressources/integrity.toml`` manifest, which
    covers release and archive downloads. Snapshots are not included.
 
-If none of the above resolves to a checksum, the download proceeds without verification.
+If none of the above resolves to a checksum, a ``RuntimeWarning`` is emitted and the
+download proceeds without verification. This is typically the case for snapshots, which
+are absent from the bundled manifest. Provide a checksum via
+``LTP_DOWNLOAD_SHA256_<VERSION>`` to silence the warning and verify the download.
 
 .. list-table::
    :header-rows: 1
