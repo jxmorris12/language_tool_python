@@ -752,7 +752,9 @@ class ReleaseLocalLanguageTool(LocalLanguageTool):
             return
 
         if self not in self.get_installed_versions():
-            with (  # pragma: no cover  # integration: HTTP download + extraction
+            # In test env, LT is probably already installed, so this branch is not
+            # taken, but the ZIP extraction code is tested in unit and property tests
+            with (  # pragma: no cover
                 tempfile.TemporaryDirectory(dir=download_folder) as temp_dir,
                 tempfile.NamedTemporaryFile(
                     suffix=".zip",
