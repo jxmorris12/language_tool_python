@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import locale
 from typing import TYPE_CHECKING
 
 import psutil
 import pytest
 
 from language_tool_python._internals.utils import (
+    FAILSAFE_LANGUAGE,
     get_env_float,
     get_env_int,
     get_language_tool_download_path,
@@ -148,6 +150,19 @@ class TestGetLocaleLanguage:
         result = get_locale_language()
         assert isinstance(result, str)
         assert len(result) > 0
+
+    def test_falls_back_to_failsafe_when_no_locale_is_configured(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """FAILSAFE_LANGUAGE is returned when both locale lookups yield no language."""
+
+        def _no_locale(*_args: object) -> tuple[None, None]:
+            return (None, None)
+
+        monkeypatch.setattr(locale, "getlocale", _no_locale)
+        monkeypatch.setattr(locale, "getdefaultlocale", _no_locale)
+        assert get_locale_language() == FAILSAFE_LANGUAGE
 
 
 class _MockPsutilProcess:

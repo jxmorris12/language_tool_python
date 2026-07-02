@@ -1,9 +1,4 @@
-"""Unit tests for download_lt.py helpers (no network, no Java required).
-
-Note: test_download.py calls importlib.reload(download_lt) which invalidates
-static class imports. We access classes via the module object (updated in-place
-by reload) to ensure isinstance checks work regardless of test ordering.
-"""
+"""Unit tests for download_lt.py helpers (no network, no Java required)."""
 
 from __future__ import annotations
 

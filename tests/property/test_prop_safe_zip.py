@@ -9,7 +9,7 @@ from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING
 
 import pytest
-from hypothesis import given, settings
+from hypothesis import example, given, settings
 from hypothesis import strategies as st
 
 from language_tool_python._internals.safe_zip import SafeZipExtractor
@@ -20,6 +20,19 @@ if TYPE_CHECKING:
 
 _TRAVERSAL_SEGMENTS = st.sampled_from([".."] * 3 + ["."])
 _SEP = st.sampled_from(["/", "\\"])
+_RESERVED_LEAVES = st.sampled_from(
+    [
+        "CON",
+        "NUL",
+        "PRN",
+        "AUX",
+        "COM1",
+        "LPT1",
+        "trailing-space ",
+        "trailing-dot.",
+        "file.txt:stream",
+    ],
+)
 
 
 def _make_zip_payload(files: dict[str, bytes]) -> bytes:
@@ -36,8 +49,10 @@ def adversarial_member_names(draw: DrawFn) -> str:
     """Generate adversarial ZIP member names built from unsafe path segments.
 
     Combines repeated ``..`` traversal segments, mixed separators, absolute
-    paths, Windows drive letters, and UNC paths, so the strategy is not limited
-    to a small fixed set of prefixes.
+    paths, Windows drive letters, UNC paths, traversal sandwiched between
+    safe-looking components, and Windows-reserved/ADS-style leaf names, so the
+    strategy is not limited to a small fixed set of prefixes or to traversal
+    sitting only at the start of the path.
     """
     depth = draw(st.integers(min_value=1, max_value=4))
     segs = [draw(_TRAVERSAL_SEGMENTS) for _ in range(depth)]
@@ -52,26 +67,48 @@ def adversarial_member_names(draw: DrawFn) -> str:
             max_size=20,
         ),
     )
-    style = draw(st.sampled_from(["prefix", "embedded", "absolute", "drive", "unc"]))
+    style = draw(
+        st.sampled_from(
+            ["prefix", "embedded", "nested", "absolute", "drive", "unc", "reserved"],
+        ),
+    )
     if style == "prefix":
-        return sep.join([*segs, leaf])
-    if style == "embedded":
-        return sep.join(["safe", *segs, leaf])
-    if style == "absolute":
-        return sep + leaf
-    if style == "drive":
-        return draw(st.sampled_from("CDZ")) + ":" + sep + leaf
-    return "\\\\server\\share\\" + leaf
+        name = sep.join([*segs, leaf])
+    elif style == "embedded":
+        name = sep.join(["safe", *segs, leaf])
+    elif style == "nested":
+        # Traversal sandwiched between two otherwise-safe-looking components,
+        # e.g. "safe/../../also-safe/leaf" rather than only leading traversal.
+        name = sep.join(["safe", *segs, "also-safe", leaf])
+    elif style == "absolute":
+        name = sep + leaf
+    elif style == "drive":
+        name = draw(st.sampled_from("CDZ")) + ":" + sep + leaf
+    elif style == "unc":
+        name = sep * 2 + "server" + sep + "share" + sep + leaf
+    else:
+        name = sep.join(["safe", draw(_RESERVED_LEAVES)])
+    return name
 
 
 @given(filename=adversarial_member_names())
 @settings(max_examples=300, deadline=None)
+@example(filename="../../../etc/passwd")
+@example(filename="..\\..\\..\\Windows\\System32\\evil.dll")
+@example(filename="safe/../../../etc/passwd")
+@example(filename="\\\\server\\share\\..\\..\\evil")
+@example(filename="safe/CON")
+@example(filename="safe/file.txt:stream")
+@example(filename="safe/trailing-dot.")
 def test_prop_safe_zip_path_traversal_always_rejected(filename: str) -> None:
     """Any adversarial ZIP member name must be rejected by SafeZipExtractor.
 
     Checks that ``SafeZipExtractor`` raises ``PathError`` for a wide range of
-    unsafe filenames (traversal, absolute paths, drive letters, UNC paths)
-    rather than a small fixed set of hand-picked prefixes.
+    unsafe filenames (traversal anywhere in the path, absolute paths, drive
+    letters, UNC paths, Windows-reserved/ADS-style names) rather than a small
+    fixed set of hand-picked prefixes. A handful of canonical zip-slip payloads
+    are pinned via ``@example`` so they are always checked regardless of the
+    Hypothesis random seed.
 
     A fresh temporary directory is created per example instead of using a
     pytest fixture, since function-scoped fixtures are not reset between
@@ -127,6 +164,10 @@ def test_prop_zip_target_always_inside_destination(member_path: PurePosixPath) -
 
 @given(filename=adversarial_member_names())
 @settings(max_examples=300)
+@example(filename="../../../etc/passwd")
+@example(filename="safe/../../../etc/passwd")
+@example(filename="safe/CON")
+@example(filename="safe/file.txt:stream")
 def test_prop_normalize_member_path_always_rejects_or_stays_relative(
     filename: str,
 ) -> None:

@@ -13,12 +13,8 @@ from language_tool_python._internals import safe_zip, utils
 from language_tool_python._internals.safe_zip import SafeZipExtractor, SafeZipLimits
 from language_tool_python.exceptions import PathError
 
-EXPECTED_MAX_ARCHIVE_BYTES = 11
-EXPECTED_MAX_EXTRACTED_BYTES = 22
-EXPECTED_MAX_MEMBERS = 33
-EXPECTED_MAX_MEMBER_EXTRACTED_BYTES = 44
-EXPECTED_MAX_MEMBER_COMPRESSION_RATIO = 55.5
-EXPECTED_MAX_TOTAL_COMPRESSION_RATIO = 66.5
+_EXPECTED_INT_ENV_OVERRIDE = 12345
+_EXPECTED_FLOAT_ENV_OVERRIDE = 12.5
 
 
 def make_zip_payload(files: dict[str, bytes]) -> bytes:
@@ -102,6 +98,55 @@ def test_safe_zip_limits_defaults_wired_to_module_constants() -> None:
     assert (
         limits.max_total_compression_ratio
         == safe_zip.DEFAULT_MAX_TOTAL_COMPRESSION_RATIO
+    )
+
+
+@pytest.mark.parametrize(
+    "env_var",
+    [
+        safe_zip.LTP_SAFE_ZIP_MAX_ARCHIVE_BYTES_ENV_VAR,
+        safe_zip.LTP_SAFE_ZIP_MAX_EXTRACTED_BYTES_ENV_VAR,
+        safe_zip.LTP_SAFE_ZIP_MAX_MEMBERS_ENV_VAR,
+        safe_zip.LTP_SAFE_ZIP_MAX_MEMBER_EXTRACTED_BYTES_ENV_VAR,
+    ],
+)
+def test_safe_zip_int_limit_env_var_overrides_default(
+    monkeypatch: pytest.MonkeyPatch,
+    env_var: str,
+) -> None:
+    """Test that each safe-zip integer limit's dedicated env var overrides it.
+
+    Each ``DEFAULT_MAX_*`` constant in ``safe_zip`` is computed once at import
+    time as ``get_env_int(<this var>, ...)``. Reloading the module to prove the
+    override is wired up would leak global state across tests (see
+    ``test_max_download_bytes_uses_env_override`` in ``test_download.py`` for the
+    same reasoning applied to the download size limit), so this instead calls
+    ``get_env_int`` directly with each module's real environment-variable name,
+    which is exactly what happens at import time.
+    """
+    monkeypatch.setenv(env_var, str(_EXPECTED_INT_ENV_OVERRIDE))
+    assert utils.get_env_int(env_var, 1) == _EXPECTED_INT_ENV_OVERRIDE
+
+
+@pytest.mark.parametrize(
+    "env_var",
+    [
+        safe_zip.LTP_SAFE_ZIP_MAX_MEMBER_COMPRESSION_RATIO_ENV_VAR,
+        safe_zip.LTP_SAFE_ZIP_MAX_TOTAL_COMPRESSION_RATIO_ENV_VAR,
+    ],
+)
+def test_safe_zip_float_limit_env_var_overrides_default(
+    monkeypatch: pytest.MonkeyPatch,
+    env_var: str,
+) -> None:
+    """Test that each safe-zip float ratio limit's dedicated env var overrides it.
+
+    Same reasoning as ``test_safe_zip_int_limit_env_var_overrides_default``, but
+    for the two ``float``-typed compression-ratio limits.
+    """
+    monkeypatch.setenv(env_var, str(_EXPECTED_FLOAT_ENV_OVERRIDE))
+    assert utils.get_env_float(env_var, 1.0) == pytest.approx(
+        _EXPECTED_FLOAT_ENV_OVERRIDE,
     )
 
 
