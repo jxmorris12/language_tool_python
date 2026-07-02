@@ -1,7 +1,6 @@
 """Integration tests for LanguageTool configuration options (require a local server)."""
 
 import re
-import time
 
 import pytest
 
@@ -131,47 +130,29 @@ def test_config_text_length() -> None:
 
 
 def test_config_caching() -> None:
-    """Test the caching configuration parameters.
+    """Test that the caching configuration parameters are accepted by the server.
 
-    This test verifies that LanguageTool's caching mechanism (cacheSize and
-    pipelineCaching) significantly improves performance when checking the same text
-    multiple times. The test measures the time difference between an uncached and a
-    cached check to ensure caching provides a substantial speedup.
+    This test verifies that LanguageTool starts successfully and correctly checks
+    text when configured with ``cacheSize`` and ``pipelineCaching``, including when
+    the same sentence is checked twice in a row (the second call takes the cache
+    hit code path server-side).
 
-    This is inherently a timing-sensitive test and could still be flaky under heavy
-    machine load, so it: (1) performs a warm-up check on unrelated text before
-    timing, to exclude one-off JIT/connection-setup costs from the measurement
-    without pre-populating the cache for the text under test, and (2) repeats the
-    timed comparison up to ``_ATTEMPTS`` times, succeeding as soon as one attempt
-    shows the expected speedup, instead of requiring every attempt to pass.
+    The actual speedup these options provide is a wall-clock measurement, which is
+    too noisy on shared CI runners to gate pass/fail on: it belongs in the
+    ``perf``-marked benchmark suite (see ``test_bench_check_with_pipeline_cache`` in
+    ``tests/benchmarks/test_bench_check.py``), which is opt-in and does not affect
+    CI results.
 
-    :raises AssertionError: If caching does not provide the expected performance
-        improvement in any attempt.
+    :raises AssertionError: If the tool fails to produce matches under this config.
     """
-    speedup_factor = 5.0
-    attempts = 3
-
     with language_tool_python.LanguageTool(
         "en-US",
         config={"cacheSize": 1000, "pipelineCaching": True},
     ) as tool:
-        tool.check("warm-up text unrelated to the cached sentence below")
-
         s = "hello darkness my old frend"
-        for _ in range(attempts):
-            t1 = time.time()
-            tool.check(s)
-            t2 = time.time()
-            tool.check(s)
-            t3 = time.time()
-
-            # In practice, speedups of around 250x (6.76s to 0.028s) have been observed.
-            if (t2 - t1) / speedup_factor > (t3 - t2):
-                return
-
-        pytest.fail(
-            f"Caching did not provide the expected speedup in {attempts} attempts."
-        )
+        assert len(tool.check(s)) > 0
+        # Second check of the same sentence exercises the cache-hit path.
+        assert len(tool.check(s)) > 0
 
 
 def test_inexistent_language() -> None:

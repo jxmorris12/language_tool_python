@@ -44,7 +44,8 @@ from .match import Match, four_byte_char_positions
 from .utils import correct
 
 _startupinfo: object | None = None
-if sys.platform == "win32":
+# Windows-specific code, coverage is measured on Linux
+if sys.platform == "win32":  # pragma: no cover
     _startupinfo = subprocess.STARTUPINFO()
     _startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 
