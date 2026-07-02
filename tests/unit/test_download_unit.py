@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 import subprocess
+import warnings
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
@@ -321,13 +322,28 @@ class TestGetZipHash:
         assert result is not None
         assert len(result) == _SHA256_HEX_LENGTH
 
-    def test_unknown_version_returns_none(
+    def test_unknown_version_returns_none_with_warning(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """A version absent from the manifest returns None."""
+        """A version absent from the manifest returns None and warns about it."""
         monkeypatch.delenv("LTP_BYPASS_VERIFIED_DOWNLOADS", raising=False)
-        result = _dl._get_zip_hash("0.0")
+        monkeypatch.delenv("LTP_DOWNLOAD_SHA256", raising=False)
+        monkeypatch.delenv("LTP_DOWNLOAD_SHA256_0_0", raising=False)
+        with pytest.warns(RuntimeWarning, match="No SHA-256 checksum available"):
+            result = _dl._get_zip_hash("0.0")
         assert result is None
+
+    def test_known_version_emits_no_checksum_warning(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A version present in the manifest emits no missing-checksum warning."""
+        monkeypatch.delenv("LTP_BYPASS_VERIFIED_DOWNLOADS", raising=False)
+        monkeypatch.delenv("LTP_DOWNLOAD_SHA256", raising=False)
+        monkeypatch.delenv("LTP_DOWNLOAD_SHA256_6_8", raising=False)
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", RuntimeWarning)
+            result = _dl._get_zip_hash("6.8")
+        assert result is not None
 
     def test_invalid_hash_in_env_raises(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """An invalid SHA-256 value in LTP_DOWNLOAD_SHA256 raises PathError."""
