@@ -1,5 +1,8 @@
 name: "CodeQL Advanced"
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: [ "master" ]
@@ -9,13 +12,16 @@ on:
     - cron: '36 16 * * 6'
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   analyze:
     name: Analyze (${{ matrix.language }})
     runs-on: ubuntu-26.04
     permissions:
-      # required for all workflows
-      security-events: write
+      security-events: write # Required for CodeQL to upload results to GitHub Security and Quality tab
 
     strategy:
       fail-fast: false
@@ -29,6 +35,8 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # 7.0.0
+      with:
+        persist-credentials: false
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL

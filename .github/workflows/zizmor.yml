@@ -1,0 +1,35 @@
+name: Zizmor
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [ master ]
+    paths: [ '.github/workflows/**' ]
+  pull_request:
+    branches: [ master ]
+    paths: [ '.github/workflows/**' ]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  zizmor:
+    timeout-minutes: 10
+    name: Lint GitHub Actions with zizmor
+    runs-on: ubuntu-26.04
+    steps:
+      - name: Install uv
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # 8.2.0
+
+      - name: Clone repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # 7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Run zizmor
+        run: |
+          make zizmor-check

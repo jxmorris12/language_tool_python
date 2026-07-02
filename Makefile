@@ -1,4 +1,4 @@
-.PHONY: default install format fix ruff-check mypy-check check benchmark-test integration-test property-test unit-test test doc publish clean
+.PHONY: default install format fix ruff-check mypy-check zizmor-check check benchmark-test integration-test property-test unit-test test doc publish clean
 
 UV := $(shell command -v uv 2>/dev/null || true)
 ifeq ($(UV),)
@@ -6,7 +6,7 @@ $(warning uv not found. Install uv (curl -LsSf https://astral.sh/uv/install.sh |
 endif
 
 default:
-	@echo "Usage: make [install|format|fix|ruff-check|mypy-check|check|benchmark-test|integration-test|property-test|unit-test|test|doc|publish|clean]"
+	@echo "Usage: make [install|format|fix|ruff-check|mypy-check|zizmor-check|check|benchmark-test|integration-test|property-test|unit-test|test|doc|publish|clean]"
 	@exit 1
 
 install:
@@ -17,6 +17,7 @@ format:
 
 fix:
 	uv run --group quality --locked ruff check --fix
+	uv run --group quality --locked zizmor --collect=all --no-progress --fix --persona=auditor .
 
 ruff-check:
 	uv run --group quality --locked ruff check
@@ -25,9 +26,13 @@ ruff-check:
 mypy-check:
 	uv run --group tests --group types --group quality --locked mypy
 
+zizmor-check:
+	uv run --group quality --locked zizmor --collect=all --no-progress --persona=auditor .
+
 check:
 	make ruff-check
 	make mypy-check
+	make zizmor-check
 
 benchmark-test:
 	uv run --group tests --locked pytest -m perf
