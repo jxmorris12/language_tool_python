@@ -40,14 +40,124 @@ class TestParseUrl:
         assert parse_url("https://example.com") == "https://example.com"
 
     def test_adds_http_scheme(self) -> None:
-        """A host:port string without a scheme gets http:// prepended."""
-        result = parse_url("localhost:8081")
-        assert result.startswith("http://")
-        assert "localhost" in result
+        """A host:port string without a scheme gets http:// prepended and warns."""
+        with pytest.warns(RuntimeWarning, match="No scheme was specified"):
+            result = parse_url("localhost:8081")
+        assert result == "http://localhost:8081"
 
     def test_canonical_form(self) -> None:
         """An already-complete URL with trailing slash is returned unchanged."""
         assert parse_url("http://localhost:8081/") == "http://localhost:8081/"
+
+    def test_host_containing_http_substring_is_prefixed(self) -> None:
+        """A schemeless host containing 'http' in its name still gets prefixed."""
+        with pytest.warns(RuntimeWarning, match="No scheme was specified"):
+            result = parse_url("myhttpserver.example.com")
+        assert result == "http://myhttpserver.example.com"
+
+    def test_host_with_port_and_path(self) -> None:
+        """A schemeless host:port/path string is prefixed and preserved."""
+        with pytest.warns(RuntimeWarning, match="No scheme was specified"):
+            result = parse_url("example.com:8081/api")
+        assert result == "http://example.com:8081/api"
+
+    def test_uppercase_scheme_is_normalised(self) -> None:
+        """An uppercase scheme is recognised and normalised to lowercase."""
+        assert parse_url("HTTP://example.com") == "http://example.com"
+
+    def test_mixed_case_https_scheme_is_normalised(self) -> None:
+        """A mixed-case https scheme is recognised and normalised to lowercase."""
+        assert parse_url("HTTPS://example.com") == "https://example.com"
+
+    def test_strips_surrounding_whitespace(self) -> None:
+        """Leading and trailing whitespace around the URL is ignored."""
+        assert parse_url("  http://example.com  ") == "http://example.com"
+
+    def test_empty_string_raises(self) -> None:
+        """An empty URL string raises ValueError."""
+        with pytest.raises(ValueError, match="must not be empty"):
+            parse_url("")
+
+    def test_whitespace_only_raises(self) -> None:
+        """A whitespace-only URL string raises ValueError."""
+        with pytest.raises(ValueError, match="must not be empty"):
+            parse_url("   ")
+
+    def test_unsupported_scheme_raises(self) -> None:
+        """An explicit, unsupported scheme (e.g. ftp) raises ValueError."""
+        with pytest.raises(ValueError, match="Unsupported URL scheme 'ftp'"):
+            parse_url("ftp://example.com")
+
+    def test_file_scheme_raises(self) -> None:
+        """An explicit file:// scheme raises ValueError instead of passing through."""
+        with pytest.raises(ValueError, match="Unsupported URL scheme 'file'"):
+            parse_url("file:///etc/passwd")
+
+    def test_scheme_without_host_raises(self) -> None:
+        """A scheme with no host raises ValueError."""
+        with pytest.raises(ValueError, match="must include a host"):
+            parse_url("http://")
+
+    def test_scheme_with_empty_host_and_port_raises(self) -> None:
+        """A scheme with a port but no host raises ValueError."""
+        with pytest.raises(ValueError, match="must include a host"):
+            parse_url("http://:8081")
+
+    def test_error_message_strips_whitespace(self) -> None:
+        """The host-missing error message does not leak surrounding whitespace."""
+        with pytest.raises(
+            ValueError, match=r"^The URL 'http://:8081' must include a host\.$"
+        ):
+            parse_url("  http://:8081  ")
+
+    def test_protocol_relative_url_gets_http_scheme(self) -> None:
+        """A protocol-relative URL (//host) is given an http:// scheme, not mangled."""
+        with pytest.warns(RuntimeWarning, match="No scheme was specified"):
+            result = parse_url("//example.com:8081")
+        assert result == "http://example.com:8081"
+
+    def test_explicit_scheme_without_slashes_raises_clean_message(self) -> None:
+        """An RFC 3986 scheme:opaque form (no host) raises with a clean message."""
+        with pytest.raises(
+            ValueError, match=r"^The URL 'http:example\.com' must include a host\.$"
+        ):
+            parse_url("http:example.com")
+
+    def test_uppercase_explicit_scheme_without_slashes_raises(self) -> None:
+        """An uppercase scheme:opaque form is treated the same as lowercase."""
+        with pytest.raises(ValueError, match="must include a host"):
+            parse_url("HTTPS:example.com")
+
+    def test_schemeless_host_port_unaffected_by_scheme_without_slash_detection(
+        self,
+    ) -> None:
+        """A schemeless host:port input is still treated as schemeless."""
+        with pytest.warns(RuntimeWarning, match="No scheme was specified"):
+            result = parse_url("localhost:8081")
+        assert result == "http://localhost:8081"
+
+    def test_schemeless_host_port_path_unaffected_by_scheme_without_slash_detection(
+        self,
+    ) -> None:
+        """A schemeless host:port/path input is still treated as schemeless."""
+        with pytest.warns(RuntimeWarning, match="No scheme was specified"):
+            result = parse_url("example.com:8081/api")
+        assert result == "http://example.com:8081/api"
+
+    def test_ftp_scheme_without_slashes_raises_unsupported(self) -> None:
+        """An unsupported scheme:opaque form (ftp:) raises Unsupported URL scheme."""
+        with pytest.raises(ValueError, match="Unsupported URL scheme 'ftp'"):
+            parse_url("ftp:example.com")
+
+    def test_mailto_scheme_without_slashes_raises_unsupported(self) -> None:
+        """An unsupported scheme:opaque form (mailto:) raises Unsupported URL scheme."""
+        with pytest.raises(ValueError, match="Unsupported URL scheme 'mailto'"):
+            parse_url("mailto:a@b.com")
+
+    def test_ws_scheme_without_slashes_raises_unsupported(self) -> None:
+        """An unsupported scheme:opaque form (ws:) raises Unsupported URL scheme."""
+        with pytest.raises(ValueError, match="Unsupported URL scheme 'ws'"):
+            parse_url("ws:example.com")
 
 
 class TestGetEnvInt:
