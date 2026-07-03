@@ -1,4 +1,5 @@
 import contextlib
+import inspect
 import locale
 import logging
 import math
@@ -15,6 +16,7 @@ from language_tool_python.exceptions import PathError
 
 __all__ = [
     "SupportsBool",
+    "external_stacklevel",
     "get_env_float",
     "get_env_int",
     "get_language_tool_download_path",
@@ -38,6 +40,36 @@ _URL_SCHEME_RE = re.compile(r"^([a-zA-Z][a-zA-Z0-9+.-]*)://")
 # Matches an explicit "scheme:" prefix that lacks the "//" authority marker
 # (RFC 3986's scheme:opaque form, e.g. "ftp:example.com" or "mailto:a@b.com").
 _EXPLICIT_SCHEME_NO_SLASH_RE = re.compile(r"^([a-zA-Z][a-zA-Z0-9+.-]*):(?!\d)")
+
+_PACKAGE_DIR = Path(__file__).resolve().parent.parent
+
+
+def external_stacklevel() -> int:
+    """Compute the stacklevel of the first caller located outside this package.
+
+    The call chain leading into a warning here varies in depth depending on how it is
+    reached (e.g. through ``LanguageTool.__init__()`` versus calling
+    ``LocalLanguageTool.download()`` directly), so a hardcoded stacklevel would point
+    to the wrong line, or nothing at all, depending on the caller. Walking the stack
+    until leaving this package keeps the warning attributed to the caller's code.
+
+    :return: The stacklevel to pass to :func:`warnings.warn`, from the perspective of
+        the caller of this function.
+    :rtype: int
+    """
+    frame = inspect.currentframe()
+    try:
+        frame = frame.f_back if frame is not None else None
+        stacklevel = 1
+        while frame is not None:
+            frame_dir = Path(frame.f_code.co_filename).resolve().parent
+            if not frame_dir.is_relative_to(_PACKAGE_DIR):
+                break
+            frame = frame.f_back
+            stacklevel += 1
+        return stacklevel
+    finally:
+        del frame  # Avoid reference cycles
 
 
 def _check_supported_scheme(scheme: str) -> None:
@@ -85,7 +117,7 @@ def parse_url(url_str: str) -> str:
                 "scheme was used by default. It is recommended to explicitly set the "
                 "protocol ('http://' or 'https://') yourself in the URL.",
                 RuntimeWarning,
-                stacklevel=2,
+                stacklevel=external_stacklevel(),
             )
 
     parsed = urllib.parse.urlparse(stripped)
