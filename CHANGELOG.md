@@ -38,6 +38,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 - Fixed a bug in `LanguageTool._query_server` where `RateLimitError` was only raised when the rate-limit response body was invalid JSON, a valid JSON body with status 426 was silently returned as data instead (for now, the body from LanguageTool for rate-limiting responses is "Upgrade Required", which is not valid JSON, but this may change in the future).
 - Fixed a bug in `LanguageTool._terminate_server` where `_RUNNING_SERVER_PROCESSES.remove()` could raise `ValueError` if the server process was not yet in the list or was no longer in it.
 - Fixed a missing warning when downloading a LanguageTool zip file (with `LanguageTool` or `LocalLanguageTool`) without an available SHA-256 checksum. Now a `RuntimeWarning` is emitted in this case.
+- Fixed `remote_server` URL scheme detection in `language_tool_python.server.LanguageTool`, which used a fragile substring check (`"http" in remote_server`) and could misidentify a host containing "http" in its name (e.g. `myhttpserver.example.com`) as already having a scheme. `parse_url` now correctly recognises `scheme://` URLs, bare `scheme:` URLs (e.g. `http:example.com`, `ftp:example.com`), and protocol-relative URLs (`//host`). Only `http`/`https` are accepted, raising `ValueError` otherwise (unsupported scheme, empty URL, or missing host), and warning via `RuntimeWarning` when `http://` is added by default.
 
 ### Removed
 - **Breaking:** Removed all functions and classes previously deprecated in v3.3.0:

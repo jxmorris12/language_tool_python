@@ -3,9 +3,11 @@ import locale
 import logging
 import math
 import os
+import re
 import urllib.parse
 from pathlib import Path
-from typing import Protocol, runtime_checkable
+from typing import Protocol, cast, runtime_checkable
+from warnings import warn
 
 import psutil
 
@@ -28,22 +30,70 @@ FAILSAFE_LANGUAGE = "en"
 
 LTP_PATH_ENV_VAR = "LTP_PATH"  # LanguageTool download path
 
+_SUPPORTED_URL_SCHEMES = frozenset({"http", "https"})
+
+# Matches an explicit "scheme://" prefix, capturing the scheme name.
+_URL_SCHEME_RE = re.compile(r"^([a-zA-Z][a-zA-Z0-9+.-]*)://")
+
+# Matches an explicit "scheme:" prefix that lacks the "//" authority marker
+# (RFC 3986's scheme:opaque form, e.g. "ftp:example.com" or "mailto:a@b.com").
+_EXPLICIT_SCHEME_NO_SLASH_RE = re.compile(r"^([a-zA-Z][a-zA-Z0-9+.-]*):(?!\d)")
+
+
+def _check_supported_scheme(scheme: str) -> None:
+    """Raise ValueError if ``scheme`` is not one of the supported URL schemes."""
+    if scheme not in _SUPPORTED_URL_SCHEMES:
+        err = (
+            f"Unsupported URL scheme {scheme!r}. Only 'http' and 'https' are supported."
+        )
+        raise ValueError(err)
+
 
 def parse_url(url_str: str) -> str:
     """Parse the given URL string and ensure it has a scheme.
-
-    If the input URL string does not contain 'http', 'http://' is prepended to it. The
-    function then parses the URL and returns its canonical form.
 
     :param url_str: The URL string to be parsed.
     :type url_str: str
     :return: The parsed URL in its canonical form.
     :rtype: str
+    :raises ValueError: If ``url_str`` is empty (or only whitespace), uses an
+        unsupported scheme, or has no host.
     """
-    if "http" not in url_str:
-        url_str = "http://" + url_str
+    stripped = url_str.strip()
+    if not stripped:
+        err = "The URL must not be empty."
+        raise ValueError(err)
 
-    return urllib.parse.urlparse(url_str).geturl()
+    scheme_match = _URL_SCHEME_RE.match(stripped)
+    if scheme_match is not None:
+        # scheme is present and followed by "//"
+        scheme = cast("str", scheme_match.group(1)).lower()
+        _check_supported_scheme(scheme)
+    else:
+        explicit_scheme_match = _EXPLICIT_SCHEME_NO_SLASH_RE.match(stripped)
+        if explicit_scheme_match is not None:
+            # scheme is present but not followed by "//"
+            scheme = cast("str", explicit_scheme_match.group(1)).lower()
+            _check_supported_scheme(scheme)
+            stripped = scheme + stripped[explicit_scheme_match.end(1) :]
+        else:
+            # scheme is missing, so we default to "http://" and issue a warning
+            prefix = "http:" if stripped.startswith("//") else "http://"
+            stripped = prefix + stripped
+            warn(
+                "No scheme was specified in the URL, so the unsecure 'http://' "
+                "scheme was used by default. It is recommended to explicitly set the "
+                "protocol ('http://' or 'https://') yourself in the URL.",
+                RuntimeWarning,
+                stacklevel=2,
+            )
+
+    parsed = urllib.parse.urlparse(stripped)
+    if not parsed.hostname:
+        err = f"The URL {stripped!r} must include a host."
+        raise ValueError(err)
+
+    return parsed.geturl()
 
 
 def get_env_int(env_var: str, default: int) -> int:
