@@ -430,11 +430,16 @@ def test_snapshot_download_renames_archive_root_to_requested_date(
         lambda: tmp_path,
     )
 
-    with patch(
-        "language_tool_python.download_lt.requests.get",
-        return_value=MockDownloadResponse(payload),
+    with (
+        patch(
+            "language_tool_python.download_lt.requests.get",
+            return_value=MockDownloadResponse(payload),
+        ),
     ):
-        local_language_tool.download()
+        with pytest.warns(
+            RuntimeWarning, match="No SHA-256 checksum available for LanguageTool"
+        ):
+            local_language_tool.download()
 
         expected_dir = tmp_path / f"LanguageTool-{requested_snapshot}"
         assert (expected_dir / "languagetool-server.jar").read_bytes() == b"jar"
@@ -505,6 +510,9 @@ def test_snapshot_download_raises_when_archive_has_multiple_root_dirs(
             return_value=MockDownloadResponse(payload),
         ),
         pytest.raises(PathError, match="Expected snapshot archive"),
+        pytest.warns(
+            RuntimeWarning, match="No SHA-256 checksum available for LanguageTool"
+        ),
     ):
         local_language_tool.download()
 
@@ -538,7 +546,10 @@ def test_latest_snapshot_download_renames_archive_root_to_current_date(
         "language_tool_python.download_lt.requests.get",
         return_value=MockDownloadResponse(payload),
     ):
-        local_language_tool.download()
+        with pytest.warns(
+            RuntimeWarning, match="No SHA-256 checksum available for LanguageTool"
+        ):
+            local_language_tool.download()
 
         expected_dir = tmp_path / f"LanguageTool-{current_snapshot_date}"
         assert (expected_dir / "languagetool-server.jar").read_bytes() == b"jar"

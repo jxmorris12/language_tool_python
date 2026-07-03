@@ -26,6 +26,7 @@ from ._internals.api_types import (
 )
 from ._internals.utils import (
     FAILSAFE_LANGUAGE,
+    external_stacklevel,
     get_locale_language,
     kill_process_force,
     parse_url,
@@ -349,7 +350,9 @@ class LanguageTool:
         necessary cleanup.
         """
         if self._server_is_alive():
-            warnings.warn("unclosed server", ResourceWarning, stacklevel=2)
+            warnings.warn(
+                "unclosed server", ResourceWarning, stacklevel=external_stacklevel()
+            )
             logger.warning(
                 "Unclosed server (server still running at %s). Closing it now.",
                 getattr(self, "_url", "unknown"),

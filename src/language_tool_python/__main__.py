@@ -8,6 +8,7 @@ import logging
 import re
 import sys
 import traceback
+import warnings
 from importlib.metadata import PackageNotFoundError, version
 from logging.config import dictConfig
 from pathlib import Path
@@ -374,55 +375,61 @@ def process_file(
         print(filename, file=sys.stderr)
 
     try:
-        with LanguageTool(
-            language=args.language,
-            mother_tongue=args.mother_tongue,
-            remote_server=remote_server,
-        ) as lang_tool:
-            try:
-                text = get_input_text(filename, args)
-            except (UnicodeError, FileNotFoundError) as exception:
-                print_exception(exception, args.verbose)
-                return 0
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                message="No scheme was specified in the URL",
+                category=RuntimeWarning,
+            )
+            with LanguageTool(
+                language=args.language,
+                mother_tongue=args.mother_tongue,
+                remote_server=remote_server,
+            ) as lang_tool:
+                try:
+                    text = get_input_text(filename, args)
+                except (UnicodeError, FileNotFoundError) as exception:
+                    print_exception(exception, args.verbose)
+                    return 0
 
-            if not args.spell_check:
-                lang_tool.disable_spellchecking()
+                if not args.spell_check:
+                    lang_tool.disable_spellchecking()
 
-            lang_tool.disabled_rules.update(args.disable)
-            lang_tool.enabled_rules.update(args.enable)
-            lang_tool.disabled_categories.update(args.disable_categories)
-            lang_tool.enabled_categories.update(args.enable_categories)
-            lang_tool.enabled_rules_only = args.enabled_only
+                lang_tool.disabled_rules.update(args.disable)
+                lang_tool.enabled_rules.update(args.enable)
+                lang_tool.disabled_categories.update(args.disable_categories)
+                lang_tool.enabled_categories.update(args.enable_categories)
+                lang_tool.enabled_rules_only = args.enabled_only
 
-            if args.picky:
-                lang_tool.picky = True
+                if args.picky:
+                    lang_tool.picky = True
 
-            if args.apply:
-                print(lang_tool.correct(text))
-                return 0
+                if args.apply:
+                    print(lang_tool.correct(text))
+                    return 0
 
-            status = 0
-            for match in lang_tool.check(text):
-                rule_id = match.rule_id
+                status = 0
+                for match in lang_tool.check(text):
+                    rule_id = match.rule_id
 
-                replacement_text = ", ".join(
-                    f"'{word}'" for word in match.replacements
-                ).strip()
+                    replacement_text = ", ".join(
+                        f"'{word}'" for word in match.replacements
+                    ).strip()
 
-                message = match.message
+                    message = match.message
 
-                # Messages that end with punctuation already include the
-                # suggestion.
-                if replacement_text and not message.endswith("?"):
-                    message += " Suggestions: " + replacement_text
+                    # Messages that end with punctuation already include the
+                    # suggestion.
+                    if replacement_text and not message.endswith("?"):
+                        message += " Suggestions: " + replacement_text
 
-                line, column = match.get_line_and_column(text)
+                    line, column = match.get_line_and_column(text)
 
-                print(f"{filename}:{line}:{column}: {rule_id}: {message}")
+                    print(f"{filename}:{line}:{column}: {rule_id}: {message}")
 
-                status = 2
+                    status = 2
 
-            return status
+                return status
     except LanguageToolError as exception:
         print_exception(exception, args.verbose)
         return 0

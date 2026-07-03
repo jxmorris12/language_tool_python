@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import locale
-from typing import TYPE_CHECKING
+from pathlib import Path
 
 import psutil
 import pytest
 
 from language_tool_python._internals.utils import (
     FAILSAFE_LANGUAGE,
+    external_stacklevel,
     get_env_float,
     get_env_int,
     get_language_tool_download_path,
@@ -19,9 +20,6 @@ from language_tool_python._internals.utils import (
     version_tuple,
 )
 from language_tool_python.exceptions import PathError
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 _DEFAULT_INT = 42
 _ENV_INT_VALUE = 100
@@ -158,6 +156,39 @@ class TestParseUrl:
         """An unsupported scheme:opaque form (ws:) raises Unsupported URL scheme."""
         with pytest.raises(ValueError, match="Unsupported URL scheme 'ws'"):
             parse_url("ws:example.com")
+
+    def test_warning_is_attributed_to_the_external_caller(self) -> None:
+        """The 'no scheme' warning points at the caller's file, not internal code."""
+        with pytest.warns(RuntimeWarning, match="No scheme was specified") as record:
+            parse_url("example.com")
+        assert len(record) == 1
+        assert record[0].filename == __file__
+
+
+class TestExternalStacklevel:
+    """Tests for external_stacklevel()'s package-boundary detection."""
+
+    def test_walks_past_frames_in_a_subdirectory_of_the_package_root(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A frame in a subdirectory of the package root still counts as internal."""
+        monkeypatch.setattr(
+            "language_tool_python._internals.utils._PACKAGE_DIR",
+            Path(__file__).resolve().parent.parent,
+        )
+
+        def _wrapper() -> int:
+            return external_stacklevel()
+
+        stacklevel_from_here = external_stacklevel()
+        stacklevel_from_wrapper = _wrapper()
+
+        # The wrapper adds exactly one extra internal frame compared to calling
+        # external_stacklevel() directly, so the reported stacklevel must be one
+        # higher. Under the old strict-equality bug, both calls would stop at the
+        # first frame (this test module isn't *exactly* the patched package root)
+        # and return the same value regardless of the extra wrapper frame.
+        assert stacklevel_from_wrapper == stacklevel_from_here + 1
 
 
 class TestGetEnvInt:
