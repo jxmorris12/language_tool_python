@@ -61,7 +61,7 @@ types = [
 
 quality = [
     # Keep in sync mypy version with .pre-commit-config.yaml
-    "mypy==2.1.0",
+    "mypy==2.3.0",
     # Keep in sync ruff version with .pre-commit-config.yaml
     "ruff==0.15.22",
     # Keep in sync zizmor version with .pre-commit-config.yaml

@@ -15,7 +15,7 @@ import sys
 import time
 import urllib.parse
 import warnings
-from typing import TYPE_CHECKING, ClassVar, Literal
+from typing import TYPE_CHECKING, ClassVar, Literal, cast
 
 import psutil
 import requests
@@ -54,6 +54,7 @@ if TYPE_CHECKING:
     from collections.abc import Mapping
     from pathlib import Path
     from types import TracebackType
+    from typing import IO
 
     from .config_file import ConfigValue
 
@@ -1236,8 +1237,11 @@ class LanguageTool:
             with contextlib.suppress(ValueError):
                 _RUNNING_SERVER_PROCESSES.remove(self._server)
 
-            if self._server.stdin:
-                self._server.stdin.close()
+            # stdin is IO[Any], so cast it back to the
+            # text stream that text=True actually gives us
+            stdin = cast("IO[str] | None", self._server.stdin)
+            if stdin:
+                stdin.close()
 
             # Release the server process object
             self._server = None
