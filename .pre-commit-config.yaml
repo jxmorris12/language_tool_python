@@ -11,7 +11,7 @@ repos:
 
   # mypy for type checking
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v2.1.0 # Keep in sync mypy version with pyproject.toml
+    rev: v2.3.0 # Keep in sync mypy version with pyproject.toml
     hooks:
       - id: mypy
         args: [--config-file=pyproject.toml]
