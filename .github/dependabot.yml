@@ -26,9 +26,6 @@ updates:
     commit-message:
       prefix: "chore"
       include: "scope"
-    ignore:
-      - dependency-name: "https://github.com/astral-sh/ruff-pre-commit" # Because we want to keep the ruff version in sync with pyproject.toml
-      - dependency-name: "https://github.com/pre-commit/mirrors-mypy" # Because we want to keep the mypy version in sync with pyproject.toml
 
   - package-ecosystem: "github-actions"
     directory: "/"
