@@ -223,7 +223,7 @@ class LanguageTool:
     _premium_key: str | None
     """The premium API key for the LanguageTool API."""
 
-    def __init__(  # noqa: PLR0913  # Too many arguments, but they are all necessary for configuring the server. Maybe refactor in a future breaking release to use a configuration object instead of individual parameters.
+    def __init__(  # noqa: PLR0913 PLR0917  # Too many arguments, but they are all necessary for configuring the server. Maybe refactor in a future breaking release to use a configuration object instead of individual parameters.
         self,
         language: str | None = None,
         mother_tongue: str | None = None,
