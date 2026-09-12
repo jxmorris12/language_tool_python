@@ -14,9 +14,10 @@ updates:
       prefix: "chore"
       include: "scope"
     groups:
-      dev-dependencies:
-        dependency-type: "development"
-  
+      python-dependencies:
+        patterns:
+          - "*"
+
   - package-ecosystem: "pre-commit"
     directory: "/"
     schedule:
@@ -26,6 +27,10 @@ updates:
     commit-message:
       prefix: "chore"
       include: "scope"
+    groups:
+      pre-commit-hooks:
+        patterns:
+          - "*"
 
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -36,3 +41,7 @@ updates:
     commit-message:
       prefix: "chore"
       include: "scope"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
