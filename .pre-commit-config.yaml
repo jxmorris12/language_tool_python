@@ -1,7 +1,7 @@
 repos:
   # Ruff for linting and formatting
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.16.5 # Keep in sync ruff version with pyproject.toml
+    rev: v0.16.8 # Keep in sync ruff version with pyproject.toml
     hooks:
       # Run the linter
       - id: ruff
@@ -18,7 +18,7 @@ repos:
 
   # zizmor for github actions linting
   - repo: https://github.com/zizmorcore/zizmor-pre-commit
-    rev: v1.29.0 # Keep in sync zizmor version with pyproject.toml
+    rev: v1.30.1 # Keep in sync zizmor version with pyproject.toml
     hooks:
       - id: zizmor
         args: [--no-progress, --fix, --persona=auditor]
